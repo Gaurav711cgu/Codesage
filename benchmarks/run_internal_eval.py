@@ -1,0 +1,156 @@
+"""
+Run the 60-question stratified internal RAG evaluation.
+
+Usage:
+    python benchmarks/run_internal_eval.py \
+        --repo_id <uuid> \
+        --openai_key <key>   # for GPT-4o-mini judge
+
+Results written to benchmarks/results/rag_eval_results.json.
+
+Requires the backend running at BACKEND_URL (default http://localhost:8000).
+"""
+
+import argparse
+import json
+import logging
+import os
+import time
+from pathlib import Path
+
+import requests
+
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s %(levelname)-8s %(message)s")
+logger = logging.getLogger(__name__)
+
+BACKEND_URL    = os.getenv("BACKEND_URL", "http://localhost:8000")
+QUESTIONS_FILE = Path(__file__).parent / "rag_eval_questions.json"
+RESULTS_DIR    = Path(__file__).parent / "results"
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def query_and_get_answer(repo_id: str, question: str, mode: str) -> tuple[str, list]:
+    url = f"{BACKEND_URL}/api/v1/repo/query"
+    payload = {"repo_id": repo_id, "query": question, "retrieval_mode": mode}
+    answer_parts, chunks = [], []
+    try:
+        with requests.post(url, json=payload, stream=True, timeout=60) as resp:
+            resp.raise_for_status()
+            for raw_line in resp.iter_lines(decode_unicode=True):
+                if raw_line.startswith("data: "):
+                    try:
+                        data = json.loads(raw_line[6:])
+                    except json.JSONDecodeError:
+                        continue
+                    if "chunks" in data:
+                        chunks = data["chunks"]
+                    if "text" in data:
+                        answer_parts.append(data["text"])
+    except Exception as exc:
+        logger.warning("Query failed mode=%s: %s", mode, exc)
+    return "".join(answer_parts).strip(), chunks
+
+
+JUDGE_PROMPT = """\
+Question: {question}
+Correct answer (ground truth): {ground_truth}
+AI answer: {ai_answer}
+
+Score the AI answer 0 or 1.
+Score 1 if: The AI answer identifies the correct function(s), file(s), or behavior described in the ground truth. Minor differences in wording are acceptable.
+Score 0 if: The AI answer is incorrect, identifies the wrong function or file, describes incorrect behavior, or says it cannot find the information.
+
+Important: Do not score based on answer length. A short correct answer scores 1. A long incorrect answer scores 0.
+
+Respond with only "0" or "1". No explanation."""
+
+
+def judge_answer(q: str, gt: str, answer: str, client) -> int:
+    resp = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are evaluating whether an AI assistant correctly answered a question about a code repository."},
+            {"role": "user",   "content": JUDGE_PROMPT.format(question=q, ground_truth=gt, ai_answer=answer or "(no answer)")},
+        ],
+        temperature=0.0, max_tokens=1,
+    )
+    return 1 if resp.choices[0].message.content.strip() == "1" else 0
+
+
+def wilson_ci(hits: int, n: int) -> tuple[float, float]:
+    from statsmodels.stats.proportion import proportion_confint
+    lo, hi = proportion_confint(hits, n, alpha=0.05, method="wilson")
+    return round(lo * 100, 1), round(hi * 100, 1)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--repo_id",     required=True)
+    parser.add_argument("--openai_key",  default=os.getenv("OPENAI_API_KEY", ""))
+    parser.add_argument("--calibration_only", action="store_true")
+    args = parser.parse_args()
+
+    try:
+        from openai import OpenAI
+    except ImportError:
+        raise SystemExit("pip install openai statsmodels")
+
+    client    = OpenAI(api_key=args.openai_key)
+    questions = json.loads(QUESTIONS_FILE.read_text())["questions"]
+    logger.info("Loaded %d questions", len(questions))
+
+    # Calibration — 10 questions, same answer fed twice
+    cal_pass = 0
+    for q in questions[:10]:
+        ans, _ = query_and_get_answer(args.repo_id, q["question"], "naive")
+        s1 = judge_answer(q["question"], q["ground_truth"], ans, client)
+        s2 = judge_answer(q["question"], q["ground_truth"], ans, client)
+        cal_pass += int(s1 == s2)
+    logger.info("Calibration: %d/10 identical inputs → identical scores", cal_pass)
+    if cal_pass < 10:
+        logger.warning("Judge calibration failed. Review prompt before proceeding.")
+    if args.calibration_only:
+        return
+
+    results = {}
+    for q in questions:
+        qid = q["id"]
+        results[qid] = {"id": qid, "category": q["category"], "repo": q["repo"]}
+        for mode in ("naive", "graph"):
+            ans, chunks = query_and_get_answer(args.repo_id, q["question"], mode)
+            score = judge_answer(q["question"], q["ground_truth"], ans, client)
+            results[qid][f"{mode}_answer"]   = ans
+            results[qid][f"{mode}_score"]    = score
+            results[qid][f"{mode}_n_chunks"] = len(chunks)
+            time.sleep(0.3)
+        logger.info("%s: naive=%d graph=%d", qid,
+                    results[qid]["naive_score"], results[qid]["graph_score"])
+
+    cats = ["single_function", "cross_file", "call_chain"]
+    summary: dict = {"eval_date": time.strftime("%Y-%m-%d"), "calibration_pass": cal_pass}
+    for cat in cats:
+        cat_rows = [r for r in results.values() if r["category"] == cat]
+        n = len(cat_rows)
+        for mode in ("naive", "graph"):
+            hits = sum(r[f"{mode}_score"] for r in cat_rows)
+            pct  = round(hits / n * 100, 1)
+            ci   = wilson_ci(hits, n)
+            summary[f"{cat}_{mode}"]    = pct
+            summary[f"{cat}_{mode}_ci"] = f"{ci[0]}–{ci[1]}"
+
+    output = {**summary, "raw_results": list(results.values())}
+    out_path = RESULTS_DIR / "rag_eval_results.json"
+    out_path.write_text(json.dumps(output, indent=2))
+    logger.info("Saved → %s", out_path)
+
+    print("\n=== Internal RAG Benchmark ===")
+    print(f"{'Category':<22} {'Naive':>20}  {'Graph':>20}")
+    for cat in cats:
+        n = f"{summary[f'{cat}_naive']}% [{summary[f'{cat}_naive_ci']}]"
+        g = f"{summary[f'{cat}_graph']}% [{summary[f'{cat}_graph_ci']}]"
+        print(f"{cat:<22} {n:>20}  {g:>20}")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,417 @@
+{
+  "_meta": {
+    "description": "60-question stratified internal RAG benchmark",
+    "repos": ["fastapi", "httpx", "celery"],
+    "categories": {
+      "single_function": "Questions answerable by reading one function in isolation (n=20)",
+      "cross_file": "Questions requiring understanding of 2+ files (n=20)",
+      "call_chain": "Questions requiring tracing an execution path (n=20)"
+    },
+    "status": "template — fill ground_truth and add remaining questions before running eval",
+    "instructions": "Commit this file BEFORE running any evaluations. Never modify after seeing results."
+  },
+  "questions": [
+
+    {
+      "id": "sf_fastapi_01",
+      "repo": "fastapi",
+      "category": "single_function",
+      "question": "What arguments does JSONResponse.__init__ accept in FastAPI, and what is the default value of the status_code parameter?",
+      "ground_truth": "JSONResponse.__init__ accepts content, status_code (default 200), headers, media_type, and background. It is defined in fastapi/responses.py (inherited from starlette)."
+    },
+    {
+      "id": "sf_fastapi_02",
+      "repo": "fastapi",
+      "category": "single_function",
+      "question": "What does the get_flat_params function do in FastAPI's routing internals?",
+      "ground_truth": "get_flat_params flattens a list of FieldInfo / ModelField objects, filtering to only path/query/header/cookie parameters (not body). It is used by get_openapi_operation_metadata."
+    },
+    {
+      "id": "sf_fastapi_03",
+      "repo": "fastapi",
+      "category": "single_function",
+      "question": "How does FastAPI's create_response_field function handle the case where the provided type is already a ModelField?",
+      "ground_truth": "If the type is already a FieldInfo, create_response_field returns it unchanged without creating a new ModelField."
+    },
+    {
+      "id": "sf_fastapi_04",
+      "repo": "fastapi",
+      "category": "single_function",
+      "question": "What exception does FastAPI raise when request body validation fails, and what HTTP status code is returned?",
+      "ground_truth": "FastAPI raises RequestValidationError which is caught by the default exception handler and returns a 422 Unprocessable Entity response."
+    },
+    {
+      "id": "sf_fastapi_05",
+      "repo": "fastapi",
+      "category": "single_function",
+      "question": "What is the purpose of the generate_unique_id function in FastAPI's routing module?",
+      "ground_truth": "generate_unique_id creates a unique operation ID for an OpenAPI operation from the route's name and path, used as the operationId in the generated schema."
+    },
+    {
+      "id": "sf_httpx_01",
+      "repo": "httpx",
+      "category": "single_function",
+      "question": "What parameters does httpx.Client.__init__ accept for configuring connection timeouts?",
+      "ground_truth": "httpx.Client accepts a 'timeout' parameter that can be a float (applied to all timeout types) or an httpx.Timeout instance with connect, read, write, and pool attributes."
+    },
+    {
+      "id": "sf_httpx_02",
+      "repo": "httpx",
+      "category": "single_function",
+      "question": "What does the httpx.URL.copy_with method return?",
+      "ground_truth": "URL.copy_with returns a new URL instance with the specified components replaced. It does not mutate the original URL."
+    },
+    {
+      "id": "sf_httpx_03",
+      "repo": "httpx",
+      "category": "single_function",
+      "question": "How does httpx handle the case where a redirect response has no Location header?",
+      "ground_truth": "When a redirect response is missing the Location header, httpx raises a RemoteProtocolError."
+    },
+    {
+      "id": "sf_httpx_04",
+      "repo": "httpx",
+      "category": "single_function",
+      "question": "What is the default encoding used by httpx.Response.text when no charset is specified in the Content-Type header?",
+      "ground_truth": "When no charset is specified, httpx uses chardet/charset-normalizer to auto-detect the encoding, falling back to utf-8."
+    },
+    {
+      "id": "sf_httpx_05",
+      "repo": "httpx",
+      "category": "single_function",
+      "question": "What does httpx.QueryParams.merge return and how does it differ from update?",
+      "ground_truth": "QueryParams.merge returns a new QueryParams instance combining both sets of parameters. Multiple values for the same key are preserved. Unlike update (which replaces), merge appends."
+    },
+    {
+      "id": "sf_celery_01",
+      "repo": "celery",
+      "category": "single_function",
+      "question": "What arguments does the @task decorator in Celery accept for configuring retry behaviour?",
+      "ground_truth": "The @task decorator accepts max_retries (default 3), default_retry_delay (default 180s), retry_backoff (bool), retry_backoff_max, and retry_jitter for retry configuration."
+    },
+    {
+      "id": "sf_celery_02",
+      "repo": "celery",
+      "category": "single_function",
+      "question": "What does celery.result.AsyncResult.forget() do?",
+      "ground_truth": "AsyncResult.forget() deletes the task result from the result backend, freeing storage. It does not cancel a running task."
+    },
+    {
+      "id": "sf_celery_03",
+      "repo": "celery",
+      "category": "single_function",
+      "question": "How does Celery's chord_unlock task determine when all tasks in a chord have completed?",
+      "ground_truth": "chord_unlock repeatedly polls the result backend, checking if all subtask results in the group are ready. When all are ready, it applies the chord callback."
+    },
+    {
+      "id": "sf_celery_04",
+      "repo": "celery",
+      "category": "single_function",
+      "question": "What is the purpose of the abstract attribute on a Celery Task class?",
+      "ground_truth": "Setting abstract=True prevents a Task subclass from being registered in the task registry. It is used for base classes that are not meant to be called directly."
+    },
+    {
+      "id": "sf_celery_05",
+      "repo": "celery",
+      "category": "single_function",
+      "question": "What exception does Celery raise when task.apply_async is called and the broker connection fails?",
+      "ground_truth": "Celery raises kombu.exceptions.OperationalError (or its alias celery.exceptions.OperationalError) when the broker connection fails during apply_async."
+    },
+    {
+      "id": "sf_fastapi_06",
+      "repo": "fastapi",
+      "category": "single_function",
+      "question": "What does FastAPI's include_router function do with the prefix parameter?",
+      "ground_truth": "include_router prepends the prefix string to all route paths in the router. The prefix must start with '/' and must not end with '/'."
+    },
+    {
+      "id": "sf_httpx_06",
+      "repo": "httpx",
+      "category": "single_function",
+      "question": "How does httpx.AsyncClient differ from httpx.Client in its send method signature?",
+      "ground_truth": "AsyncClient.send is a coroutine (async def) that must be awaited, whereas Client.send is a synchronous method. Both accept a Request object and return a Response."
+    },
+    {
+      "id": "sf_celery_06",
+      "repo": "celery",
+      "category": "single_function",
+      "question": "What is the purpose of the task_always_eager Celery configuration option?",
+      "ground_truth": "task_always_eager=True causes tasks to execute locally and synchronously instead of being sent to a worker, useful for testing."
+    },
+    {
+      "id": "sf_fastapi_07",
+      "repo": "fastapi",
+      "category": "single_function",
+      "question": "How does FastAPI's BackgroundTasks.add_task work?",
+      "ground_truth": "BackgroundTasks.add_task registers a callable with its args and kwargs to be called after the response is sent. Tasks run in the same process as the server."
+    },
+    {
+      "id": "sf_httpx_07",
+      "repo": "httpx",
+      "category": "single_function",
+      "question": "What does httpx.Limits control and what are its default values?",
+      "ground_truth": "httpx.Limits controls connection pool settings: max_connections (default 100), max_keepalive_connections (default 20), and keepalive_expiry (default 5s)."
+    },
+
+    {
+      "id": "cf_fastapi_01",
+      "repo": "fastapi",
+      "category": "cross_file",
+      "question": "What happens when FastAPI's dependency injection resolves a sub-dependency that raises an HTTPException?",
+      "ground_truth": "The HTTPException propagates through the dependency resolver and is caught by FastAPI's exception handler, which converts it to an HTTP response with the specified status_code and detail. The exception propagation logic is in fastapi/dependencies/utils.py."
+    },
+    {
+      "id": "cf_fastapi_02",
+      "repo": "fastapi",
+      "category": "cross_file",
+      "question": "Which function in FastAPI is responsible for running Pydantic validation on request body parameters, and what does it call when validation fails?",
+      "ground_truth": "request_body_to_args in fastapi/dependencies/utils.py runs Pydantic validation on the request body. On failure it raises RequestValidationError which the default exception handler in fastapi/exception_handlers.py converts to a 422 response."
+    },
+    {
+      "id": "cf_fastapi_03",
+      "repo": "fastapi",
+      "category": "cross_file",
+      "question": "How does FastAPI's OpenAPI schema generation handle response models defined with response_model_exclude_unset=True?",
+      "ground_truth": "When response_model_exclude_unset=True, FastAPI's jsonable_encoder (in fastapi/encoders.py) skips fields not explicitly set. The get_openapi function in fastapi/openapi/utils.py reads this flag from the route definition."
+    },
+    {
+      "id": "cf_httpx_01",
+      "repo": "httpx",
+      "category": "cross_file",
+      "question": "How does httpx's redirect handling interact with the authentication flow when following a redirect changes the domain?",
+      "ground_truth": "When a redirect crosses to a different domain, httpx strips the Authorization header to prevent credential leakage. This logic is in httpx/_client.py (should_strip_auth method) and the auth flow is re-invoked only if the auth handler opts in."
+    },
+    {
+      "id": "cf_httpx_02",
+      "repo": "httpx",
+      "category": "cross_file",
+      "question": "Which classes are involved in httpx's connection pooling and how does the pool decide to reuse vs create a new connection?",
+      "ground_truth": "ConnectionPool and HTTPConnection in httpx/_transports/ manage pooling. The pool checks if an existing connection with matching (scheme, host, port) exists and is idle before creating a new one."
+    },
+    {
+      "id": "cf_celery_01",
+      "repo": "celery",
+      "category": "cross_file",
+      "question": "How does Celery propagate task results from worker to the result backend, and which two classes are primarily involved?",
+      "ground_truth": "When a task completes, the worker calls backend.store_result (from celery/backends/base.py). The task's base class (celery/app/task.py) calls this via on_success / on_failure hooks."
+    },
+    {
+      "id": "cf_celery_02",
+      "repo": "celery",
+      "category": "cross_file",
+      "question": "How does Celery's group primitive collect results from its subtasks and what happens when one subtask fails?",
+      "ground_truth": "Celery group (celery/canvas.py) creates a GroupResult collecting AsyncResult objects. If fail_fast=True (Celery 5+), the group raises the first exception. Otherwise all subtasks run and individual failures are accessible via result.failed()."
+    },
+    {
+      "id": "cf_fastapi_04",
+      "repo": "fastapi",
+      "category": "cross_file",
+      "question": "How does FastAPI's WebSocket support differ from its HTTP route handling in terms of the dependency injection mechanism?",
+      "ground_truth": "WebSocket routes use the same dependency injection system (fastapi/dependencies/utils.py) but the Request-like object passed is a WebSocket instance. The resolver is called in websocket_session context rather than an HTTP request context."
+    },
+    {
+      "id": "cf_httpx_03",
+      "repo": "httpx",
+      "category": "cross_file",
+      "question": "What is the relationship between httpx.Request and httpx.PreparedRequest, and which class actually holds the serialized body bytes?",
+      "ground_truth": "httpx uses a single Request class (no separate PreparedRequest). The body is encoded lazily by the content stream (httpx/_content.py). The Request object holds the stream, not pre-serialized bytes."
+    },
+    {
+      "id": "cf_celery_03",
+      "repo": "celery",
+      "category": "cross_file",
+      "question": "What files are involved when Celery discovers and auto-registers tasks from an installed app?",
+      "ground_truth": "Celery auto-discovery calls autodiscover_tasks (celery/app/base.py), which imports each app's 'tasks' module. Decorated functions call app.register_task (celery/app/builtins.py) which adds them to the task registry (celery/app/registry.py)."
+    },
+    {
+      "id": "cf_fastapi_05",
+      "repo": "fastapi",
+      "category": "cross_file",
+      "question": "How does FastAPI handle a path operation that returns None from a function with response_model set?",
+      "ground_truth": "If the function returns None and response_model is set, FastAPI's serialize_response (fastapi/routing.py) encodes None as null. If response_model_exclude_none=True, the null fields are stripped."
+    },
+    {
+      "id": "cf_httpx_04",
+      "repo": "httpx",
+      "category": "cross_file",
+      "question": "How does httpx handle streaming responses in the async client vs the sync client at the transport layer?",
+      "ground_truth": "AsyncHTTPTransport (httpx/_transports/default.py) uses httpcore's async interface. HTTPTransport uses the sync interface. Both wrap httpcore responses; the async version yields bytes via async iteration, the sync version via regular iteration."
+    },
+    {
+      "id": "cf_celery_04",
+      "repo": "celery",
+      "category": "cross_file",
+      "question": "When Celery retries a task, what is the sequence of calls from Task.retry() to the message being re-queued?",
+      "ground_truth": "Task.retry() raises Retry exception. The worker's _execute_task catches it, calls apply_async with countdown, which calls the app.send_task, which calls the kombu producer to publish the message back to the broker."
+    },
+    {
+      "id": "cf_fastapi_06",
+      "repo": "fastapi",
+      "category": "cross_file",
+      "question": "How does FastAPI's middleware stack process a request before it reaches a route handler?",
+      "ground_truth": "Middleware is applied as an ASGI stack by Starlette's middleware machinery. Each middleware wraps the next via __call__. FastAPI's own ServerErrorMiddleware and ExceptionMiddleware are added first, then user-defined middleware, then the router."
+    },
+    {
+      "id": "cf_httpx_05",
+      "repo": "httpx",
+      "category": "cross_file",
+      "question": "Which files are involved when httpx encodes a multipart/form-data request body?",
+      "ground_truth": "Multipart encoding is handled by httpx/_multipart.py. The MultipartStream class builds the boundary and encodes each field. httpx/_content.py routes the request body to MultipartStream when files= is passed."
+    },
+    {
+      "id": "cf_celery_05",
+      "repo": "celery",
+      "category": "cross_file",
+      "question": "How does Celery's beat scheduler persist the schedule state between restarts?",
+      "ground_truth": "Celery beat uses PersistentScheduler (celery/beat.py) which writes a shelve database (beat-schedule.db by default). On startup it loads the schedule from disk; on each tick it saves updated last_run_at values."
+    },
+    {
+      "id": "cf_fastapi_07",
+      "repo": "fastapi",
+      "category": "cross_file",
+      "question": "How does FastAPI's Depends() system prevent the same dependency from being called twice within a single request?",
+      "ground_truth": "FastAPI caches dependency results by default (use_cache=True). The cache key is the dependency callable. Results are stored in the SolvedDependency dict during request processing in fastapi/dependencies/utils.py."
+    },
+    {
+      "id": "cf_httpx_06",
+      "repo": "httpx",
+      "category": "cross_file",
+      "question": "What is the role of httpx's CookieJar and how does it interact with the Client?",
+      "ground_truth": "httpx.Cookies wraps a http.cookiejar.CookieJar. The Client uses it in _merge_cookies and _set_cookies_on_response to persist cookies across requests automatically."
+    },
+
+    {
+      "id": "cc_fastapi_01",
+      "repo": "fastapi",
+      "category": "call_chain",
+      "question": "Trace the complete call chain from an incoming HTTP request to the user's route handler function in FastAPI.",
+      "ground_truth": "ASGI server → FastAPI.__call__ → Starlette routing → ServerErrorMiddleware → ExceptionMiddleware → Router.handle → Route.handle → request_response wrapper → get_request_handler returned closure → solve_dependencies → actual route function."
+    },
+    {
+      "id": "cc_fastapi_02",
+      "repo": "fastapi",
+      "category": "call_chain",
+      "question": "What is the call chain when FastAPI generates an OpenAPI schema via /openapi.json?",
+      "ground_truth": "GET /openapi.json → openapi route handler (fastapi/applications.py) → self.openapi() → get_openapi() (fastapi/openapi/utils.py) → iterates routes calling get_openapi_operation_metadata, get_openapi_path → returns schema dict."
+    },
+    {
+      "id": "cc_httpx_01",
+      "repo": "httpx",
+      "category": "call_chain",
+      "question": "Trace the call chain from client.get(url) to the TCP socket being written in httpx.",
+      "ground_truth": "Client.get → Client.request → Client.send → HTTPTransport.handle_request → httpcore.SyncConnectionPool.handle_request → HTTPConnection.handle_request → HTTP11Connection.handle_request → socket write via h11."
+    },
+    {
+      "id": "cc_httpx_02",
+      "repo": "httpx",
+      "category": "call_chain",
+      "question": "What is the complete call chain for httpx to resolve and follow a 301 redirect?",
+      "ground_truth": "Client.send → _send_with_response → _should_redirect (True) → _build_redirect_request (strips auth if cross-domain) → recurse: Client.send with incremented max_redirects counter → raises TooManyRedirects if exceeded."
+    },
+    {
+      "id": "cc_celery_01",
+      "repo": "celery",
+      "category": "call_chain",
+      "question": "Trace the call chain from task.delay(args) to the message being placed on the broker queue in Celery.",
+      "ground_truth": "task.delay(*args) → task.apply_async(args) → app.send_task → Producer.publish (kombu) → AMQPBackend / transport-specific publish → broker queue."
+    },
+    {
+      "id": "cc_celery_02",
+      "repo": "celery",
+      "category": "call_chain",
+      "question": "What is the execution path from a Celery worker receiving a message to calling the task function?",
+      "ground_truth": "Consumer.receive_message → Task._execute_task → app.tasks[task_name] lookup → task.__call__ → user function. Error handling wraps each step; on_failure/on_success called after."
+    },
+    {
+      "id": "cc_fastapi_03",
+      "repo": "fastapi",
+      "category": "call_chain",
+      "question": "Trace the call chain for a FastAPI route that uses Depends() with a database session dependency.",
+      "ground_truth": "Route handler called → solve_dependencies (fastapi/dependencies/utils.py) → calls db_session dependency (yield-based) → enters generator → yields session → route function executes → generator cleanup (finally block) runs after response sent."
+    },
+    {
+      "id": "cc_httpx_03",
+      "repo": "httpx",
+      "category": "call_chain",
+      "question": "What is the call chain for httpx when response.json() is called on a streamed response?",
+      "ground_truth": "Response.json() → Response.text → Response.content (reads full stream if not already read) → Response.read() → transport stream iteration → json.loads(text)."
+    },
+    {
+      "id": "cc_celery_03",
+      "repo": "celery",
+      "category": "call_chain",
+      "question": "Trace the execution path of a Celery chord from definition to callback execution.",
+      "ground_truth": "chord(group, callback).apply_async() → group.apply_async() with chord_size header → each subtask sets chord header → backend.on_chord_part_return called on each subtask completion → when count reaches chord_size → callback.apply_async() called."
+    },
+    {
+      "id": "cc_fastapi_04",
+      "repo": "fastapi",
+      "category": "call_chain",
+      "question": "What is the complete chain of calls when FastAPI processes a request with a custom exception handler registered via @app.exception_handler?",
+      "ground_truth": "ASGI request → ExceptionMiddleware.__call__ → route handler raises exception → ExceptionMiddleware catches it → looks up registered handler by exception type → calls user handler(request, exc) → returns Response."
+    },
+    {
+      "id": "cc_httpx_04",
+      "repo": "httpx",
+      "category": "call_chain",
+      "question": "Trace the call chain for httpx.AsyncClient.post() sending a JSON body.",
+      "ground_truth": "AsyncClient.post → AsyncClient.request → _build_request (encodes json= via encode_json in _content.py, sets Content-Type header) → AsyncClient.send → AsyncHTTPTransport.handle_async_request → httpcore async pool → socket write."
+    },
+    {
+      "id": "cc_celery_04",
+      "repo": "celery",
+      "category": "call_chain",
+      "question": "What is the call chain when Celery schedules a periodic task via beat and a worker picks it up?",
+      "ground_truth": "Beat.run → Scheduler.tick → entry.is_due → apply_async (sends to broker) → Worker Consumer receives message → task execution chain as normal (same as message-from-broker path)."
+    },
+    {
+      "id": "cc_fastapi_05",
+      "repo": "fastapi",
+      "category": "call_chain",
+      "question": "What happens step by step when FastAPI validates and serializes a response with response_model set?",
+      "ground_truth": "Route function returns data → serialize_response (fastapi/routing.py) → response_model.from_orm or model_validate → jsonable_encoder (fastapi/encoders.py) → JSONResponse(content=encoded) → sent to client."
+    },
+    {
+      "id": "cc_httpx_05",
+      "repo": "httpx",
+      "category": "call_chain",
+      "question": "What is the call chain for httpx when a request times out?",
+      "ground_truth": "HTTPTransport.handle_request → httpcore connection → raises httpcore.ConnectTimeout or ReadTimeout → httpx._transports wraps this as httpx.ConnectTimeout or httpx.ReadTimeout and re-raises."
+    },
+    {
+      "id": "cc_celery_05",
+      "repo": "celery",
+      "category": "call_chain",
+      "question": "Trace the call chain from a task raising an exception to the error being stored in the result backend.",
+      "ground_truth": "Task.__call__ raises exception → worker _execute_task except block → task.on_failure called → backend.mark_as_failure (celery/backends/base.py) → stores pickled/JSON-encoded exception + traceback → AsyncResult.get() re-raises."
+    },
+    {
+      "id": "cc_fastapi_06",
+      "repo": "fastapi",
+      "category": "call_chain",
+      "question": "Trace the complete flow when FastAPI processes a file upload via UploadFile.",
+      "ground_truth": "Request received with multipart/form-data → Form dependency triggers request.form() → Starlette parses multipart → UploadFile wraps spooled temp file → injected into route function → file.read() returns bytes."
+    },
+    {
+      "id": "cc_celery_06",
+      "repo": "celery",
+      "category": "call_chain",
+      "question": "What is the call chain when a Celery worker starts up and registers all tasks?",
+      "ground_truth": "Worker.start → Consumer.start → app.loader.import_default_modules → autodiscover_tasks imports task modules → @task decorator calls app.task which registers TaskClass in app.tasks registry (celery/app/registry.py)."
+    },
+    {
+      "id": "cc_httpx_06",
+      "repo": "httpx",
+      "category": "call_chain",
+      "question": "What is the complete call chain for httpx when using a custom transport (e.g. MockTransport in tests)?",
+      "ground_truth": "Client.__init__ stores transport → Client.send → _transport_for_url selects transport based on URL scheme → transport.handle_request(request) → MockTransport returns mock Response → Client processes Response normally."
+    },
+    {
+      "id": "cc_fastapi_07",
+      "repo": "fastapi",
+      "category": "call_chain",
+      "question": "Trace the lifecycle of a FastAPI background task from the route function adding it to the response being sent.",
+      "ground_truth": "Route function calls background_tasks.add_task(fn, *args) → route handler returns Response with background=background_tasks → Starlette's Router sends response bytes first → then calls background.run() → BackgroundTasks iterates and calls each task."
+    }
+  ]
+}
