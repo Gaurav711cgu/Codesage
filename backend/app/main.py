@@ -12,7 +12,8 @@ from app.core.rate_limit import limiter
 from app.core.config import settings
 from app.api.v1 import repo, code, benchmarks
 from app.services import chromadb_client
-from app.core.database import AsyncSessionLocal
+from app.core.database import AsyncSessionLocal, engine, Base
+from app.models.repo import *
 from sqlalchemy import text
 
 import os
@@ -35,6 +36,15 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("CodeSageZ v%s starting up — environment: %s",
                 settings.version, settings.environment)
+    
+    # Ensure database tables exist
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database tables verified/created successfully.")
+    except Exception as e:
+        logger.error("Failed to create database tables: %s", e)
+        
     yield
     logger.info("CodeSageZ shutting down")
 
@@ -67,6 +77,7 @@ app.include_router(benchmarks.router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])
+@app.get("/healthz", tags=["health"])
 async def health_check():
     checks = {}
     
