@@ -2,6 +2,23 @@ import uuid
 from datetime import datetime
 from sqlalchemy import String, Text, DateTime, Integer, ForeignKey, func, JSON
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+import enum
+from sqlalchemy import Enum as SQLEnum
+
+class RepoStatus(str, enum.Enum):
+    queued = "queued"
+    cloning = "cloning"
+    parsing = "parsing"
+    graphing = "graphing"
+    embedding = "embedding"
+    storing = "storing"
+    complete = "complete"
+    failed = "failed"
+
+class TaskStatus(str, enum.Enum):
+    running = "running"
+    complete = "complete"
+    failed = "failed"
 
 JSONVariant = JSON().with_variant(JSONB, "postgresql")
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -17,11 +34,11 @@ class Repo(Base):
     )
     github_url: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     name: Mapped[str] = mapped_column(Text, nullable=False)
-    status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="queued"
+    status: Mapped[RepoStatus] = mapped_column(
+        SQLEnum(RepoStatus, name="repostatus_enum"), nullable=False, default=RepoStatus.queued
     )
     stats: Mapped[dict | None] = mapped_column(JSONVariant, nullable=True)
-    graph_data: Mapped[str | None] = mapped_column(Text, nullable=True)
+    graph_data: Mapped[dict | None] = mapped_column(JSONVariant, nullable=True)
     error_code: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -54,8 +71,8 @@ class Task(Base):
     stage: Mapped[str] = mapped_column(Text, nullable=False)
     current_step: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     total_steps: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="running"
+    status: Mapped[TaskStatus] = mapped_column(
+        SQLEnum(TaskStatus, name="taskstatus_enum"), nullable=False, default=TaskStatus.running
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

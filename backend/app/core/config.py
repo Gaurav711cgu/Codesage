@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     redis_url: str = ""
 
     # Ingestion
-    max_repo_size_kb: int = 100000         # 100 MB
+    max_repo_size_kb: int = 51200          # 50 MB
     max_code_input_chars: int = 10000
     tmp_clone_dir: str = "/tmp/codesagez"
     excluded_dirs: list[str] = [

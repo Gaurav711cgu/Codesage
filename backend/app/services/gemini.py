@@ -21,7 +21,7 @@ client = genai.Client(api_key=settings.gemini_api_key)
 def stream_llm(prompt: str) -> Generator[str, None, None]:
     """Stream tokens from Gemini Flash."""
     response = client.models.generate_content_stream(
-        model="gemini-2.5-flash",
+        model="gemini-2.0-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.2,
@@ -42,7 +42,7 @@ def stream_llm(prompt: str) -> Generator[str, None, None]:
 def call_llm(prompt: str) -> str:
     """Single-shot Gemini call, returns full response text."""
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.0-flash",
         contents=prompt,
     )
     return response.text

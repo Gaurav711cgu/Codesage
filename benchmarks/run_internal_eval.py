@@ -101,7 +101,7 @@ def main():
         raise SystemExit("pip install google-generativeai statsmodels")
 
     genai.configure(api_key=args.gemini_key or os.getenv("GEMINI_API_KEY"))
-    judge_model = genai.GenerativeModel('gemini-2.5-flash')
+    judge_model = genai.GenerativeModel('gemini-2.0-flash')
     
     questions = json.loads(QUESTIONS_FILE.read_text())["questions"]
     logger.info("Loaded %d questions", len(questions))

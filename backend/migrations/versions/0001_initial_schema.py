@@ -24,6 +24,9 @@ def upgrade() -> None:
     json_type = sa.JSON().with_variant(postgresql.JSONB, "postgresql")
     uuid_type = postgresql.UUID(as_uuid=True).with_variant(sa.String(36), "sqlite")
     
+    repostatus_enum = sa.Enum('queued', 'cloning', 'parsing', 'graphing', 'embedding', 'storing', 'complete', 'failed', name='repostatus_enum')
+    taskstatus_enum = sa.Enum('running', 'complete', 'failed', name='taskstatus_enum')
+    
     server_default_uuid = sa.text("gen_random_uuid()") if is_postgres else None
 
     op.create_table(
@@ -31,20 +34,15 @@ def upgrade() -> None:
         sa.Column("id", uuid_type, primary_key=True, server_default=server_default_uuid),
         sa.Column("github_url", sa.Text, nullable=False, unique=True),
         sa.Column("name", sa.Text, nullable=False),
-        sa.Column("status", sa.String(32), nullable=False, server_default="queued"),
+        sa.Column("status", repostatus_enum, nullable=False, server_default="queued"),
         sa.Column("stats", json_type, nullable=True),
-        sa.Column("graph_data", sa.Text, nullable=True),
+        sa.Column("graph_data", json_type, nullable=True),
         sa.Column("error_code", sa.Text, nullable=True),
         sa.Column("error_message", sa.Text, nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True),
                   server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True),
                   server_default=sa.func.now(), nullable=False),
-        sa.CheckConstraint(
-            "status IN ('queued','cloning','parsing','graphing','embedding',"
-            "'storing','complete','failed')",
-            name="repos_status_check",
-        ),
     )
 
     op.create_table(
@@ -55,15 +53,11 @@ def upgrade() -> None:
         sa.Column("stage", sa.Text, nullable=False),
         sa.Column("current_step", sa.Integer, nullable=False, server_default="0"),
         sa.Column("total_steps", sa.Integer, nullable=False, server_default="0"),
-        sa.Column("status", sa.String(32), nullable=False, server_default="running"),
+        sa.Column("status", taskstatus_enum, nullable=False, server_default="running"),
         sa.Column("created_at", sa.DateTime(timezone=True),
                   server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True),
                   server_default=sa.func.now(), nullable=False),
-        sa.CheckConstraint(
-            "status IN ('running','complete','failed')",
-            name="tasks_status_check",
-        ),
     )
 
     op.create_table(
@@ -140,3 +134,7 @@ def downgrade() -> None:
     op.drop_table("messages")
     op.drop_table("tasks")
     op.drop_table("repos")
+    
+    if is_postgres:
+        op.execute("DROP TYPE IF EXISTS repostatus_enum")
+        op.execute("DROP TYPE IF EXISTS taskstatus_enum")

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { loader } from "@monaco-editor/react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -59,15 +60,7 @@ export default function StreamingOutput({ text, streaming, className }: Props) {
             .replace(/^```[\w]*\n/, "")
             .replace(/```$/, "")
             .trim();
-          return (
-            <pre
-              key={i}
-              className="bg-muted rounded-md p-4 overflow-x-auto text-xs"
-              aria-label={`Code block (${lang})`}
-            >
-              <code>{code}</code>
-            </pre>
-          );
+          return <CodeBlock key={i} code={code} lang={lang} />;
         }
         return (
           <p key={i} className={cn("whitespace-pre-wrap text-foreground",
@@ -78,5 +71,26 @@ export default function StreamingOutput({ text, streaming, className }: Props) {
       })}
       <div ref={bottomRef} />
     </div>
+  );
+}
+
+function CodeBlock({ code, lang }: { code: string; lang: string }) {
+  const [html, setHtml] = useState<string>("");
+
+  useEffect(() => {
+    let active = true;
+    loader.init().then((monaco) => {
+      monaco.editor.colorize(code, lang, {}).then((colorized) => {
+        if (active) setHtml(colorized);
+      });
+    });
+    return () => { active = false; };
+  }, [code, lang]);
+
+  return (
+    <div
+      className="bg-muted rounded-md p-4 overflow-x-auto text-xs font-mono"
+      dangerouslySetInnerHTML={{ __html: html || `<code>${code}</code>` }}
+    />
   );
 }

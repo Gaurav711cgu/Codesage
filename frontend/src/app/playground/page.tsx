@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import type { CodeReviewResult, DebugResult, TestGenResult } from "@/lib/api";
 
-type Tab = "review" | "debug" | "tests";
+type Tab = "review" | "debug" | "tests" | "complete";
 type Language = "python" | "javascript" | "typescript";
 
 const PLACEHOLDER: Record<Language, string> = {
@@ -131,12 +131,13 @@ export default function PlaygroundPage() {
     { id: "review", label: "Review" },
     { id: "debug",  label: "Debug" },
     { id: "tests",  label: "Tests" },
+    { id: "complete", label: "Complete" },
   ];
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] flex">
+    <div className="h-[calc(100vh-3.5rem)] flex flex-col md:flex-row">
       {/* Left column */}
-      <div className="w-1/2 border-r border-border flex flex-col p-4 gap-3 overflow-y-auto">
+      <div className="w-full md:w-1/2 border-b md:border-b-0 md:border-r border-border flex flex-col p-4 gap-3 overflow-y-auto">
         {/* Tab selector */}
         <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
           {TABS.map((t) => (
@@ -215,7 +216,7 @@ export default function PlaygroundPage() {
       </div>
 
       {/* Right column — output */}
-      <div className="w-1/2 p-4 overflow-y-auto">
+      <div className="w-full md:w-1/2 p-4 overflow-y-auto">
         <StreamingOutput text={output} streaming={streaming} />
       </div>
     </div>

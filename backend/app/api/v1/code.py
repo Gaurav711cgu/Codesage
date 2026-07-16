@@ -9,7 +9,7 @@ import logging
 import re
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.models.schemas import (
     ApiResponse,
@@ -22,7 +22,7 @@ from app.models.schemas import (
     TestGenRequest,
     TestGenResponse,
 )
-from app.services.gemini import call_llm
+from app.services.gemini import call_llm, stream_llm
 from app.services import ollama as ollama_svc
 from app.core.rate_limit import limiter
 from app.core.config import settings
@@ -113,6 +113,19 @@ Code to review:
     return {"data": response.model_dump(), "error": None}
 
 
+@router.post("/code/review/stream")
+@limiter.limit("20/minute")
+async def review_code_stream(request: Request, body: CodeReviewRequest):
+    prompt = f"""Perform a code review of the following {body.language} code.
+Provide your analysis in Markdown format, highlighting any issues with their severity, and suggesting improvements.
+
+Code to review:
+```{body.language}
+{body.code}
+```"""
+    return StreamingResponse(stream_llm(prompt), media_type="text/event-stream")
+
+
 # ─── POST /api/v1/code/debug ─────────────────────────────────────────────────
 
 
@@ -151,7 +164,7 @@ Return only the JSON object."""
     else:
         fix_text = call_llm(fix_prompt)
         
-    model_used = settings.ollama_model if body.use_local_model else "gemini-2.5-flash"
+    model_used = settings.ollama_model if body.use_local_model else "gemini-2.0-flash"
 
     # Always use Gemini for the structured explanation
     explanation_raw = call_llm(explanation_prompt)
@@ -174,6 +187,29 @@ Return only the JSON object."""
         model_used=model_used,
     )
     return {"data": response.model_dump(), "error": None}
+
+
+@router.post("/code/debug/stream")
+async def debug_code_stream(body: DebugRequest):
+    if len(body.code) > 10000:
+        _err("CODE_TOO_LONG", "Code exceeds 10,000 character limit")
+
+    prompt = f"""Analyze this {body.language} bug and provide a fix in Markdown format.
+
+Error: {body.error}
+
+Code:
+```{body.language}
+{body.code}
+```"""
+    if body.use_local_model:
+        # For simplicity, streaming local model is not fully integrated yet, fallback to single shot
+        fix_text, _ = ollama_svc.generate_with_local_model(prompt)
+        async def mock_stream():
+            yield fix_text
+        return StreamingResponse(mock_stream(), media_type="text/event-stream")
+    else:
+        return StreamingResponse(stream_llm(prompt), media_type="text/event-stream")
 
 
 # ─── POST /api/v1/code/tests ─────────────────────────────────────────────────

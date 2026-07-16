@@ -20,22 +20,25 @@ _graph_cache: dict[str, nx.DiGraph] = {}
 
 # ─── Cache management ─────────────────────────────────────────────────────────
 
-def get_graph(repo_id: str, graph_data_json: Optional[str] = None) -> nx.DiGraph:
+def get_graph(repo_id: str, graph_data: Optional[dict | str] = None) -> nx.DiGraph:
     """
     Return the cached graph for repo_id.
-    If not cached and graph_data_json is provided, deserialise and cache it.
+    If not cached and graph_data is provided, deserialise and cache it.
     Raises ValueError if neither source is available.
     """
     if repo_id in _graph_cache:
         return _graph_cache[repo_id]
 
-    if graph_data_json is None:
+    if graph_data is None:
         raise ValueError(
             f"Graph for repo {repo_id} is not in cache and no JSON was provided. "
-            "Pass graph_data_json from the repos.graph_data column."
+            "Pass graph_data from the repos.graph_data column."
         )
 
-    G = nx.node_link_graph(json.loads(graph_data_json))
+    if isinstance(graph_data, str):
+        graph_data = json.loads(graph_data)
+
+    G = nx.node_link_graph(graph_data)
     _graph_cache[repo_id] = G
     logger.info(
         "Loaded graph for repo %s from JSON: %d nodes, %d edges",
@@ -64,9 +67,9 @@ def invalidate_graph(repo_id: str) -> None:
         logger.info("Evicted graph for repo %s from cache", repo_id)
 
 
-def serialise_graph(G: nx.DiGraph) -> str:
-    """Serialise a DiGraph to a JSON string for PostgreSQL storage."""
-    return json.dumps(nx.node_link_data(G))
+def serialise_graph(G: nx.DiGraph) -> dict:
+    """Serialise a DiGraph to a dict for PostgreSQL JSONB storage."""
+    return nx.node_link_data(G)
 
 
 # ─── Graph construction (called by ingestion) ─────────────────────────────────

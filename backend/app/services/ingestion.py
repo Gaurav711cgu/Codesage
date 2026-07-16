@@ -29,6 +29,8 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from tree_sitter import Language, Parser
 import tree_sitter_python as tspython
+import tree_sitter_javascript as tsjavascript
+import tree_sitter_typescript as tstypescript
 
 from app.core.config import settings
 from app.models.repo import Repo, Task
@@ -41,6 +43,12 @@ logger = logging.getLogger(__name__)
 
 PY_LANGUAGE = Language(tspython.language())
 _parser = Parser(PY_LANGUAGE)
+JS_LANGUAGE = Language(tsjavascript.language())
+_js_parser = Parser(JS_LANGUAGE)
+TS_LANGUAGE = Language(tstypescript.language_typescript())
+_ts_parser = Parser(TS_LANGUAGE)
+TSX_LANGUAGE = Language(tstypescript.language_tsx())
+_tsx_parser = Parser(TSX_LANGUAGE)
 
 
 # ─── Data model ───────────────────────────────────────────────────────────────
@@ -129,7 +137,7 @@ async def _update_repo_status(
     error_code: str | None = None,
     error_message: str | None = None,
     stats: dict | None = None,
-    graph_data: str | None = None,
+    graph_data: dict | str | None = None,
 ) -> None:
     values: dict = {"status": status}
     if error_code:
@@ -166,13 +174,13 @@ def _extract_calls(body_node, src_bytes: bytes) -> list[str]:
     calls: list[str] = []
 
     def walk(node):
-        if node.type == "call":
+        if node.type in ("call", "call_expression"):
             func_node = node.child_by_field_name("function")
             if func_node:
                 if func_node.type == "identifier":
                     calls.append(_node_text(func_node, src_bytes))
-                elif func_node.type == "attribute":
-                    attr = func_node.child_by_field_name("attribute")
+                elif func_node.type in ("attribute", "member_expression"):
+                    attr = func_node.child_by_field_name("attribute") or func_node.child_by_field_name("property")
                     if attr:
                         calls.append(_node_text(attr, src_bytes))
         for child in node.children:
@@ -185,55 +193,73 @@ def _extract_calls(body_node, src_bytes: bytes) -> list[str]:
 def _extract_imports(tree_root, src_bytes: bytes) -> list[str]:
     imports: list[str] = []
     for node in tree_root.children:
-        if node.type in ("import_statement", "import_from_statement"):
+        if node.type in ("import_statement", "import_from_statement", "lexical_declaration"):
             imports.append(_node_text(node, src_bytes).strip())
     return imports
 
 
-def parse_python_file(
+def parse_file(
     file_path: Path, repo_id: str, file_rel: str
 ) -> list[CodeUnit]:
-    """Parse a single Python file and return a list of CodeUnit objects."""
+    """Parse a single file and return a list of CodeUnit objects."""
     try:
         src_bytes = file_path.read_bytes()
     except Exception as exc:
         logger.warning("Could not read %s: %s", file_path, exc)
         return []
 
-    tree = _parser.parse(src_bytes)
+    ext = file_path.suffix.lower()
+    if ext == ".py":
+        parser = _parser
+    elif ext == ".js":
+        parser = _js_parser
+    elif ext == ".ts":
+        parser = _ts_parser
+    elif ext in (".tsx", ".jsx"):
+        parser = _tsx_parser
+    else:
+        return []
+
+    tree = parser.parse(src_bytes)
     root = tree.root_node
     imports = _extract_imports(root, src_bytes)
     units: list[CodeUnit] = []
 
     def process_node(node, parent_class: str | None = None):
-        if node.type in ("function_definition", "async_function_definition"):
+        if node.type in ("function_definition", "async_function_definition", "function_declaration", "method_definition", "arrow_function"):
             name_node = node.child_by_field_name("name")
-            body_node = node.child_by_field_name("body")
+            if not name_node and node.parent and node.parent.type == "variable_declarator":
+                name_node = node.parent.child_by_field_name("name")
+            
+            body_node = node.child_by_field_name("body") or node.child_by_field_name("statement_block")
             if not name_node or not body_node:
-                return
-            name = _node_text(name_node, src_bytes)
-            qualified = f"{parent_class}.{name}" if parent_class else name
-            unit_id = f"{repo_id}::{file_rel}::{qualified}::{node.start_point[0] + 1}"
-            units.append(
-                CodeUnit(
-                    id=unit_id,
-                    repo_id=repo_id,
-                    name=qualified,
-                    file=file_rel,
-                    type="function",
-                    start_line=node.start_point[0] + 1,
-                    end_line=node.end_point[0] + 1,
-                    source=_node_text(node, src_bytes),
-                    docstring=_extract_docstring(body_node, src_bytes),
-                    calls=_extract_calls(body_node, src_bytes),
-                    imports=imports,
+                pass
+            else:
+                name = _node_text(name_node, src_bytes)
+                qualified = f"{parent_class}.{name}" if parent_class else name
+                unit_id = f"{repo_id}::{file_rel}::{qualified}::{node.start_point[0] + 1}"
+                units.append(
+                    CodeUnit(
+                        id=unit_id,
+                        repo_id=repo_id,
+                        name=qualified,
+                        file=file_rel,
+                        type="function",
+                        start_line=node.start_point[0] + 1,
+                        end_line=node.end_point[0] + 1,
+                        source=_node_text(node, src_bytes),
+                        docstring=_extract_docstring(body_node, src_bytes),
+                        calls=_extract_calls(body_node, src_bytes),
+                        imports=imports,
+                    )
                 )
-            )
-            # Recurse into nested functions
-            for child in body_node.children:
-                process_node(child, parent_class)
+            
+            # Recurse into nested
+            if body_node:
+                for child in body_node.children:
+                    process_node(child, parent_class)
 
-        elif node.type == "class_definition":
+        elif node.type in ("class_definition", "class_declaration"):
             name_node = node.child_by_field_name("name")
             body_node = node.child_by_field_name("body")
             if not name_node or not body_node:
@@ -258,6 +284,10 @@ def parse_python_file(
             # Recurse into class body for methods
             for child in body_node.children:
                 process_node(child, class_name)
+                
+        elif node.type in ("lexical_declaration", "variable_declarator", "export_statement"):
+            for child in node.children:
+                process_node(child, parent_class)
 
     for node in root.children:
         process_node(node)
@@ -338,26 +368,26 @@ async def run_ingestion(
         await _update_repo_status(db, repo_id, "parsing")
         await _update_task(db, task_id, "discovering")
 
-        python_files: list[Path] = []
+        target_files: list[Path] = []
         excluded = set(settings.excluded_dirs)
         for root, dirs, files in os.walk(clone_dir):
             # Prune excluded dirs in-place so os.walk doesn't descend into them
             dirs[:] = [d for d in dirs if d not in excluded and not d.startswith(".")]
             for fname in files:
-                if fname.endswith(".py"):
-                    python_files.append(Path(root) / fname)
+                if fname.endswith((".py", ".js", ".ts", ".jsx", ".tsx")):
+                    target_files.append(Path(root) / fname)
 
-        total_files = len(python_files)
+        total_files = len(target_files)
         await emit({"stage": "discovering", "total_files": total_files})
         await _update_task(db, task_id, "discovering", 0, total_files)
-        logger.info("Found %d Python files in %s", total_files, clone_dir)
+        logger.info("Found %d target files in %s", total_files, clone_dir)
 
         # ── Stage 3: Parse ────────────────────────────────────────────────────
         all_units: list[CodeUnit] = []
-        for i, fpath in enumerate(python_files):
+        for i, fpath in enumerate(target_files):
             file_rel = str(fpath.relative_to(clone_dir))
             units = await asyncio.to_thread(
-                parse_python_file, fpath, repo_id_str, file_rel
+                parse_file, fpath, repo_id_str, file_rel
             )
             all_units.extend(units)
             if i % 10 == 0 or i == total_files - 1:
