@@ -1,3 +1,6 @@
+import os
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
+
 import logging
 from contextlib import asynccontextmanager
 
@@ -17,7 +20,6 @@ from app.models.repo import *
 from sqlalchemy import text
 
 import os
-os.environ["ANONYMIZED_TELEMETRY"] = "False"
 os.makedirs("/tmp/codesagez", exist_ok=True)
 
 logging.basicConfig(
@@ -89,8 +91,8 @@ async def health_check():
     except Exception as e:
         checks["chromadb"] = f"error: {e}"
     
-    # Gemini API key presence
-    checks["gemini_api_key"] = "set" if settings.gemini_api_key else "missing"
+    # Voyage API key presence
+    checks["voyage_api_key"] = "set" if settings.voyage_api_key else "missing"
     
     # DB ping
     try:
