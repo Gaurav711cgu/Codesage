@@ -143,18 +143,25 @@ async function apiFetch<T>(
   path: string,
   init?: RequestInit
 ): Promise<ApiResponse<T>> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-  const json = await res.json();
-  if (!res.ok && !json.error) {
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      ...init,
+    });
+    const json = await res.json();
+    if (!res.ok && !json.error) {
+      return {
+        data: null,
+        error: { code: String(res.status), message: res.statusText },
+      };
+    }
+    return json as ApiResponse<T>;
+  } catch (err: any) {
     return {
       data: null,
-      error: { code: String(res.status), message: res.statusText },
+      error: { code: "NETWORK_ERROR", message: err.message },
     };
   }
-  return json as ApiResponse<T>;
 }
 
 // ─── Endpoints ────────────────────────────────────────────────────────────────
