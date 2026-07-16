@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     # Database (Supabase PostgreSQL)
     database_url: str
 
+    @property
+    def async_database_url(self) -> str:
+        if self.database_url.startswith("postgres://"):
+            return self.database_url.replace("postgres://", "postgresql+asyncpg://", 1)
+        if self.database_url.startswith("postgresql://"):
+            return self.database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return self.database_url
+
     # ChromaDB
     chromadb_url: str = "http://localhost:8001"
     chroma_auth_token: str = ""
