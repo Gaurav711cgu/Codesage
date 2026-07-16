@@ -17,6 +17,7 @@ from app.models.repo import *
 from sqlalchemy import text
 
 import os
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
 os.makedirs("/tmp/codesagez", exist_ok=True)
 
 logging.basicConfig(
@@ -100,6 +101,10 @@ async def health_check():
         checks["database"] = f"error: {e}"
     
     status = "ok" if all(v == "ok" or v == "set" for v in checks.values()) else "degraded"
+    
+    if status == "degraded":
+        return JSONResponse(status_code=503, content={"status": status, "version": settings.version, "checks": checks})
+        
     return {"status": status, "version": settings.version, "checks": checks}
 
 
