@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 genai.configure(api_key=settings.gemini_api_key)
 
 _llm = genai.GenerativeModel(
-    model_name="gemini-2.0-flash",
+    model_name="gemini-2.5-flash",
     generation_config=genai.types.GenerationConfig(
         temperature=0.2,
         top_p=0.95,
@@ -64,7 +64,7 @@ def embed_texts(
         for attempt in range(max_retries):
             try:
                 result = genai.embed_content(
-                    model="models/text-embedding-004",
+                    model="models/gemini-embedding-2",
                     content=batch,
                     task_type=task_type,
                     output_dimensionality=768,
@@ -85,7 +85,8 @@ def embed_texts(
                         exc,
                     )
                     raise
-                wait = 2**attempt
+                # Wait longer to handle the 100 requests per minute free tier limit
+                wait = min(65, 4 ** attempt + 5)
                 logger.warning(
                     "Embedding rate-limited (attempt %d/%d), retrying in %ds…",
                     attempt + 1,
@@ -100,7 +101,7 @@ def embed_texts(
 def embed_query(query: str) -> list[float]:
     """Embed a single query string with the retrieval_query task type."""
     result = genai.embed_content(
-        model="models/text-embedding-004",
+        model="models/gemini-embedding-2",
         content=query,
         task_type="retrieval_query",
         output_dimensionality=768,

@@ -24,7 +24,7 @@ from app.models.schemas import (
 )
 from app.services.gemini import call_llm
 from app.services import ollama as ollama_svc
-from app.main import limiter
+from app.core.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["code"])

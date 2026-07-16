@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 # ─── Client singleton ─────────────────────────────────────────────────────────
 
-def _make_client() -> chromadb.HttpClient:
+def _make_client() -> Any:
     host_port = settings.chromadb_url.replace("http://", "").replace("https://", "")
     host, _, port = host_port.partition(":")
     chroma_settings = ChromaSettings(
@@ -30,10 +30,10 @@ def _make_client() -> chromadb.HttpClient:
     )
 
 
-_client: chromadb.HttpClient | None = None
+_client: Any | None = None
 
 
-def get_client() -> chromadb.HttpClient:
+def get_client() -> Any:
     global _client
     if _client is None:
         _client = _make_client()
@@ -76,17 +76,20 @@ def upsert_documents(
     suffix: str,
     ids: list[str],
     documents: list[str],
-    embeddings: list[list[float]],
+    embeddings: list[list[float]] | None,
     metadatas: list[dict[str, Any]],
 ) -> None:
     """Upsert a batch of documents into a collection."""
     collection = get_or_create_collection(repo_id, suffix)
-    collection.upsert(
-        ids=ids,
-        documents=documents,
-        embeddings=embeddings,
-        metadatas=metadatas,
-    )
+    kwargs: dict[str, Any] = {
+        "ids": ids,
+        "documents": documents,
+        "metadatas": metadatas,
+    }
+    if embeddings is not None:
+        kwargs["embeddings"] = embeddings
+    
+    collection.upsert(**kwargs)
 
 
 # ─── Retrieval ────────────────────────────────────────────────────────────────
@@ -94,20 +97,25 @@ def upsert_documents(
 def query_collection(
     repo_id: str,
     suffix: str,
-    query_embedding: list[float],
+    query_embedding: list[float] | None = None,
+    query_text: str | None = None,
     n_results: int = 5,
     where: dict | None = None,
 ) -> dict[str, Any]:
     """
-    Query a collection by embedding vector.
+    Query a collection by embedding vector or text.
     Returns raw ChromaDB result dict with 'ids', 'documents', 'metadatas', 'distances'.
     """
     collection = get_or_create_collection(repo_id, suffix)
     kwargs: dict[str, Any] = {
-        "query_embeddings": [query_embedding],
         "n_results": n_results,
         "include": ["documents", "metadatas", "distances"],
     }
+    if query_embedding is not None:
+        kwargs["query_embeddings"] = [query_embedding]
+    elif query_text is not None:
+        kwargs["query_texts"] = [query_text]
+        
     if where:
         kwargs["where"] = where
     return collection.query(**kwargs)

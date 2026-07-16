@@ -19,7 +19,6 @@ import time
 from pathlib import Path
 
 import requests
-import google.generativeai as genai
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)-8s %(message)s")
@@ -67,20 +66,16 @@ Important: Do not score based on answer length. A short correct answer scores 1.
 Respond with only "0" or "1". No explanation."""
 
 
-def judge_answer(q: str, gt: str, answer: str, model) -> int:
-    prompt = "You are evaluating whether an AI assistant correctly answered a question about a code repository.\n\n" + JUDGE_PROMPT.format(question=q, ground_truth=gt, ai_answer=answer or "(no answer)")
-    try:
-        resp = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.0,
-                max_output_tokens=1,
-            )
-        )
-        return 1 if resp.text.strip() == "1" else 0
-    except Exception as exc:
-        logger.warning("Gemini judge failed: %s", exc)
-        return 0
+def judge_answer(q: str, gt: str, answer: str, client) -> int:
+    resp = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are evaluating whether an AI assistant correctly answered a question about a code repository."},
+            {"role": "user",   "content": JUDGE_PROMPT.format(question=q, ground_truth=gt, ai_answer=answer or "(no answer)")},
+        ],
+        temperature=0.0, max_tokens=1,
+    )
+    return 1 if resp.choices[0].message.content.strip() == "1" else 0
 
 
 def wilson_ci(hits: int, n: int) -> tuple[float, float]:
@@ -91,18 +86,16 @@ def wilson_ci(hits: int, n: int) -> tuple[float, float]:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--gemini_key",  default=os.getenv("GEMINI_API_KEY", ""))
+    parser.add_argument("--openai_key",  default=os.getenv("OPENAI_API_KEY", ""))
     parser.add_argument("--calibration_only", action="store_true")
     args = parser.parse_args()
 
     try:
-        import google.generativeai as genai
+        from openai import OpenAI
     except ImportError:
-        raise SystemExit("pip install google-generativeai statsmodels")
+        raise SystemExit("pip install openai statsmodels")
 
-    genai.configure(api_key=args.gemini_key or os.getenv("GEMINI_API_KEY"))
-    judge_model = genai.GenerativeModel('gemini-2.5-flash')
-    
+    client    = OpenAI(api_key=args.openai_key)
     questions = json.loads(QUESTIONS_FILE.read_text())["questions"]
     logger.info("Loaded %d questions", len(questions))
     
@@ -122,10 +115,8 @@ def main():
         repo_id = repo_map.get(q["repo"].lower())
         if not repo_id: continue
         ans, _ = query_and_get_answer(repo_id, q["question"], "naive")
-        s1 = judge_answer(q["question"], q["ground_truth"], ans, judge_model)
-        time.sleep(1) # rate limit prevention
-        s2 = judge_answer(q["question"], q["ground_truth"], ans, judge_model)
-        time.sleep(1) # rate limit prevention
+        s1 = judge_answer(q["question"], q["ground_truth"], ans, client)
+        s2 = judge_answer(q["question"], q["ground_truth"], ans, client)
         cal_pass += int(s1 == s2)
     logger.info("Calibration: %d/10 identical inputs → identical scores", cal_pass)
     if cal_pass < 10:
@@ -144,11 +135,11 @@ def main():
         
         for mode in ("naive", "graph"):
             ans, chunks = query_and_get_answer(repo_id, q["question"], mode)
-            score = judge_answer(q["question"], q["ground_truth"], ans, judge_model)
+            score = judge_answer(q["question"], q["ground_truth"], ans, client)
             results[qid][f"{mode}_answer"]   = ans
             results[qid][f"{mode}_score"]    = score
             results[qid][f"{mode}_n_chunks"] = len(chunks)
-            time.sleep(2) # rate limit prevention for Gemini free tier
+            time.sleep(0.3)
         logger.info("%s: naive=%d graph=%d", qid,
                     results[qid]["naive_score"], results[qid]["graph_score"])
 

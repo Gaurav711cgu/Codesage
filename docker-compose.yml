@@ -8,34 +8,26 @@ services:
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - DATABASE_URL=${DATABASE_URL}
-      - CHROMADB_URL=http://chromadb:8001
+      - CHROMADB_URL=http://chromadb:8000
       - CHROMA_AUTH_TOKEN=${CHROMA_AUTH_TOKEN}
       - OLLAMA_ENABLED=${OLLAMA_ENABLED:-false}
       - OLLAMA_URL=http://host.docker.internal:11434
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - ENVIRONMENT=${ENVIRONMENT:-development}
     depends_on:
-      chromadb:
-        condition: service_healthy
+      - chromadb
     volumes:
       - /tmp/codesagez:/tmp/codesagez    # temp clone directory
     restart: unless-stopped
 
   chromadb:
-    image: chromadb/chroma:latest
+    image: chromadb/chroma:0.5.23
     ports:
-      - "8001:8001"
+      - "8001:8000"
     volumes:
       - chroma_data:/chroma/chroma
     environment:
-      - CHROMA_SERVER_AUTH_CREDENTIALS=${CHROMA_AUTH_TOKEN}
-      - CHROMA_SERVER_AUTH_PROVIDER=token
       - ANONYMIZED_TELEMETRY=false
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/heartbeat"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     restart: unless-stopped
 
 volumes:

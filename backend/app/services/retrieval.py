@@ -83,7 +83,7 @@ def _parse_chroma_results(
 
 def retrieve_naive(
     repo_id: str,
-    query_embedding: list[float],
+    query_text: str,
     n_results: int = TOP_SEEDS,
 ) -> tuple[list[RetrievedChunk], int]:
     """
@@ -92,7 +92,7 @@ def retrieve_naive(
     """
     t0 = time.perf_counter()
     result = chromadb_client.query_collection(
-        repo_id, "_functions", query_embedding, n_results=n_results
+        repo_id, "_functions", query_text=query_text, n_results=n_results
     )
     ranked = _parse_chroma_results(result, "seed")
 
@@ -112,7 +112,7 @@ def retrieve_naive(
 
 def retrieve_graph_augmented(
     repo_id: str,
-    query_embedding: list[float],
+    query_text: str,
     graph_data_json: str | None = None,
 ) -> tuple[list[RetrievedChunk], int]:
     """
@@ -125,7 +125,7 @@ def retrieve_graph_augmented(
 
     # Step 1 — vector seeds
     seed_result = chromadb_client.query_collection(
-        repo_id, "_functions", query_embedding, n_results=TOP_SEEDS
+        repo_id, "_functions", query_text=query_text, n_results=TOP_SEEDS
     )
     seeds = _parse_chroma_results(seed_result, "seed")
 
@@ -144,7 +144,7 @@ def retrieve_graph_augmented(
         neighbour_ids = list(graph_svc.expand_one_hop(G, seed_ids))
     except Exception as exc:
         logger.warning("Graph expansion failed, falling back to naive: %s", exc)
-        return retrieve_naive(repo_id, query_embedding, TOP_FINAL)
+        return retrieve_naive(repo_id, query_text, TOP_FINAL)
 
     # Step 3 — fetch neighbour documents by ID (no vector search needed)
     neighbour_chunks: list[_RankedChunk] = []
@@ -202,7 +202,6 @@ def retrieve(
     High-level retrieval entry point used by the query API route.
     Embeds the query, dispatches to the correct strategy.
     """
-    query_embedding = embed_query(query)
     if mode == "graph":
-        return retrieve_graph_augmented(repo_id, query_embedding, graph_data_json)
-    return retrieve_naive(repo_id, query_embedding)
+        return retrieve_graph_augmented(repo_id, query, graph_data_json)
+    return retrieve_naive(repo_id, query)

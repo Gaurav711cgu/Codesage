@@ -15,7 +15,8 @@ router = APIRouter(tags=["benchmarks"])
 
 # Results live two directories above this file: /codesagez/benchmarks/results/
 # and /codesagez/training/results/
-_REPO_ROOT = Path(__file__).resolve().parents[5]
+_p = Path(__file__).resolve()
+_REPO_ROOT = _p.parents[4] if len(_p.parents) > 4 else Path("/tmp")
 _BENCH_RESULTS  = _REPO_ROOT / "benchmarks" / "results"
 _TRAIN_RESULTS  = _REPO_ROOT / "training" / "results"
 

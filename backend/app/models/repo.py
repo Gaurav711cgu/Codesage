@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Text, DateTime, Integer, ForeignKey, func
+from sqlalchemy import String, Text, DateTime, Integer, ForeignKey, func, JSON
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+JSONVariant = JSON().with_variant(JSONB, "postgresql")
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -18,7 +20,7 @@ class Repo(Base):
     status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="queued"
     )
-    stats: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    stats: Mapped[dict | None] = mapped_column(JSONVariant, nullable=True)
     graph_data: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_code: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -81,7 +83,7 @@ class Message(Base):
     role: Mapped[str] = mapped_column(String(16), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     retrieval_mode: Mapped[str | None] = mapped_column(String(16), nullable=True)
-    retrieval_meta: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    retrieval_meta: Mapped[dict | None] = mapped_column(JSONVariant, nullable=True)
     model_used: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

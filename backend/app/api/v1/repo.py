@@ -32,7 +32,7 @@ from app.models.schemas import (
 from app.services import chromadb_client, graph as graph_svc, retrieval as retrieval_svc
 from app.services.ingestion import run_ingestion
 from app.services.gemini import stream_llm
-from app.main import limiter
+from app.core.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["repos"])
@@ -87,12 +87,13 @@ async def ingest_repo(
     from app.core.database import AsyncSessionLocal
 
     async def _run():
-        async with AsyncSessionLocal() as bg_db:
-            # SSE callbacks are no-ops in background mode; progress is polled
-            # via the /status endpoint or /progress SSE (opened before ingest).
-            await run_ingestion(repo.id, task.id, body.github_url, bg_db)
+        try:
+            async with AsyncSessionLocal() as bg_db:
+                await run_ingestion(repo.id, task.id, body.github_url, bg_db)
+        except Exception as exc:
+            logger.error(f"Background task failed: {exc}")
 
-    background_tasks.add_task(asyncio.ensure_future, _run())
+    background_tasks.add_task(_run)
 
     return JSONResponse(
         status_code=202,

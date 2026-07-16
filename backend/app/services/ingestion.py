@@ -213,7 +213,7 @@ def parse_python_file(
                 return
             name = _node_text(name_node, src_bytes)
             qualified = f"{parent_class}.{name}" if parent_class else name
-            unit_id = f"{repo_id}::{file_rel}::{qualified}"
+            unit_id = f"{repo_id}::{file_rel}::{qualified}::{node.start_point[0] + 1}"
             units.append(
                 CodeUnit(
                     id=unit_id,
@@ -239,7 +239,7 @@ def parse_python_file(
             if not name_node or not body_node:
                 return
             class_name = _node_text(name_node, src_bytes)
-            unit_id = f"{repo_id}::{file_rel}::{class_name}"
+            unit_id = f"{repo_id}::{file_rel}::{class_name}::{node.start_point[0] + 1}"
             units.append(
                 CodeUnit(
                     id=unit_id,
@@ -441,26 +441,22 @@ async def run_ingestion(
                 documents = [u.to_document() for u in units]
                 metadatas = [u.to_metadata() for u in units]
 
-                # Embed in batches of 100
-                all_embeddings: list[list[float]] = []
+                # Store in ChromaDB directly in batches
+                await _update_repo_status(db, repo_id, "storing")
                 for b_start in range(0, len(documents), 100):
+                    batch_ids = ids[b_start : b_start + 100]
                     batch_docs = documents[b_start : b_start + 100]
-                    batch_embs = await asyncio.to_thread(embed_texts, batch_docs)
-                    all_embeddings.extend(batch_embs)
+                    batch_metas = metadatas[b_start : b_start + 100]
+                    
+                    await asyncio.to_thread(
+                        chromadb_client.upsert_documents,
+                        repo_id_str, suffix, batch_ids, batch_docs, None, batch_metas,
+                    )
                     batch_done += 1
                     pct = int(batch_done / total_batches * 100)
-                    await emit({"stage": "embedding", "current": batch_done,
+                    await emit({"stage": "storing", "current": batch_done,
                                 "total": total_batches, "progress": pct})
-                    await _update_task(db, task_id, "embedding", batch_done, total_batches)
-
-                # Store in ChromaDB
-                await _update_repo_status(db, repo_id, "storing")
-                await asyncio.to_thread(
-                    chromadb_client.upsert_documents,
-                    repo_id_str, suffix, ids, documents, all_embeddings, metadatas,
-                )
-                pct = int(batch_done / total_batches * 100)
-                await emit({"stage": "storing", "progress": pct})
+                    await _update_task(db, task_id, "storing", batch_done, total_batches)
 
         except Exception as exc:
             # Clean up any partial ChromaDB state
