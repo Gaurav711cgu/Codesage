@@ -25,6 +25,7 @@ from app.models.schemas import (
 from app.services.gemini import call_llm
 from app.services import ollama as ollama_svc
 from app.core.rate_limit import limiter
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["code"])
@@ -146,10 +147,11 @@ Return only the JSON object."""
 
     # Get fix from local model or Gemini
     if body.use_local_model:
-        fix_text, model_used = ollama_svc.generate_with_local_model(fix_prompt)
+        fix_text, _ = ollama_svc.generate_with_local_model(fix_prompt)
     else:
         fix_text = call_llm(fix_prompt)
-        model_used = "gemini-2.0-flash"
+        
+    model_used = settings.ollama_model if body.use_local_model else "gemini-2.5-flash"
 
     # Always use Gemini for the structured explanation
     explanation_raw = call_llm(explanation_prompt)

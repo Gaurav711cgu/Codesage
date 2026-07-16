@@ -91,8 +91,9 @@ def retrieve_naive(
     Returns (chunks, latency_ms).
     """
     t0 = time.perf_counter()
+    query_vec = embed_query(query_text)
     result = chromadb_client.query_collection(
-        repo_id, "_functions", query_text=query_text, n_results=n_results
+        repo_id, "_functions", query_embedding=query_vec, n_results=n_results
     )
     ranked = _parse_chroma_results(result, "seed")
 
@@ -124,8 +125,9 @@ def retrieve_graph_augmented(
     t0 = time.perf_counter()
 
     # Step 1 — vector seeds
+    query_vec = embed_query(query_text)
     seed_result = chromadb_client.query_collection(
-        repo_id, "_functions", query_text=query_text, n_results=TOP_SEEDS
+        repo_id, "_functions", query_embedding=query_vec, n_results=TOP_SEEDS
     )
     seeds = _parse_chroma_results(seed_result, "seed")
 

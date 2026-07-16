@@ -11,10 +11,20 @@ from app.core.rate_limit import limiter
 
 from app.core.config import settings
 from app.api.v1 import repo, code, benchmarks
+from app.services import chromadb_client
+from app.core.database import AsyncSessionLocal
+from sqlalchemy import text
+
+import os
+os.makedirs("/tmp/codesagez", exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)-8s %(name)s — %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("/tmp/codesagez/backend.log"),
+    ]
 )
 logger = logging.getLogger(__name__)
 
@@ -58,7 +68,28 @@ app.include_router(benchmarks.router, prefix="/api/v1")
 
 @app.get("/health", tags=["health"])
 async def health_check():
-    return {"status": "ok", "version": settings.version}
+    checks = {}
+    
+    # ChromaDB ping
+    try:
+        chromadb_client.get_client().heartbeat()
+        checks["chromadb"] = "ok"
+    except Exception as e:
+        checks["chromadb"] = f"error: {e}"
+    
+    # Gemini API key presence
+    checks["gemini_api_key"] = "set" if settings.gemini_api_key else "missing"
+    
+    # DB ping
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception as e:
+        checks["database"] = f"error: {e}"
+    
+    status = "ok" if all(v == "ok" or v == "set" for v in checks.values()) else "degraded"
+    return {"status": status, "version": settings.version, "checks": checks}
 
 
 @app.exception_handler(Exception)

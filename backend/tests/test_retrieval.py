@@ -105,12 +105,15 @@ def test_seed_always_beats_neighbour_when_sim_high():
 # ─── retrieve_graph_augmented (integration-style with mocks) ─────────────────
 
 
+@patch("app.services.retrieval.embed_query")
 @patch("app.services.retrieval.chromadb_client")
 @patch("app.services.retrieval.graph_svc")
-def test_graph_retrieval_deduplicates(mock_graph, mock_chroma):
+def test_graph_retrieval_deduplicates(mock_graph, mock_chroma, mock_embed):
     """Neighbour IDs that are already seeds should not appear twice."""
     import networkx as nx
     from app.services.retrieval import retrieve_graph_augmented
+
+    mock_embed.return_value = [0.1] * 768
 
     # Seed result from ChromaDB
     mock_chroma.query_collection.return_value = {
@@ -135,20 +138,22 @@ def test_graph_retrieval_deduplicates(mock_graph, mock_chroma):
                        "start_line": 1, "end_line": 5}],
     }
 
-    chunks, _ = retrieve_graph_augmented("repo1", [0.1] * 768)
+    chunks, _ = retrieve_graph_augmented("repo1", "dummy_query")
 
     # seed1 must appear exactly once
     names = [c.name for c in chunks]
     assert names.count("fn_a") == 1
 
 
+@patch("app.services.retrieval.embed_query")
 @patch("app.services.retrieval.chromadb_client")
 @patch("app.services.retrieval.graph_svc")
-def test_graph_retrieval_respects_top_n(mock_graph, mock_chroma):
+def test_graph_retrieval_respects_top_n(mock_graph, mock_chroma, mock_embed):
     """Result set must not exceed GRAPH_TOP_FINAL chunks."""
     import networkx as nx
     from app.services.retrieval import retrieve_graph_augmented
 
+    mock_embed.return_value = [0.1] * 768
     n_seeds = 5
     mock_chroma.query_collection.return_value = {
         "ids": [[f"seed{i}" for i in range(n_seeds)]],
@@ -172,5 +177,5 @@ def test_graph_retrieval_respects_top_n(mock_graph, mock_chroma):
         ],
     }
 
-    chunks, _ = retrieve_graph_augmented("repo1", [0.0] * 768)
+    chunks, _ = retrieve_graph_augmented("repo1", "dummy_query")
     assert len(chunks) <= GRAPH_TOP_FINAL

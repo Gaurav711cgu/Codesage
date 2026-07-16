@@ -267,29 +267,32 @@ def parse_python_file(
 
 # ─── GitHub size check ────────────────────────────────────────────────────────
 
-def _check_repo_size(github_url: str) -> None:
-    """Raise ValueError if the repo exceeds the configured size limit."""
-    match = re.match(r"https://github\.com/([\w.\-]+/[\w.\-]+)", github_url)
-    if not match:
-        raise ValueError("Cannot parse owner/repo from URL")
-    owner_repo = match.group(1)
-    try:
-        resp = httpx.get(
-            f"https://api.github.com/repos/{owner_repo}",
-            headers={"Accept": "application/vnd.github.v3+json"},
-            timeout=10.0,
-        )
-        if resp.status_code == 200:
-            size_kb = resp.json().get("size", 0)
-            if size_kb > settings.max_repo_size_kb:
-                raise ValueError(
-                    f"Repository is {size_kb} KB which exceeds the "
-                    f"{settings.max_repo_size_kb} KB limit"
-                )
-    except ValueError:
-        raise
-    except Exception as exc:
-        logger.warning("GitHub API size check failed: %s — proceeding anyway", exc)
+async def _check_repo_size(github_url: str) -> None:
+    """Raise if repo > MAX_REPO_SIZE_KB using GitHub API."""
+    parts = github_url.rstrip("/").split("/")
+    owner, repo = parts[-2], parts[-1]
+    
+    headers = {"Accept": "application/vnd.github.v3+json"}
+    if settings.github_token:
+        headers["Authorization"] = f"Bearer {settings.github_token}"
+        
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(
+                f"https://api.github.com/repos/{owner}/{repo}",
+                headers=headers,
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                size_kb = resp.json().get("size", 0)
+                if size_kb > settings.max_repo_size_kb:
+                    raise ValueError(f"Repo is {size_kb}KB, limit is {settings.max_repo_size_kb}KB")
+            elif resp.status_code == 404:
+                raise ValueError("Repository not found or is private")
+        except ValueError:
+            raise
+        except Exception as exc:
+            logger.warning("GitHub API size check failed: %s — proceeding anyway", exc)
 
 
 # ─── Main pipeline ────────────────────────────────────────────────────────────
@@ -317,7 +320,7 @@ async def run_ingestion(
         await _update_task(db, task_id, "cloning")
         await emit({"stage": "cloning", "message": "Checking repository size…"})
 
-        _check_repo_size(github_url)
+        await _check_repo_size(github_url)
 
         clone_dir.mkdir(parents=True, exist_ok=True)
         await emit({"stage": "cloning", "message": "Cloning repository (depth=1)…"})

@@ -283,49 +283,59 @@ async def query_repo(
     async def _stream() -> AsyncGenerator[str, None]:
         import time
 
-        # Retrieval (blocking I/O, run in thread pool)
-        chunks, retrieval_latency = await asyncio.to_thread(
-            retrieval_svc.retrieve,
-            str(body.repo_id),
-            body.query,
-            body.retrieval_mode,
-            graph_data_json,
-        )
-
-        yield _sse_event("retrieval_done", {
-            "chunks": [c.model_dump() for c in chunks],
-            "latency_ms": retrieval_latency,
-        })
-
-        # Build prompt from retrieved context
-        context_lines: list[str] = []
-        for c in chunks:
-            tag = "[SEED]" if c.type == "seed" else "[NEIGHBOR]"
-            context_lines.append(
-                f"{tag} {c.name}  ({c.file}  L{c.lines[0]}–{c.lines[1]})"
+        try:
+            # Retrieval (blocking I/O, run in thread pool)
+            chunks, retrieval_latency = await asyncio.to_thread(
+                retrieval_svc.retrieve,
+                str(body.repo_id),
+                body.query,
+                body.retrieval_mode,
+                graph_data_json,
             )
-        context_str = "\n".join(context_lines)
 
-        prompt = (
-            "You are a code analysis assistant. Use the retrieved context below "
-            "to answer the question. Reference function names and file paths "
-            "where relevant.\n\n"
-            f"=== Retrieved context ===\n{context_str}\n\n"
-            f"=== Question ===\n{body.query}"
-        )
+            yield _sse_event("retrieval_done", {
+                "chunks": [c.model_dump() for c in chunks],
+                "latency_ms": retrieval_latency,
+            })
 
-        # Stream Gemini response
-        t_start = time.perf_counter()
-        total_tokens = 0
-        for token_text in stream_llm(prompt):
-            total_tokens += 1
-            yield _sse_event("token", {"text": token_text})
+            # Build prompt from retrieved context
+            context_lines: list[str] = []
+            for c in chunks:
+                tag = "[SEED]" if c.type == "seed" else "[NEIGHBOR]"
+                context_lines.append(
+                    f"{tag} {c.name}  ({c.file}  L{c.lines[0]}–{c.lines[1]})"
+                )
+            context_str = "\n".join(context_lines)
 
-        total_latency = int((time.perf_counter() - t_start) * 1000) + retrieval_latency
-        yield _sse_event("done", {
-            "total_tokens": total_tokens,
-            "total_latency_ms": total_latency,
-        })
+            prompt = (
+                "You are a code analysis assistant. Use the retrieved context below "
+                "to answer the question. Reference function names and file paths "
+                "where relevant.\n\n"
+                f"=== Retrieved context ===\n{context_str}\n\n"
+                f"=== Question ===\n{body.query}"
+            )
+
+            # Stream Gemini response
+            t_start = time.perf_counter()
+            total_tokens = 0
+            
+            gen = stream_llm(prompt)
+            while True:
+                try:
+                    token_text = await asyncio.to_thread(next, gen)
+                    total_tokens += 1
+                    yield _sse_event("token", {"text": token_text})
+                except StopIteration:
+                    break
+
+            total_latency = int((time.perf_counter() - t_start) * 1000) + retrieval_latency
+            yield _sse_event("done", {
+                "total_tokens": total_tokens,
+                "total_latency_ms": total_latency,
+            })
+        except Exception as exc:
+            logger.error("Error in query stream: %s", exc, exc_info=True)
+            yield _sse_event("error", {"code": "STREAM_ERROR", "message": str(exc)})
 
     return StreamingResponse(
         _stream(),
