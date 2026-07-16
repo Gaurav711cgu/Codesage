@@ -6,27 +6,30 @@
 
 @layer base {
   :root {
-    /* Sage-green dark palette — not generic blue-dark */
-    --background:          10 15% 6%;      /* sage-950 #0a0f0d */
-    --card:                120 18% 8%;     /* sage-900 #0f1710 */
-    --card-hover:          120 20% 11%;    /* sage-800 #162119 */
-    --foreground:          138 24% 88%;    /* sage-100 #d4ead9 */
-    --muted-foreground:    138 10% 42%;    /* muted    #4a5c50 */
-    --border:              120 20% 14%;    /* sage-700 #1e2e22 */
-    --input:               120 20% 14%;
+    /* Premium Deep Dark Palette */
+    --background:          240 10% 4%;      /* very dark slate/black */
+    --card:                240 10% 6%;      /* slightly lighter card */
+    --card-hover:          240 10% 10%;     
+    --foreground:          0 0% 95%;        /* almost white */
+    --muted-foreground:    240 5% 65%;      /* soft gray */
+    --border:              240 10% 15%;     /* subtle borders */
+    --input:               240 10% 12%;
     
-    /* Accent — sage green, not blue */
-    --primary:             138 32% 55%;    /* sage-400 #6aaf7e */
-    --primary-hover:       138 28% 65%;    /* sage-300 #8dc4a0 */
-    --primary-dim:         138 28% 40%;    /* sage-500 #4d8f63 */
-    --primary-foreground:  10 15% 6%;
+    /* Accents — Neon Violet & Cyan */
+    --primary:             270 85% 65%;     /* neon violet */
+    --primary-hover:       270 85% 75%;     
+    --primary-dim:         270 85% 40%;     
+    --primary-foreground:  0 0% 100%;
     
+    --secondary:           190 90% 50%;     /* neon cyan */
+    --secondary-foreground:0 0% 100%;
+
     /* Semantic */
     --destructive:         0 84% 60%;
-    --warning:             38 92% 50%;     /* amber */
-    --success:             138 32% 55%;    /* same as primary */
+    --warning:             38 92% 50%;
+    --success:             150 80% 40%;
     
-    --radius:              4px;            /* reduced — sharper, more technical */
+    --radius:              12px;            /* softer, premium borders */
   }
 }
 
@@ -35,15 +38,31 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground selection:bg-primary/30 selection:text-primary-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Subtle background grid pattern */
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: center top;
   }
+}
+
+/* Glassmorphism utility */
+.glass {
+  @apply bg-card/60 backdrop-blur-xl border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)];
+}
+
+.glass-card {
+  @apply bg-card/40 backdrop-blur-md border border-white/5 hover:border-white/15 transition-all duration-300;
 }
 
 /* SSE streaming cursor */
 .streaming-cursor::after {
   content: "▋";
   animation: blink 1s step-start infinite;
+  @apply text-primary drop-shadow-[0_0_8px_rgba(168,85,247,0.8)];
 }
 
 @keyframes blink {
@@ -55,50 +74,40 @@ pre code {
   @apply text-sm;
 }
 
-/* Monospace data labels — used everywhere for file paths, scores, latencies */
+/* Monospace data labels */
 .mono {
   font-family: 'Geist Mono', monospace;
-  font-size: 0.8125rem;  /* 13px */
+  font-size: 0.8125rem;
   letter-spacing: -0.01em;
 }
 
-/* Terminal-style prefix for log/status lines */
 .terminal-line::before {
   content: '›';
-  color: hsl(var(--primary));
-  margin-right: 0.5rem;
-  font-family: 'Geist Mono', monospace;
+  @apply text-secondary mr-2 font-mono drop-shadow-[0_0_5px_rgba(6,182,212,0.8)];
 }
 
 /* Chunk type badges */
 .badge-seed {
-  background: hsl(138 32% 55% / 0.15);
-  color: hsl(138 32% 65%);
-  border: 1px solid hsl(138 32% 55% / 0.3);
-  font-family: 'Geist Mono', monospace;
-  font-size: 11px;
-  padding: 1px 6px;
-  border-radius: 3px;
+  @apply bg-primary/10 text-primary border border-primary/30 font-mono text-[11px] px-1.5 py-0.5 rounded-md;
 }
 .badge-neighbor {
-  background: hsl(38 92% 50% / 0.1);
-  color: hsl(38 92% 60%);
-  border: 1px solid hsl(38 92% 50% / 0.25);
-  font-family: 'Geist Mono', monospace;
-  font-size: 11px;
-  padding: 1px 6px;
-  border-radius: 3px;
+  @apply bg-secondary/10 text-secondary border border-secondary/30 font-mono text-[11px] px-1.5 py-0.5 rounded-md;
 }
 
-/* Score display */
+/* Glowing Score display */
 .score-bar {
-  height: 2px;
-  background: hsl(120 20% 14%);
-  border-radius: 1px;
-  overflow: hidden;
+  @apply h-1 bg-white/5 rounded-full overflow-hidden;
 }
 .score-bar-fill {
-  height: 100%;
-  background: hsl(var(--primary));
-  transition: width 400ms ease-out;
+  @apply h-full bg-gradient-to-r from-secondary to-primary transition-all duration-500 shadow-[0_0_10px_rgba(168,85,247,0.5)];
+}
+
+/* Ambient glow orb utility */
+.ambient-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: -1;
+  opacity: 0.15;
+  pointer-events: none;
 }

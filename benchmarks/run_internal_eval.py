@@ -69,18 +69,23 @@ Respond with only "0" or "1". No explanation."""
 
 def judge_answer(q: str, gt: str, answer: str, model) -> int:
     prompt = "You are evaluating whether an AI assistant correctly answered a question about a code repository.\n\n" + JUDGE_PROMPT.format(question=q, ground_truth=gt, ai_answer=answer or "(no answer)")
-    try:
-        resp = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.0,
-                max_output_tokens=1,
+    for attempt in range(6):
+        try:
+            resp = model.generate_content(
+                prompt,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.0,
+                    max_output_tokens=1,
+                )
             )
-        )
-        return 1 if resp.text.strip() == "1" else 0
-    except Exception as exc:
-        logger.warning("Gemini judge failed: %s", exc)
-        return 0
+            return 1 if resp.text.strip() == "1" else 0
+        except Exception as exc:
+            if attempt == 5:
+                logger.warning("Gemini judge failed: %s", exc)
+                return 0
+            wait_time = 10 * (2 ** attempt)
+            logger.warning("Gemini judge rate limited, retrying in %ds...", wait_time)
+            time.sleep(wait_time)
 
 
 def wilson_ci(hits: int, n: int) -> tuple[float, float]:

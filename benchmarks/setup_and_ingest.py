@@ -17,6 +17,11 @@ def main():
     for url in REPOS:
         print(f"Triggering ingestion for {url}...")
         resp = requests.post(f"{BACKEND_URL}/api/v1/repo/ingest", json={"github_url": url})
+        
+        if resp.status_code == 409:
+            print(f"✅ {url} is already indexed. Skipping.")
+            continue
+            
         resp.raise_for_status()
         data = resp.json()
         task_id = data["data"]["task_id"]

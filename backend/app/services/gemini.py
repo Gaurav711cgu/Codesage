@@ -48,9 +48,7 @@ def call_llm(prompt: str) -> str:
     return response.text
 
 
-# ─── Embeddings (Voyage AI) ───────────────────────────────────────────────────
-
-import httpx
+# ─── Embeddings (Gemini) ───────────────────────────────────────────────────
 
 def embed_texts(
     texts: list[str],
@@ -58,53 +56,71 @@ def embed_texts(
     max_retries: int = 5,
 ) -> list[list[float]]:
     """
-    Embed a list of texts using Voyage AI voyage-code-2.
-    Batches in groups of 100. Retries with exponential backoff.
-    Returns a flat list of 1024-dim embedding vectors, one per input text.
+    Embed a list of texts using Google Gemini gemini-embedding-001.
+    Batches dynamically to stay under TPM (20k tokens) and RPM (15 RPM) limits.
+    Returns a flat list of embedding vectors.
     """
-    if not settings.voyage_api_key:
-        raise ValueError("VOYAGE_API_KEY is missing from environment variables.")
-
-    input_type = "document" if "document" in task_type else "query"
-    url = "https://api.voyageai.com/v1/embeddings"
-    headers = {
-        "Authorization": f"Bearer {settings.voyage_api_key}",
-        "Content-Type": "application/json"
-    }
-    
     all_embeddings: list[list[float]] = []
 
-    for batch_start in range(0, len(texts), 100):
-        batch = texts[batch_start : batch_start + 100]
-        for attempt in range(max_retries):
+    # Group texts into batches to stay under:
+    # 1. Max 20 items per batch
+    # 2. Max 12,000 estimated tokens (char count / 3)
+    batches: list[list[str]] = []
+    current_batch: list[str] = []
+    current_batch_tokens = 0
+
+    for text in texts:
+        text_tokens = len(text) // 3
+        # Truncate extremely large files to prevent exceeding TPM alone
+        if text_tokens > 10000:
+            text = text[:30000]
+            text_tokens = len(text) // 3
+
+        if len(current_batch) >= 20 or (current_batch_tokens + text_tokens) > 12000:
+            if current_batch:
+                batches.append(current_batch)
+            current_batch = [text]
+            current_batch_tokens = text_tokens
+        else:
+            current_batch.append(text)
+            current_batch_tokens += text_tokens
+
+    if current_batch:
+        batches.append(current_batch)
+
+    logger.info("Generated %d batches for %d texts", len(batches), len(texts))
+
+    for batch_idx, batch in enumerate(batches):
+        for attempt in range(max_retries * 2):  # up to 10 retries
             try:
-                resp = httpx.post(url, headers=headers, json={
-                    "input": batch,
-                    "model": "voyage-code-2",
-                    "input_type": input_type
-                }, timeout=60.0)
-                resp.raise_for_status()
-                data = resp.json()["data"]
-                # Ensure they are in original order by sorting by index
-                data.sort(key=lambda x: x["index"])
-                embeddings = [item["embedding"] for item in data]
+                res = client.models.embed_content(
+                    model="gemini-embedding-001",
+                    contents=batch,
+                )
+                embeddings = [e.values for e in res.embeddings]
                 all_embeddings.extend(embeddings)
+                # Sleep to respect rate limits (15 RPM)
+                time.sleep(5.0)
                 break
             except Exception as exc:
-                if attempt == max_retries - 1:
+                if attempt == (max_retries * 2) - 1:
                     logger.error(
-                        "Voyage Embedding batch %d failed after %d retries: %s",
-                        batch_start // 100,
-                        max_retries,
+                        "Gemini Embedding batch %d failed after %d retries: %s",
+                        batch_idx,
+                        max_retries * 2,
                         exc,
                     )
                     raise
-                wait = 2 ** attempt
+                
+                wait = 6 + (2 ** attempt)
                 logger.warning(
-                    "Voyage Embedding failed (attempt %d/%d), retrying in %ds…",
+                    "Gemini Embedding failed for batch %d/%d (attempt %d/%d), retrying in %ds…: %s",
+                    batch_idx + 1,
+                    len(batches),
                     attempt + 1,
-                    max_retries,
+                    max_retries * 2,
                     wait,
+                    exc
                 )
                 time.sleep(wait)
 
@@ -112,19 +128,9 @@ def embed_texts(
 
 
 def embed_query(query: str) -> list[float]:
-    """Embed a single query string using Voyage AI."""
-    if not settings.voyage_api_key:
-        raise ValueError("VOYAGE_API_KEY is missing from environment variables.")
-        
-    url = "https://api.voyageai.com/v1/embeddings"
-    headers = {
-        "Authorization": f"Bearer {settings.voyage_api_key}",
-        "Content-Type": "application/json"
-    }
-    resp = httpx.post(url, headers=headers, json={
-        "input": [query],
-        "model": "voyage-code-2",
-        "input_type": "query"
-    }, timeout=30.0)
-    resp.raise_for_status()
-    return resp.json()["data"][0]["embedding"]
+    """Embed a single query string using Google Gemini gemini-embedding-001."""
+    res = client.models.embed_content(
+        model="gemini-embedding-001",
+        contents=[query],
+    )
+    return res.embeddings[0].values

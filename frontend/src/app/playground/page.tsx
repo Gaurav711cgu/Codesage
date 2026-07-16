@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Play, Loader2 } from "lucide-react";
+import { Play, Loader2, Code2, Bug, CheckCircle2, Sparkles } from "lucide-react";
 import MonacoEditor from "@/components/MonacoEditor";
 import StreamingOutput from "@/components/StreamingOutput";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import type { CodeReviewResult, DebugResult, TestGenResult } from "@/lib/api";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Tab = "review" | "debug" | "tests" | "complete";
 type Language = "python" | "javascript" | "typescript";
@@ -127,98 +128,151 @@ export default function PlaygroundPage() {
     }
   }, [tab, code, lang, errorText, running]);
 
-  const TABS: { id: Tab; label: string }[] = [
-    { id: "review", label: "Review" },
-    { id: "debug",  label: "Debug" },
-    { id: "tests",  label: "Tests" },
-    { id: "complete", label: "Complete" },
+  const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: "review", label: "Review", icon: <Code2 className="w-4 h-4" /> },
+    { id: "debug",  label: "Debug", icon: <Bug className="w-4 h-4" /> },
+    { id: "tests",  label: "Tests", icon: <CheckCircle2 className="w-4 h-4" /> },
+    { id: "complete", label: "Complete", icon: <Sparkles className="w-4 h-4" /> },
   ];
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] flex flex-col md:flex-row">
-      {/* Left column */}
-      <div className="w-full md:w-1/2 border-b md:border-b-0 md:border-r border-border flex flex-col p-4 gap-3 overflow-y-auto">
-        {/* Tab selector */}
-        <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
-          {TABS.map((t) => (
+    <div className="h-[calc(100vh-4.5rem)] flex flex-col md:flex-row p-6 gap-6 max-w-[1600px] mx-auto w-full overflow-hidden">
+      {/* Left column - Editor pane */}
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="w-full md:w-1/2 h-full flex flex-col gap-4"
+      >
+        <div className="glass rounded-3xl p-6 h-full flex flex-col relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+            <Code2 className="w-64 h-64" />
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 relative z-10">
+            <h2 className="text-2xl font-bold tracking-tight">Code <span className="text-primary">Playground</span></h2>
+            
+            <div className="flex gap-2 p-1.5 bg-background/50 backdrop-blur-md rounded-xl border border-white/10 shadow-inner">
+              {(["python", "javascript", "typescript"] as Language[]).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => handleLangChange(l)}
+                  className={cn(
+                    "text-xs px-3 py-1.5 rounded-lg transition-all font-medium capitalize",
+                    lang === l
+                      ? "bg-primary text-white shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  )}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Tabs */}
+          <div className="flex gap-2 p-1 bg-background/40 backdrop-blur-md rounded-xl border border-white/5 mb-4 relative z-10">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg transition-all font-medium",
+                  tab === t.id
+                    ? "bg-white/10 text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                )}
+              >
+                {t.icon}
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 rounded-2xl overflow-hidden border border-white/5 shadow-inner relative z-10">
+            <MonacoEditor
+              value={code}
+              onChange={setCode}
+              language={lang}
+              height="100%"
+              label="Source Code"
+            />
+          </div>
+
+          <AnimatePresence>
+            {tab === "debug" && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{ opacity: 1, height: "auto", marginTop: 16 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                className="rounded-2xl overflow-hidden border border-white/5 shadow-inner relative z-10"
+              >
+                <div className="bg-red-500/10 border-b border-white/5 px-4 py-2 flex items-center gap-2">
+                  <Bug className="w-4 h-4 text-red-400" />
+                  <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Error Trace</span>
+                </div>
+                <MonacoEditor
+                  value={errorText}
+                  onChange={setError}
+                  language="text"
+                  height="120px"
+                  label=""
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="mt-6 flex justify-end relative z-10">
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={run}
+              disabled={running}
               className={cn(
-                "px-3 py-1 text-sm rounded-md transition-colors",
-                tab === t.id
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                "flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all shadow-lg min-w-[140px]",
+                running
+                  ? "bg-white/5 text-white/40 cursor-not-allowed border border-white/5"
+                  : "bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 hover:scale-[1.02] border border-white/10"
               )}
             >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Language selector */}
-        <div className="flex gap-2 items-center">
-          <span className="text-xs text-muted-foreground">Language:</span>
-          {(["python", "javascript", "typescript"] as Language[]).map((l) => (
-            <button
-              key={l}
-              onClick={() => handleLangChange(l)}
-              className={cn(
-                "text-xs px-2 py-0.5 rounded border transition-colors",
-                lang === l
-                  ? "border-blue-500 text-blue-400 bg-blue-500/10"
-                  : "border-border text-muted-foreground hover:border-muted-foreground"
+              {running ? (
+                <><Loader2 className="h-5 w-5 animate-spin" /> Processing...</>
+              ) : (
+                <><Play className="h-5 w-5 fill-current" /> Execute {TABS.find(t => t.id === tab)?.label}</>
               )}
-            >
-              {l}
             </button>
-          ))}
+          </div>
         </div>
+      </motion.div>
 
-        {/* Main code editor */}
-        <MonacoEditor
-          value={code}
-          onChange={setCode}
-          language={lang}
-          height="calc(100vh - 20rem)"
-          label="Code"
-        />
-
-        {/* Error input for debug tab */}
-        {tab === "debug" && (
-          <MonacoEditor
-            value={errorText}
-            onChange={setError}
-            language="text"
-            height="100px"
-            label="Error / Stack trace"
-          />
-        )}
-
-        {/* Run button */}
-        <button
-          onClick={run}
-          disabled={running}
-          className={cn(
-            "flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
-            running
-              ? "bg-muted text-muted-foreground cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-500 text-white"
-          )}
-          aria-label={`Run ${tab}`}
-        >
-          {running ? (
-            <><Loader2 className="h-4 w-4 animate-spin" /> Running…</>
-          ) : (
-            <><Play className="h-4 w-4" /> Run</>
-          )}
-        </button>
-      </div>
-
-      {/* Right column — output */}
-      <div className="w-full md:w-1/2 p-4 overflow-y-auto">
-        <StreamingOutput text={output} streaming={streaming} />
-      </div>
+      {/* Right column - Output pane */}
+      <motion.div 
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="w-full md:w-1/2 h-full"
+      >
+        <div className="glass rounded-3xl h-full flex flex-col overflow-hidden relative shadow-2xl border border-white/5">
+          <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-center gap-3 backdrop-blur-md">
+            <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center border border-secondary/30">
+              <Sparkles className="w-4 h-4 text-secondary" />
+            </div>
+            <h2 className="font-semibold text-foreground">AI Evaluation & Output</h2>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-background/20 relative">
+            {!output && !running ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground opacity-50 p-8 text-center space-y-4">
+                <Sparkles className="w-16 h-16 opacity-30" />
+                <div>
+                  <p className="text-lg font-medium text-foreground mb-1">Awaiting Execution</p>
+                  <p className="text-sm">Click the execute button to generate AI insights.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="prose prose-invert max-w-none prose-sm sm:prose-base prose-pre:bg-black/40 prose-pre:border prose-pre:border-white/10 prose-headings:text-foreground prose-a:text-secondary">
+                <StreamingOutput text={output} streaming={streaming} />
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }

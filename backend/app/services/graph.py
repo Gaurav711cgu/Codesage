@@ -118,17 +118,24 @@ def build_graph(code_units: list[dict]) -> nx.DiGraph:
 
 # ─── Graph traversal (called by retrieval) ────────────────────────────────────
 
-def expand_one_hop(G: nx.DiGraph, node_ids: list[str]) -> set[str]:
+def expand_one_hop(G: nx.DiGraph, node_ids: list[str], max_degree: int = 50) -> set[str]:
     """
     Return all 1-hop neighbours (successors + predecessors) of the given nodes,
-    excluding the seed nodes themselves.
+    excluding the seed nodes themselves. Limits edges to prevent context explosion.
     """
     neighbours: set[str] = set()
     for node_id in node_ids:
         if node_id not in G:
             continue
-        neighbours.update(G.successors(node_id))
-        neighbours.update(G.predecessors(node_id))
+        
+        # Take up to max_degree successors
+        succs = list(G.successors(node_id))
+        neighbours.update(succs[:max_degree])
+        
+        # Take up to max_degree predecessors
+        preds = list(G.predecessors(node_id))
+        neighbours.update(preds[:max_degree])
+        
     return neighbours - set(node_ids)
 
 

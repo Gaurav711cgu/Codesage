@@ -20,7 +20,7 @@ def _make_client() -> Any:
     )
     # /data is the standard persistent storage path in Hugging Face Spaces
     return chromadb.PersistentClient(
-        path="/data/chroma",
+        path="/tmp/chroma",
         settings=chroma_settings,
     )
 

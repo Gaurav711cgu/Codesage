@@ -56,7 +56,7 @@ def _err(code: str, message: str, status: int = 400) -> HTTPException:
 
 
 @router.post("/repo/ingest", status_code=202)
-@limiter.limit("3/hour")
+@limiter.limit("100/hour")
 async def ingest_repo(
     request: Request,
     body: IngestRequest,
@@ -67,8 +67,14 @@ async def ingest_repo(
     existing = await db.execute(
         select(Repo).where(Repo.github_url == body.github_url)
     )
-    if existing.scalar_one_or_none():
-        _err("ALREADY_INDEXED", f"{body.github_url} is already indexed", 409)
+    existing_repo = existing.scalar_one_or_none()
+    if existing_repo:
+        if existing_repo.status == "complete":
+            _err("ALREADY_INDEXED", f"{body.github_url} is already indexed", 409)
+        else:
+            logger.info("Found incomplete repo %s with status %s. Deleting to allow retry.", body.github_url, existing_repo.status)
+            await db.delete(existing_repo)
+            await db.commit()
 
     repo_name = body.name or body.github_url.rstrip("/").split("/")[-1]
     repo = Repo(github_url=body.github_url, name=repo_name, status="queued")

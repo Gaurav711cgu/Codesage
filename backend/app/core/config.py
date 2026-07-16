@@ -15,9 +15,10 @@ class Settings(BaseSettings):
     environment: str = "development"
     frontend_url: str = "http://localhost:3000"
 
-    # Gemini & Voyage
+    # Gemini & Voyage & Github
     gemini_api_key: str = ""
     voyage_api_key: str = ""
+    github_token: str = ""
 
     # Database (Supabase PostgreSQL)
     database_url: str
@@ -43,7 +44,7 @@ class Settings(BaseSettings):
     redis_url: str = ""
 
     # Ingestion
-    max_repo_size_kb: int = 51200          # 50 MB
+    max_repo_size_kb: int = 204800         # 200 MB
     max_code_input_chars: int = 10000
     tmp_clone_dir: str = "/tmp/codesagez"
     excluded_dirs: list[str] = [

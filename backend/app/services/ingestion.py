@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import AsyncGenerator, Callable, Awaitable
 
 import httpx
+import pathspec
 from git import Repo as GitRepo
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -220,9 +221,13 @@ def parse_file(
     else:
         return []
 
-    tree = parser.parse(src_bytes)
-    root = tree.root_node
-    imports = _extract_imports(root, src_bytes)
+    try:
+        tree = parser.parse(src_bytes)
+        root = tree.root_node
+        imports = _extract_imports(root, src_bytes)
+    except Exception as exc:
+        logger.warning("Tree-sitter parse failed for %s: %s", file_path, exc)
+        return []
     units: list[CodeUnit] = []
 
     def process_node(node, parent_class: str | None = None):
@@ -289,8 +294,11 @@ def parse_file(
             for child in node.children:
                 process_node(child, parent_class)
 
-    for node in root.children:
-        process_node(node)
+    try:
+        for node in root.children:
+            process_node(node)
+    except Exception as exc:
+        logger.warning("Tree-sitter AST walk failed for %s: %s", file_path, exc)
 
     return units
 
@@ -368,14 +376,53 @@ async def run_ingestion(
         await _update_repo_status(db, repo_id, "parsing")
         await _update_task(db, task_id, "discovering")
 
+        gitignore_path = clone_dir / ".gitignore"
+        spec = None
+        if gitignore_path.exists():
+            try:
+                lines = gitignore_path.read_text().splitlines()
+                spec = pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, lines)
+            except Exception as exc:
+                logger.warning("Failed to parse .gitignore: %s", exc)
+
         target_files: list[Path] = []
         excluded = set(settings.excluded_dirs)
+        
+        # 1MB limit for files
+        MAX_FILE_SIZE = 1024 * 1024
+
         for root, dirs, files in os.walk(clone_dir):
             # Prune excluded dirs in-place so os.walk doesn't descend into them
             dirs[:] = [d for d in dirs if d not in excluded and not d.startswith(".")]
+            
+            # Prune with pathspec if available
+            if spec:
+                dirs[:] = [
+                    d for d in dirs 
+                    if not spec.match_file(str(Path(root).relative_to(clone_dir) / d) + "/")
+                ]
+            
             for fname in files:
-                if fname.endswith((".py", ".js", ".ts", ".jsx", ".tsx")):
-                    target_files.append(Path(root) / fname)
+                fpath = Path(root) / fname
+                rel_path = str(fpath.relative_to(clone_dir))
+                
+                # Check extension
+                if not fname.endswith((".py", ".js", ".ts", ".jsx", ".tsx")):
+                    continue
+                    
+                # Check pathspec
+                if spec and spec.match_file(rel_path):
+                    continue
+                    
+                # Check file size limit
+                try:
+                    if fpath.stat().st_size > MAX_FILE_SIZE:
+                        logger.warning("Skipping %s (size > 1MB)", rel_path)
+                        continue
+                except Exception:
+                    continue
+                    
+                target_files.append(fpath)
 
         total_files = len(target_files)
         await emit({"stage": "discovering", "total_files": total_files})
@@ -481,9 +528,14 @@ async def run_ingestion(
                     batch_docs = documents[b_start : b_start + 100]
                     batch_metas = metadatas[b_start : b_start + 100]
                     
+                    # Generate embeddings via Voyage AI
+                    batch_embeddings = await asyncio.to_thread(
+                        embed_texts, batch_docs
+                    )
+                    
                     await asyncio.to_thread(
                         chromadb_client.upsert_documents,
-                        repo_id_str, suffix, batch_ids, batch_docs, None, batch_metas,
+                        repo_id_str, suffix, batch_ids, batch_docs, batch_embeddings, batch_metas,
                     )
                     batch_done += 1
                     pct = int(batch_done / total_batches * 100)
