@@ -16,8 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source
 COPY . .
 
-# Temp directory for repo clones
-RUN mkdir -p /tmp/codesagez
+# Temp directory for repo clones and data directory for ChromaDB
+RUN mkdir -p /tmp/codesagez /data/chroma && chmod 777 /data /data/chroma
 
-# Two workers: one for long-lived SSE ingestion, one for queries
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# Two workers: one for long-lived SSE ingestion, one for queries.
+# Port 7860 is the default for Hugging Face Spaces.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860", "--workers", "2"]

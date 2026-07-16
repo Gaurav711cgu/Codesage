@@ -48,7 +48,9 @@ def call_llm(prompt: str) -> str:
     return response.text
 
 
-# ─── Embeddings ───────────────────────────────────────────────────────────────
+# ─── Embeddings (Voyage AI) ───────────────────────────────────────────────────
+
+import httpx
 
 def embed_texts(
     texts: list[str],
@@ -56,37 +58,50 @@ def embed_texts(
     max_retries: int = 5,
 ) -> list[list[float]]:
     """
-    Embed a list of texts using text-embedding-004.
-    Batches in groups of 100 (API limit). Retries with exponential backoff.
-    Returns a flat list of 768-dim embedding vectors, one per input text.
+    Embed a list of texts using Voyage AI voyage-code-2.
+    Batches in groups of 100. Retries with exponential backoff.
+    Returns a flat list of 1024-dim embedding vectors, one per input text.
     """
+    if not settings.voyage_api_key:
+        raise ValueError("VOYAGE_API_KEY is missing from environment variables.")
+
+    input_type = "document" if "document" in task_type else "query"
+    url = "https://api.voyageai.com/v1/embeddings"
+    headers = {
+        "Authorization": f"Bearer {settings.voyage_api_key}",
+        "Content-Type": "application/json"
+    }
+    
     all_embeddings: list[list[float]] = []
 
     for batch_start in range(0, len(texts), 100):
         batch = texts[batch_start : batch_start + 100]
         for attempt in range(max_retries):
             try:
-                result = client.models.embed_content(
-                    model="models/text-embedding-004",
-                    contents=batch,
-                    config=types.EmbedContentConfig(task_type=task_type),
-                )
-                embeddings = [e.values for e in result.embeddings]
+                resp = httpx.post(url, headers=headers, json={
+                    "input": batch,
+                    "model": "voyage-code-2",
+                    "input_type": input_type
+                }, timeout=60.0)
+                resp.raise_for_status()
+                data = resp.json()["data"]
+                # Ensure they are in original order by sorting by index
+                data.sort(key=lambda x: x["index"])
+                embeddings = [item["embedding"] for item in data]
                 all_embeddings.extend(embeddings)
                 break
             except Exception as exc:
                 if attempt == max_retries - 1:
                     logger.error(
-                        "Embedding batch %d failed after %d retries: %s",
+                        "Voyage Embedding batch %d failed after %d retries: %s",
                         batch_start // 100,
                         max_retries,
                         exc,
                     )
                     raise
-                # Wait longer to handle the 100 requests per minute free tier limit
-                wait = min(65, 4 ** attempt + 5)
+                wait = 2 ** attempt
                 logger.warning(
-                    "Embedding rate-limited (attempt %d/%d), retrying in %ds…",
+                    "Voyage Embedding failed (attempt %d/%d), retrying in %ds…",
                     attempt + 1,
                     max_retries,
                     wait,
@@ -97,10 +112,19 @@ def embed_texts(
 
 
 def embed_query(query: str) -> list[float]:
-    """Embed a single query string with the retrieval_query task type."""
-    result = client.models.embed_content(
-        model="models/text-embedding-004",
-        contents=query,
-        config=types.EmbedContentConfig(task_type="retrieval_query"),
-    )
-    return result.embeddings[0].values
+    """Embed a single query string using Voyage AI."""
+    if not settings.voyage_api_key:
+        raise ValueError("VOYAGE_API_KEY is missing from environment variables.")
+        
+    url = "https://api.voyageai.com/v1/embeddings"
+    headers = {
+        "Authorization": f"Bearer {settings.voyage_api_key}",
+        "Content-Type": "application/json"
+    }
+    resp = httpx.post(url, headers=headers, json={
+        "input": [query],
+        "model": "voyage-code-2",
+        "input_type": "query"
+    }, timeout=30.0)
+    resp.raise_for_status()
+    return resp.json()["data"][0]["embedding"]

@@ -15,8 +15,9 @@ class Settings(BaseSettings):
     environment: str = "development"
     frontend_url: str = "http://localhost:3000"
 
-    # Gemini
+    # Gemini & Voyage
     gemini_api_key: str
+    voyage_api_key: str = ""
 
     # Database (Supabase PostgreSQL)
     database_url: str

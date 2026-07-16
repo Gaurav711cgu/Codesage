@@ -14,18 +14,13 @@ logger = logging.getLogger(__name__)
 # ─── Client singleton ─────────────────────────────────────────────────────────
 
 def _make_client() -> Any:
-    host_port = settings.chromadb_url.replace("http://", "").replace("https://", "")
-    host, _, port = host_port.partition(":")
+    # Use persistent client for Hugging Face Spaces compatibility
     chroma_settings = ChromaSettings(
-        chroma_client_auth_provider="chromadb.auth.token.TokenAuthClientProvider"
-        if settings.chroma_auth_token
-        else None,
-        chroma_client_auth_credentials=settings.chroma_auth_token or None,
         anonymized_telemetry=False,
     )
-    return chromadb.HttpClient(
-        host=host,
-        port=int(port) if port else 8001,
+    # /data is the standard persistent storage path in Hugging Face Spaces
+    return chromadb.PersistentClient(
+        path="/data/chroma",
         settings=chroma_settings,
     )
 
