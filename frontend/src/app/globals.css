@@ -2,26 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@400;500;600&display=swap');
+
 @layer base {
   :root {
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
-    --card: 224 71% 6%;
-    --card-foreground: 213 31% 91%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 222.2 47.4% 11.2%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 223 47% 11%;
-    --muted-foreground: 215.4 16.3% 56.9%;
-    --accent: 216 34% 17%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 216 34% 17%;
-    --input: 216 34% 17%;
-    --ring: 224 64% 33%;
-    --radius: 0.5rem;
+    /* Sage-green dark palette — not generic blue-dark */
+    --background:          10 15% 6%;      /* sage-950 #0a0f0d */
+    --card:                120 18% 8%;     /* sage-900 #0f1710 */
+    --card-hover:          120 20% 11%;    /* sage-800 #162119 */
+    --foreground:          138 24% 88%;    /* sage-100 #d4ead9 */
+    --muted-foreground:    138 10% 42%;    /* muted    #4a5c50 */
+    --border:              120 20% 14%;    /* sage-700 #1e2e22 */
+    --input:               120 20% 14%;
+    
+    /* Accent — sage green, not blue */
+    --primary:             138 32% 55%;    /* sage-400 #6aaf7e */
+    --primary-hover:       138 28% 65%;    /* sage-300 #8dc4a0 */
+    --primary-dim:         138 28% 40%;    /* sage-500 #4d8f63 */
+    --primary-foreground:  10 15% 6%;
+    
+    /* Semantic */
+    --destructive:         0 84% 60%;
+    --warning:             38 92% 50%;     /* amber */
+    --success:             138 32% 55%;    /* same as primary */
+    
+    --radius:              4px;            /* reduced — sharper, more technical */
   }
 }
 
@@ -48,4 +53,52 @@
 /* Code block syntax highlighting */
 pre code {
   @apply text-sm;
+}
+
+/* Monospace data labels — used everywhere for file paths, scores, latencies */
+.mono {
+  font-family: 'Geist Mono', monospace;
+  font-size: 0.8125rem;  /* 13px */
+  letter-spacing: -0.01em;
+}
+
+/* Terminal-style prefix for log/status lines */
+.terminal-line::before {
+  content: '›';
+  color: hsl(var(--primary));
+  margin-right: 0.5rem;
+  font-family: 'Geist Mono', monospace;
+}
+
+/* Chunk type badges */
+.badge-seed {
+  background: hsl(138 32% 55% / 0.15);
+  color: hsl(138 32% 65%);
+  border: 1px solid hsl(138 32% 55% / 0.3);
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.badge-neighbor {
+  background: hsl(38 92% 50% / 0.1);
+  color: hsl(38 92% 60%);
+  border: 1px solid hsl(38 92% 50% / 0.25);
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+/* Score display */
+.score-bar {
+  height: 2px;
+  background: hsl(120 20% 14%);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.score-bar-fill {
+  height: 100%;
+  background: hsl(var(--primary));
+  transition: width 400ms ease-out;
 }
