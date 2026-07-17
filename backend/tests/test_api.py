@@ -56,12 +56,25 @@ async def client():
 
 
 @pytest.mark.asyncio
-async def test_health(client):
+@patch("app.main.chromadb_client")
+@patch("app.main.AsyncSessionLocal")
+async def test_health(mock_session, mock_chroma, client):
+    # Mock ChromaDB client heartbeat
+    mock_client = MagicMock()
+    mock_client.heartbeat.return_value = 12345
+    mock_chroma.get_client.return_value = mock_client
+
+    # Mock DB connection
+    mock_db = MagicMock()
+    mock_db.execute = AsyncMock()
+    mock_session.return_value.__aenter__.return_value = mock_db
+
     resp = await client.get("/health")
     assert resp.status_code == 200
     body = resp.json()
     assert body["status"] == "ok"
     assert "version" in body
+
 
 
 # ─── POST /api/v1/repo/ingest ─────────────────────────────────────────────────

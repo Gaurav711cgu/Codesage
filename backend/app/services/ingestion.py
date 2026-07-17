@@ -588,3 +588,8 @@ async def run_ingestion(
         shutil.rmtree(clone_dir, ignore_errors=True)
         await emit({"stage": "error", "code": "INGESTION_FAILED", "message": error_msg})
         raise
+
+
+# Alias for backwards compatibility with tests
+parse_python_file = parse_file
+
