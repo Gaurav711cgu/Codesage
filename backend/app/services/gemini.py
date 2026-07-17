@@ -50,76 +50,52 @@ def call_llm(prompt: str) -> str:
 
 # ─── Embeddings (Gemini) ───────────────────────────────────────────────────
 
+import hashlib
+import math
+import re
+
+def local_hash_embed(text: str, dimension: int = 384) -> list[float]:
+    """
+    Generate a stable, normalized bag-of-words hash vector for a text.
+    Runs locally in microseconds, zero dependencies, zero rate limits.
+    """
+    words = re.findall(r'[a-zA-Z_0-9]+', text.lower())
+    vector = [0.0] * dimension
+    if not words:
+        return [0.0] * dimension
+    for word in words:
+        h = int(hashlib.md5(word.encode('utf-8')).hexdigest(), 16)
+        index = h % dimension
+        vector[index] += 1.0
+    norm = math.sqrt(sum(x * x for x in vector))
+    if norm > 0.0:
+        vector = [x / norm for x in vector]
+    return vector
+
+
 def embed_texts(
     texts: list[str],
     task_type: str = "retrieval_document",
     max_retries: int = 5,
 ) -> list[list[float]]:
     """
-    Embed a list of texts using Voyage AI (if settings.voyage_api_key is set)
-    with a fallback to Google Gemini gemini-embedding-001.
+    Embed a list of texts using the local hash embedding function.
     """
-    if settings.voyage_api_key:
-        import requests
-        logger.info("Using Voyage AI to embed %d texts", len(texts))
-        
-        # Voyage AI supports up to 128 inputs per batch
-        batch_size = 128
-        all_embeddings: list[list[float]] = []
-        
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
-            for attempt in range(max_retries):
-                try:
-                    resp = requests.post(
-                        "https://api.voyageai.com/v1/embeddings",
-                        json={
-                            "input": batch,
-                            "model": "voyage-code-2",
-                            "input_type": "document"
-                        },
-                        headers={
-                            "Authorization": f"Bearer {settings.voyage_api_key}",
-                            "Content-Type": "application/json"
-                        },
-                        timeout=30
-                    )
-                    resp.raise_for_status()
-                    data = resp.json()
-                    embeddings = [item["embedding"] for item in data["data"]]
-                    all_embeddings.extend(embeddings)
-                    break
-                except Exception as exc:
-                    if attempt == max_retries - 1:
-                        logger.error("Voyage AI embedding failed: %s. Falling back to Gemini.", exc)
-                        # Break and try Gemini fallback below for this run
-                        all_embeddings = []
-                        break
-                    wait = 2 * (attempt + 1)
-                    logger.warning("Voyage AI rate limit or transient error, retrying in %ds...", wait)
-                    time.sleep(wait)
-            
-            if not all_embeddings:
-                # Fallback to Gemini occurred
-                break
+    logger.info("Using local hashing embedding function to embed %d texts", len(texts))
+    return [local_hash_embed(t) for t in texts]
 
-        if all_embeddings:
-            return all_embeddings
 
     # --- Gemini Fallback ---
-    logger.info("Using Gemini to embed %d texts", len(texts))
+    logger.info("Using Gemini fallback to embed %d texts", len(texts))
     all_embeddings = []
 
-    # Group texts into batches to stay under:
-    # 1. Max 20 items per batch
-    # 2. Max 12,000 estimated tokens (char count / 3)
+    # Group texts into batches to stay under limits
     batches: list[list[str]] = []
     current_batch: list[str] = []
     current_batch_tokens = 0
 
     for text in texts:
         text_tokens = len(text) // 3
-        # Truncate extremely large files to prevent exceeding TPM alone
         if text_tokens > 10000:
             text = text[:30000]
             text_tokens = len(text) // 3
@@ -136,10 +112,8 @@ def embed_texts(
     if current_batch:
         batches.append(current_batch)
 
-    logger.info("Generated %d batches for %d texts (Gemini fallback)", len(batches), len(texts))
-
     for batch_idx, batch in enumerate(batches):
-        for attempt in range(max_retries * 2):  # up to 10 retries
+        for attempt in range(max_retries * 2):
             try:
                 res = client.models.embed_content(
                     model="gemini-embedding-001",
@@ -147,65 +121,21 @@ def embed_texts(
                 )
                 embeddings = [e.values for e in res.embeddings]
                 all_embeddings.extend(embeddings)
-                # Sleep to respect rate limits (15 RPM)
                 time.sleep(5.0)
                 break
             except Exception as exc:
                 if attempt == (max_retries * 2) - 1:
-                    logger.error(
-                        "Gemini Embedding batch %d failed after %d retries: %s",
-                        batch_idx,
-                        max_retries * 2,
-                        exc,
-                    )
+                    logger.error("Gemini fallback embedding failed: %s", exc)
                     raise
-                
                 wait = 6 + (2 ** attempt)
-                logger.warning(
-                    "Gemini Embedding failed for batch %d/%d (attempt %d/%d), retrying in %ds…: %s",
-                    batch_idx + 1,
-                    len(batches),
-                    attempt + 1,
-                    max_retries * 2,
-                    wait,
-                    exc
-                )
                 time.sleep(wait)
 
     return all_embeddings
 
 
 def embed_query(query: str) -> list[float]:
-    """Embed a single query string using Voyage AI or fallback to Google Gemini."""
-    if settings.voyage_api_key:
-        import requests
-        for attempt in range(3):
-            try:
-                resp = requests.post(
-                    "https://api.voyageai.com/v1/embeddings",
-                    json={
-                        "input": [query],
-                        "model": "voyage-code-2",
-                        "input_type": "query"
-                    },
-                    headers={
-                        "Authorization": f"Bearer {settings.voyage_api_key}",
-                        "Content-Type": "application/json"
-                    },
-                    timeout=10
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                return data["data"][0]["embedding"]
-            except Exception as exc:
-                if attempt == 2:
-                    logger.warning("Voyage query embedding failed: %s. Falling back to Gemini.", exc)
-                    break
-                time.sleep(1)
+    """Embed a single query string using local hash embedding."""
+    return local_hash_embed(query)
 
-    res = client.models.embed_content(
-        model="gemini-embedding-001",
-        contents=[query],
-    )
-    return res.embeddings[0].values
+
 
