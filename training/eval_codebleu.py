@@ -23,12 +23,14 @@ import json
 import logging
 from pathlib import Path
 
+from experiment_utils import provenance, sha256_file, write_json
+
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)-8s %(message)s")
 logger = logging.getLogger(__name__)
 
 MAX_NEW_TOKENS = 512
-TEMPERATURE    = 0.2
+TEMPERATURE    = 0.0
 
 
 def load_test_samples(path: Path) -> list[dict]:
@@ -48,7 +50,7 @@ def generate_fix(model, tokenizer, prompt: str, device: str) -> str:
             **inputs,
             max_new_tokens=MAX_NEW_TOKENS,
             temperature=TEMPERATURE,
-            do_sample=True,
+            do_sample=temperature > 0,
             pad_token_id=tokenizer.eos_token_id,
         )
     # Decode only the new tokens
@@ -67,6 +69,7 @@ def main():
     parser.add_argument("--output",    required=True,
                         help="Output JSON path for results")
     parser.add_argument("--temperature", type=float, default=TEMPERATURE)
+    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max_samples", type=int, default=None,
                         help="Limit evaluation to N samples (for quick testing)")
     args = parser.parse_args()
@@ -80,6 +83,9 @@ def main():
                          "Run: pip install codebleu transformers torch")
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
     logger.info("Device: %s", device)
 
     logger.info("Loading model: %s", args.model)
@@ -130,9 +136,15 @@ def main():
     logger.info("CodeBLEU: %.4f (×100 = %.2f)", codebleu_score, codebleu_score * 100)
 
     output = {
+        **provenance(),
         "model":         args.model,
+        "metric": "CodeBLEU",
+        "test_data": str(Path(args.test_data)),
+        "test_data_sha256": sha256_file(Path(args.test_data)),
         "test_samples":  len(predictions),
         "errors":        errors,
+        "seed": args.seed,
+        "generation": {"temperature": args.temperature, "max_new_tokens": MAX_NEW_TOKENS, "do_sample": args.temperature > 0},
         "codebleu":      round(codebleu_score * 100, 2),   # reported ×100 per PRD
         "codebleu_raw":  codebleu_score,
         "components": {
@@ -144,8 +156,7 @@ def main():
     }
 
     out_path = Path(args.output)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(output, indent=2))
+    write_json(out_path, output)
     logger.info("Results saved to %s", out_path)
 
     print(f"\nCodeBLEU: {codebleu_score * 100:.2f}  (model: {args.model})")

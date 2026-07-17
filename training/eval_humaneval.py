@@ -25,6 +25,8 @@ import os
 import tempfile
 from pathlib import Path
 
+from experiment_utils import provenance, write_json
+
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)-8s %(message)s")
 logger = logging.getLogger(__name__)
@@ -77,6 +79,7 @@ def main():
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--num_samples", type=int, default=1,
                         help="Samples per problem for Pass@k (we use k=1)")
+    parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
     try:
@@ -89,6 +92,9 @@ def main():
                          "Run: pip install human-eval transformers torch")
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
     logger.info("Device: %s", device)
 
     logger.info("Loading model: %s", args.model)
@@ -149,17 +155,19 @@ def main():
         )
 
     output = {
+        **provenance(),
         "model":       args.model,
+        "metric": "HumanEval Pass@1",
         "pass_at_1":   pass_at_1,
         "num_problems": len(problems),
         "num_samples": args.num_samples,
         "temperature": args.temperature,
+        "seed": args.seed,
         "raw_results": {k: round(v * 100, 2) for k, v in results.items()},
     }
 
     out_path = Path(args.output)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(output, indent=2))
+    write_json(out_path, output)
     logger.info("Results saved to %s", out_path)
 
     print(f"\nHumanEval Pass@1: {pass_at_1:.2f}%  (model: {args.model})")

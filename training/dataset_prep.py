@@ -22,6 +22,8 @@ import random
 import re
 from pathlib import Path
 
+from experiment_utils import count_jsonl, provenance, sha256_file, write_json
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-8s %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -180,15 +182,15 @@ def main():
     val_indices   = indices[TRAIN_SIZE : TRAIN_SIZE + VAL_SIZE]
     test_indices  = indices[TRAIN_SIZE + VAL_SIZE : TOTAL_SIZE]
 
-    # Save indices for reproducibility
+    # Save indices for reproducibility before training starts.
     split_file = DATA_DIR / "split_indices.json"
-    split_file.write_text(json.dumps({
+    write_json(split_file, {
         "train": train_indices,
         "val":   val_indices,
         "test":  test_indices,
         "random_seed": RANDOM_SEED,
         "total_available": total_available,
-    }, indent=2))
+    })
     logger.info("Saved split indices to %s", split_file)
 
     # Write JSONL files
@@ -206,6 +208,32 @@ def main():
                 f.write(json.dumps(sample) + "\n")
                 written += 1
         logger.info("Wrote %d samples to %s", written, out_path)
+
+    manifest = {
+        **provenance(),
+        "dataset": "bigcode/commitpack",
+        "configuration": "python",
+        "random_seed": RANDOM_SEED,
+        "filters": {
+            "max_file_chars": MAX_FILE_CHARS,
+            "max_diff_lines": MAX_DIFF_LINES,
+            "min_message_words": MIN_MESSAGE_WORDS,
+            "bugfix_keyword_filter": True,
+            "syntax_valid_python": True,
+        },
+        "source_rows_after_filtering": total_available,
+        "splits": {
+            split: {
+                "path": f"training/data/{split}.jsonl",
+                "samples": count_jsonl(DATA_DIR / f"{split}.jsonl"),
+                "sha256": sha256_file(DATA_DIR / f"{split}.jsonl"),
+            }
+            for split in ("train", "val", "test")
+        },
+        "split_indices_sha256": sha256_file(split_file),
+    }
+    write_json(DATA_DIR / "dataset_manifest.json", manifest)
+    logger.info("Saved immutable dataset manifest to %s", DATA_DIR / "dataset_manifest.json")
 
     logger.info(
         "Dataset ready: %d train / %d val / %d test (test split is held out)",

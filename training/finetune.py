@@ -16,6 +16,8 @@ import json
 import logging
 from pathlib import Path
 
+from experiment_utils import provenance, sha256_file, write_json
+
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)-8s %(message)s")
 logger = logging.getLogger(__name__)
@@ -73,6 +75,9 @@ def train():
     )
 
     logger.info("Loading datasets")
+    manifest_path = DATA_DIR / "dataset_manifest.json"
+    if not manifest_path.exists():
+        raise SystemExit("Missing training/data/dataset_manifest.json. Run training/dataset_prep.py first.")
     train_dataset = load_jsonl(DATA_DIR / "train.jsonl")
     val_dataset   = load_jsonl(DATA_DIR / "val.jsonl")
     logger.info("Train: %d  Val: %d", len(train_dataset), len(val_dataset))
@@ -114,13 +119,19 @@ def train():
 
     # Save training log
     log = {
+        **provenance(),
+        "base_model": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+        "dataset_manifest_sha256": sha256_file(manifest_path),
+        "random_seed": RANDOM_SEED,
+        "max_seq_length": MAX_SEQ_LENGTH,
+        "qlora": {"r": 16, "alpha": 32, "dropout": 0.05, "load_in_4bit": True},
         "epochs_completed": training_args.num_train_epochs,
         "train_runtime_s": trainer_stats.metrics.get("train_runtime"),
         "train_loss": trainer_stats.metrics.get("train_loss"),
         "eval_date": None,        # filled after running evals
         "humaneval_interpretation": None,  # filled after error analysis
     }
-    (RESULTS_DIR / "training_log.json").write_text(json.dumps(log, indent=2))
+    write_json(RESULTS_DIR / "training_log.json", log)
     logger.info("Training complete. Log saved to training/results/training_log.json")
 
     # Save the best adapter weights

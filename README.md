@@ -121,10 +121,15 @@ Only the committed graph-edge result should be quoted in resumes or interviews.
 
 ### Experimental: QLoRA bug-fix fine-tuning
 
-Qwen2.5-Coder-1.5B-Instruct fine-tuned on 8K CommitPack Python bug-fix
-commits via Unsloth QLoRA. The pipeline is included for experimentation, but no
+Qwen2.5-Coder-1.5B-Instruct is configured for fine-tuning on 8K CommitPack
+Python bug-fix commits via Unsloth QLoRA. The pipeline is included for experimentation, but no
 fine-tuning result is published in this portfolio until a held-out evaluation
 has been completed and committed.
+
+The ML workflow now records dataset split hashes, model configuration, seed,
+Git revision, and generation settings in every result file. It refuses to
+compare baseline and fine-tuned CodeBLEU scores when their held-out test files
+do not match. See [the model card](training/MODEL_CARD.md) and [GPU runbook](training/GPU_RUNBOOK.md).
 
 ---
 
@@ -161,6 +166,9 @@ python training/eval_codebleu.py \
 # 5. Export to GGUF and create Ollama model
 python training/finetune.py --export
 ollama create codesagez-coder -f training/Modelfile
+
+# 6. Validate and publish only comparable real metrics
+python training/compare_results.py
 ```
 
 ---
