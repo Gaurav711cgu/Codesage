@@ -327,12 +327,11 @@ async def query_repo(
             
             gen = stream_llm(prompt)
             while True:
-                try:
-                    token_text = await asyncio.to_thread(next, gen)
-                    total_tokens += 1
-                    yield _sse_event("token", {"text": token_text})
-                except StopIteration:
+                token_text = await asyncio.to_thread(next, gen, None)
+                if token_text is None:
                     break
+                total_tokens += 1
+                yield _sse_event("token", {"text": token_text})
 
             total_latency = int((time.perf_counter() - t_start) * 1000) + retrieval_latency
             yield _sse_event("done", {
