@@ -128,9 +128,9 @@ def main():
         if not repo_id: continue
         ans, _ = query_and_get_answer(repo_id, q["question"], "naive")
         s1 = judge_answer(q["question"], q["ground_truth"], ans, judge_model)
-        time.sleep(1) # rate limit prevention
+        time.sleep(4.5) # rate limit prevention
         s2 = judge_answer(q["question"], q["ground_truth"], ans, judge_model)
-        time.sleep(1) # rate limit prevention
+        time.sleep(4.5) # rate limit prevention
         cal_pass += int(s1 == s2)
     logger.info("Calibration: %d/10 identical inputs → identical scores", cal_pass)
     if cal_pass < 10:
@@ -153,7 +153,7 @@ def main():
             results[qid][f"{mode}_answer"]   = ans
             results[qid][f"{mode}_score"]    = score
             results[qid][f"{mode}_n_chunks"] = len(chunks)
-            time.sleep(2) # rate limit prevention for Gemini free tier
+            time.sleep(4.5) # rate limit prevention for Gemini free tier
         logger.info("%s: naive=%d graph=%d", qid,
                     results[qid]["naive_score"], results[qid]["graph_score"])
 
