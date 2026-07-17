@@ -56,11 +56,59 @@ def embed_texts(
     max_retries: int = 5,
 ) -> list[list[float]]:
     """
-    Embed a list of texts using Google Gemini gemini-embedding-001.
-    Batches dynamically to stay under TPM (20k tokens) and RPM (15 RPM) limits.
-    Returns a flat list of embedding vectors.
+    Embed a list of texts using Voyage AI (if settings.voyage_api_key is set)
+    with a fallback to Google Gemini gemini-embedding-001.
     """
-    all_embeddings: list[list[float]] = []
+    if settings.voyage_api_key:
+        import requests
+        logger.info("Using Voyage AI to embed %d texts", len(texts))
+        
+        # Voyage AI supports up to 128 inputs per batch
+        batch_size = 128
+        all_embeddings: list[list[float]] = []
+        
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
+            for attempt in range(max_retries):
+                try:
+                    resp = requests.post(
+                        "https://api.voyageai.com/v1/embeddings",
+                        json={
+                            "input": batch,
+                            "model": "voyage-code-2",
+                            "input_type": "document"
+                        },
+                        headers={
+                            "Authorization": f"Bearer {settings.voyage_api_key}",
+                            "Content-Type": "application/json"
+                        },
+                        timeout=30
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    embeddings = [item["embedding"] for item in data["data"]]
+                    all_embeddings.extend(embeddings)
+                    break
+                except Exception as exc:
+                    if attempt == max_retries - 1:
+                        logger.error("Voyage AI embedding failed: %s. Falling back to Gemini.", exc)
+                        # Break and try Gemini fallback below for this run
+                        all_embeddings = []
+                        break
+                    wait = 2 * (attempt + 1)
+                    logger.warning("Voyage AI rate limit or transient error, retrying in %ds...", wait)
+                    time.sleep(wait)
+            
+            if not all_embeddings:
+                # Fallback to Gemini occurred
+                break
+
+        if all_embeddings:
+            return all_embeddings
+
+    # --- Gemini Fallback ---
+    logger.info("Using Gemini to embed %d texts", len(texts))
+    all_embeddings = []
 
     # Group texts into batches to stay under:
     # 1. Max 20 items per batch
@@ -88,7 +136,7 @@ def embed_texts(
     if current_batch:
         batches.append(current_batch)
 
-    logger.info("Generated %d batches for %d texts", len(batches), len(texts))
+    logger.info("Generated %d batches for %d texts (Gemini fallback)", len(batches), len(texts))
 
     for batch_idx, batch in enumerate(batches):
         for attempt in range(max_retries * 2):  # up to 10 retries
@@ -128,9 +176,36 @@ def embed_texts(
 
 
 def embed_query(query: str) -> list[float]:
-    """Embed a single query string using Google Gemini gemini-embedding-001."""
+    """Embed a single query string using Voyage AI or fallback to Google Gemini."""
+    if settings.voyage_api_key:
+        import requests
+        for attempt in range(3):
+            try:
+                resp = requests.post(
+                    "https://api.voyageai.com/v1/embeddings",
+                    json={
+                        "input": [query],
+                        "model": "voyage-code-2",
+                        "input_type": "query"
+                    },
+                    headers={
+                        "Authorization": f"Bearer {settings.voyage_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    timeout=10
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                return data["data"][0]["embedding"]
+            except Exception as exc:
+                if attempt == 2:
+                    logger.warning("Voyage query embedding failed: %s. Falling back to Gemini.", exc)
+                    break
+                time.sleep(1)
+
     res = client.models.embed_content(
         model="gemini-embedding-001",
         contents=[query],
     )
     return res.embeddings[0].values
+
