@@ -76,6 +76,16 @@ async def test_health(mock_session, mock_chroma, client):
     assert "version" in body
 
 
+@pytest.mark.asyncio
+async def test_benchmarks_serves_real_graph_edge_measurement(client):
+    resp = await client.get("/api/v1/benchmarks")
+    assert resp.status_code == 200
+    graph_edge = resp.json()["data"]["rag"]["graph_edge"]
+    assert graph_edge["edges"] and graph_edge["edges"] > 0
+    assert 0 <= graph_edge["naive"] <= 100
+    assert 0 <= graph_edge["graph"] <= 100
+
+
 
 # ─── POST /api/v1/repo/ingest ─────────────────────────────────────────────────
 

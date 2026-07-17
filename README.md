@@ -1,7 +1,20 @@
 # CodeSageZ v2
 
-Graph-augmented RAG for repository-level code Q&A, plus a QLoRA fine-tuned
-Qwen2.5-Coder-1.5B bug-fix model.
+Graph-augmented retrieval for repository-level code understanding. CodeSageZ
+parses a repository into a structural call graph, retrieves relevant symbols,
+and expands context through real caller/callee relationships.
+
+## Measured Result
+
+On 120 real parsed caller-to-callee edges from FastAPI, HTTPX, and Celery,
+graph-augmented retrieval achieved **53.3% direct-callee Recall@8** versus
+**0.0%** for vector-only retrieval (**+53.3 percentage points**, 95% Wilson CI
+44.4-62.0%). Graph expansion added 1 ms at p50 latency (3 ms vs 2 ms).
+
+The benchmark derives ground truth from the indexed repositories' parsed graph;
+it uses no mock code, synthetic documents, or LLM judge scores. See
+[`benchmarks/methodology.md`](benchmarks/methodology.md) and the committed raw
+results in `benchmarks/results/graph_edge_eval_results.json`.
 
 ## Quick start (local, under 10 minutes)
 
@@ -9,7 +22,7 @@ Qwen2.5-Coder-1.5B bug-fix model.
 
 - Docker + Docker Compose
 - A [Gemini API key](https://aistudio.google.com/app/apikey) (free tier)
-- A [Supabase](https://supabase.com) project (free tier)
+- Optional: a [Supabase](https://supabase.com) project for hosted PostgreSQL
 
 ### 1. Clone and configure
 
@@ -17,14 +30,14 @@ Qwen2.5-Coder-1.5B bug-fix model.
 git clone https://github.com/gauravkumarnayak/codesagez
 cd codesagez
 cp .env.example .env
-# Fill in GEMINI_API_KEY and DATABASE_URL in .env
+# Fill in GEMINI_API_KEY. SQLite and the embedded Chroma store are local-only.
 ```
 
 ### 2. Run database migrations
 
 ```bash
 cd backend
-pip install alembic asyncpg
+pip install alembic asyncpg aiosqlite
 alembic -c migrations/alembic.ini upgrade head
 cd ..
 ```
@@ -81,10 +94,10 @@ codesagez/
 │   ├── eval_humaneval.py
 │   ├── eval_repobench.py
 │   └── Modelfile
-└── benchmarks/       Eval methodology + 60-question stratified benchmark
+└── benchmarks/       Reproducible real-repository evaluation
     ├── methodology.md
-    ├── rag_eval_questions.json
-    └── run_internal_eval.py
+    ├── setup_and_ingest.py
+    └── run_graph_edge_eval.py
 ```
 
 ---
@@ -102,15 +115,16 @@ seed score     = 0.6 × vector_sim + 0.4 × 1.0
 neighbour score = 0.6 × 0.0       + 0.4 × 0.5
 ```
 
-This consistently outperforms naive retrieval on cross-file and call-chain
-questions in our stratified 60-question internal eval (results pending).
+The benchmark pipeline compares this with vector-only retrieval on real parsed
+call-graph edges and stores raw per-edge outputs under `benchmarks/results/`.
+Only the committed graph-edge result should be quoted in resumes or interviews.
 
-### 2. QLoRA bug-fix fine-tuning
+### Experimental: QLoRA bug-fix fine-tuning
 
 Qwen2.5-Coder-1.5B-Instruct fine-tuned on 8K CommitPack Python bug-fix
-commits via Unsloth QLoRA. Primary metric: CodeBLEU on held-out test set
-(measures the actual task distribution). HumanEval is reported as a
-catastrophic forgetting check only.
+commits via Unsloth QLoRA. The pipeline is included for experimentation, but no
+fine-tuning result is published in this portfolio until a held-out evaluation
+has been completed and committed.
 
 ---
 
@@ -154,16 +168,9 @@ ollama create codesagez-coder -f training/Modelfile
 ## Running benchmarks
 
 ```bash
-# RepoBench-R (requires backend running + at least one indexed repo)
-python training/eval_repobench.py --retrieval_mode naive \
-    --output benchmarks/results/repobench_naive.json
-python training/eval_repobench.py --retrieval_mode graph \
-    --output benchmarks/results/repobench_graph.json
-
-# Internal stratified eval (requires OpenAI key for GPT-4o-mini judge)
-python benchmarks/run_internal_eval.py \
-    --repo_id <uuid-of-indexed-fastapi-repo> \
-    --openai_key $OPENAI_API_KEY
+# Real structural retrieval benchmark (requires FastAPI, HTTPX, and Celery to
+# be indexed locally; see benchmarks/setup_and_ingest.py)
+python benchmarks/run_graph_edge_eval.py
 ```
 
 ---
@@ -172,8 +179,11 @@ python benchmarks/run_internal_eval.py \
 
 **Backend → Railway**
 1. New project → Deploy from GitHub → select `backend/` directory
-2. Add all env vars from `.env.example`
-3. Add ChromaDB as a separate Railway service (Docker image `chromadb/chroma:latest`)
+2. Set `ENVIRONMENT=production`, a persistent PostgreSQL `DATABASE_URL`, and
+   the deployed Vercel URL as `FRONTEND_URL`.
+3. Add a persistent ChromaDB service and set `CHROMADB_URL`. Do not use the
+   embedded local Chroma store or SQLite in production.
+4. Set `REDIS_URL` when running more than one backend replica so rate limits are shared.
 
 **Frontend → Vercel**
 1. `vercel deploy` from `frontend/`
@@ -193,6 +203,11 @@ pytest
 
 ## Interview answers
 
+**Why is there no fine-tuning result on the project page?**
+The fine-tuning pipeline exists, but the evaluation run has not been completed.
+Publishing blank or unverified numbers would weaken the project. The shipped
+claim is the reproducible Graph RAG measurement instead.
+
 **Why CodeBLEU not HumanEval as primary metric?**  
 CommitPack trains the model to fix bugs in existing code. HumanEval tests
 completion from scratch. These are different distributions — evaluating a
@@ -206,6 +221,6 @@ source code — no LLM extraction needed. The graph is a fact about the code, no
 an inference from it.
 
 **Why 1-hop expansion?**  
-A 2-hop ablation showed a 3pp accuracy drop. Second-hop neighbours introduce
-noise that hurts LLM answer quality more than the additional context helps.
-Results in `benchmarks/results/hop_ablation.json`.
+One hop is the intentionally narrow structural expansion measured by the
+direct-callee benchmark. A deeper-hop claim is not made until it has its own
+reproducible ablation.

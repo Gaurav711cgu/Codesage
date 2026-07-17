@@ -81,64 +81,35 @@ async def get_benchmarks():
     }
 
     # ── RAG metrics ───────────────────────────────────────────────────────────
-    repobench = _load_json(_BENCH_RESULTS / "repobench_graph.json")
-    repobench_naive = _load_json(_BENCH_RESULTS / "repobench_naive.json")
-    internal  = _load_json(_BENCH_RESULTS / "rag_eval_results.json")
+    edge_eval = _load_json(_BENCH_RESULTS / "graph_edge_eval_results.json")
 
     def _rb(data, key):
         return data.get(key) if data else None
 
     rag = {
-        "repobench": {
-            "naive_recall_at_10": _rb(repobench_naive, "recall_at_10"),
-            "graph_recall_at_10": _rb(repobench,       "recall_at_10"),
-            "delta": (
-                round(
-                    _rb(repobench, "recall_at_10") - _rb(repobench_naive, "recall_at_10"), 2
-                )
-                if repobench and repobench_naive
-                   and _rb(repobench, "recall_at_10") is not None
-                   and _rb(repobench_naive, "recall_at_10") is not None
-                else None
-            ),
+        "graph_edge": {
+            "naive": _rb(edge_eval, "naive_recall_at_8"),
+            "graph": _rb(edge_eval, "graph_recall_at_8"),
+            "naive_ci": _rb(edge_eval, "naive_recall_at_8_ci"),
+            "graph_ci": _rb(edge_eval, "graph_recall_at_8_ci"),
+            "edges": _rb(edge_eval, "num_real_edges"),
+            "description": _rb(edge_eval, "description"),
         },
-        "internal": {
-            "single_function": {
-                "naive":    _rb(internal, "single_function_naive"),
-                "graph":    _rb(internal, "single_function_graph"),
-                "naive_ci": _rb(internal, "single_function_naive_ci"),
-                "graph_ci": _rb(internal, "single_function_graph_ci"),
-            },
-            "cross_file": {
-                "naive":    _rb(internal, "cross_file_naive"),
-                "graph":    _rb(internal, "cross_file_graph"),
-                "naive_ci": _rb(internal, "cross_file_naive_ci"),
-                "graph_ci": _rb(internal, "cross_file_graph_ci"),
-            },
-            "call_chain": {
-                "naive":    _rb(internal, "call_chain_naive"),
-                "graph":    _rb(internal, "call_chain_graph"),
-                "naive_ci": _rb(internal, "call_chain_naive_ci"),
-                "graph_ci": _rb(internal, "call_chain_graph_ci"),
-            },
-        },
-        "eval_date": _rb(internal, "eval_date"),
+        "eval_date": _rb(edge_eval, "eval_date"),
     }
 
     # ── System performance ────────────────────────────────────────────────────
-    perf = _load_json(_BENCH_RESULTS / "performance.json")
-
     ingestion = {
-        "avg_seconds_50k_loc": _rb(perf, "ingestion_avg_s") if perf else None,
-        "p95_seconds_50k_loc": _rb(perf, "ingestion_p95_s") if perf else None,
+        "avg_seconds_50k_loc": None,
+        "p95_seconds_50k_loc": None,
         "test_repos": ["fastapi", "httpx", "celery"],
     }
     retrieval_latency = {
-        "naive_p50_ms":      _rb(perf, "naive_p50_ms")  if perf else None,
-        "naive_p95_ms":      _rb(perf, "naive_p95_ms")  if perf else None,
-        "graph_p50_ms":      _rb(perf, "graph_p50_ms")  if perf else None,
-        "graph_p95_ms":      _rb(perf, "graph_p95_ms")  if perf else None,
-        "measurement_queries": 100,
+        "naive_p50_ms": _rb(edge_eval, "naive_p50_ms"),
+        "naive_p95_ms": _rb(edge_eval, "naive_p95_ms"),
+        "graph_p50_ms": _rb(edge_eval, "graph_p50_ms"),
+        "graph_p95_ms": _rb(edge_eval, "graph_p95_ms"),
+        "measurement_queries": _rb(edge_eval, "num_real_edges") or 0,
     }
 
     return JSONResponse(content={

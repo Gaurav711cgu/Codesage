@@ -3,6 +3,7 @@ ChromaDB operations — all collection management and document storage/retrieval
 """
 import logging
 from typing import Any
+from urllib.parse import urlparse
 
 import chromadb
 from chromadb.config import Settings as ChromaSettings
@@ -14,13 +15,27 @@ logger = logging.getLogger(__name__)
 # ─── Client singleton ─────────────────────────────────────────────────────────
 
 def _make_client() -> Any:
-    # Use persistent client for Hugging Face Spaces compatibility
     chroma_settings = ChromaSettings(
         anonymized_telemetry=False,
     )
-    # /data is the standard persistent storage path in Hugging Face Spaces
+    if settings.chromadb_url:
+        parsed = urlparse(settings.chromadb_url)
+        if not parsed.hostname:
+            raise ValueError("CHROMADB_URL must be a valid HTTP(S) URL")
+        headers = (
+            {"Authorization": f"Bearer {settings.chroma_auth_token}"}
+            if settings.chroma_auth_token
+            else None
+        )
+        return chromadb.HttpClient(
+            host=parsed.hostname,
+            port=parsed.port or (443 if parsed.scheme == "https" else 80),
+            ssl=parsed.scheme == "https",
+            headers=headers,
+            settings=chroma_settings,
+        )
     return chromadb.PersistentClient(
-        path="/tmp/chroma",
+        path=settings.chroma_persist_directory,
         settings=chroma_settings,
     )
 
@@ -129,6 +144,16 @@ def get_documents_by_ids(
         ids=ids,
         include=["documents", "metadatas"],
     )
+
+
+def get_documents_by_metadata(
+    repo_id: str,
+    suffix: str,
+    where: dict[str, Any],
+) -> dict[str, Any]:
+    """Fetch exact metadata matches without loading an entire collection."""
+    collection = get_or_create_collection(repo_id, suffix)
+    return collection.get(where=where, include=["documents", "metadatas"])
 
 
 def count_documents(repo_id: str, suffix: str) -> int:

@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("CodeSageZ v%s starting up — environment: %s",
                 settings.version, settings.environment)
+    settings.validate_production_config()
     
     # Ensure database tables exist
     try:
@@ -91,9 +92,6 @@ async def health_check():
     except Exception as e:
         checks["chromadb"] = f"error: {e}"
     
-    # Voyage API key presence
-    checks["voyage_api_key"] = "set" if settings.voyage_api_key else "missing"
-    
     # DB ping
     try:
         async with AsyncSessionLocal() as db:
@@ -102,7 +100,7 @@ async def health_check():
     except Exception as e:
         checks["database"] = f"error: {e}"
     
-    status = "ok" if all(v == "ok" or v == "set" for v in checks.values()) else "degraded"
+    status = "ok" if all(v == "ok" for v in checks.values()) else "degraded"
     
     if status == "degraded":
         return JSONResponse(status_code=503, content={"status": status, "version": settings.version, "checks": checks})
@@ -115,5 +113,5 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.exception("Unhandled exception on %s %s", request.method, request.url)
     return JSONResponse(
         status_code=500,
-        content={"data": None, "error": {"code": "INTERNAL_ERROR", "message": str(exc)}},
+        content={"data": None, "error": {"code": "INTERNAL_ERROR", "message": "An internal error occurred."}},
     )

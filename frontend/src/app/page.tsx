@@ -3,7 +3,7 @@ import Link from "next/link";
 
 const TERMINAL_STATS = [
   { label: "retrieval",  value: "graph-augmented"   },
-  { label: "embeddings", value: "text-embedding-004" },
+  { label: "embeddings", value: "local lexical hash" },
   { label: "expansion",  value: "1-hop AST"          },
   { label: "context",    value: "top-8 chunks"       },
 ];
@@ -22,7 +22,7 @@ const PAGES = [
   {
     href: "/benchmarks",
     label: "Benchmarks",
-    desc: "Stratified eval: single-function, cross-file, call-chain. Graph RAG vs naive delta.",
+    desc: "Real call-graph edge recall and retrieval latency from indexed open-source repositories.",
   },
   {
     href: "/architecture",

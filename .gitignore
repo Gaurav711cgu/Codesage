@@ -41,3 +41,8 @@ Thumbs.db
 
 # Temp clone dir
 /tmp/
+
+# Local application state
+backend/app.db
+backend/.chroma/
+.chroma/

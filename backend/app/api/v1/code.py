@@ -130,7 +130,8 @@ Code to review:
 
 
 @router.post("/code/debug", response_model=ApiResponse)
-async def debug_code(body: DebugRequest):
+@limiter.limit("20/minute")
+async def debug_code(request: Request, body: DebugRequest):
     if len(body.code) > 10000:
         _err("CODE_TOO_LONG", "Code exceeds 10,000 character limit")
 
@@ -190,7 +191,8 @@ Return only the JSON object."""
 
 
 @router.post("/code/debug/stream")
-async def debug_code_stream(body: DebugRequest):
+@limiter.limit("20/minute")
+async def debug_code_stream(request: Request, body: DebugRequest):
     if len(body.code) > 10000:
         _err("CODE_TOO_LONG", "Code exceeds 10,000 character limit")
 
@@ -216,7 +218,8 @@ Code:
 
 
 @router.post("/code/tests", response_model=ApiResponse)
-async def generate_tests(body: TestGenRequest):
+@limiter.limit("20/minute")
+async def generate_tests(request: Request, body: TestGenRequest):
     if len(body.code) > 10000:
         _err("CODE_TOO_LONG", "Code exceeds 10,000 character limit")
 

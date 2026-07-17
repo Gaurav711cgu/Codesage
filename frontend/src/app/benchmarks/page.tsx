@@ -66,40 +66,18 @@ export default async function BenchmarksPage() {
     },
   ];
 
-  const ragChartData = rag
-    ? [
-        {
-          category: "single_function",
-          naive:    rag.internal.single_function.naive,
-          graph:    rag.internal.single_function.graph,
-          naiveCiLow:  parseCiBounds(rag.internal.single_function.naive_ci)?.low,
-          naiveCiHigh: parseCiBounds(rag.internal.single_function.naive_ci)?.high,
-          graphCiLow:  parseCiBounds(rag.internal.single_function.graph_ci)?.low,
-          graphCiHigh: parseCiBounds(rag.internal.single_function.graph_ci)?.high,
-        },
-        {
-          category: "cross_file",
-          naive:    rag.internal.cross_file.naive,
-          graph:    rag.internal.cross_file.graph,
-          naiveCiLow:  parseCiBounds(rag.internal.cross_file.naive_ci)?.low,
-          naiveCiHigh: parseCiBounds(rag.internal.cross_file.naive_ci)?.high,
-          graphCiLow:  parseCiBounds(rag.internal.cross_file.graph_ci)?.low,
-          graphCiHigh: parseCiBounds(rag.internal.cross_file.graph_ci)?.high,
-        },
-        {
-          category: "call_chain",
-          naive:    rag.internal.call_chain.naive,
-          graph:    rag.internal.call_chain.graph,
-          naiveCiLow:  parseCiBounds(rag.internal.call_chain.naive_ci)?.low,
-          naiveCiHigh: parseCiBounds(rag.internal.call_chain.naive_ci)?.high,
-          graphCiLow:  parseCiBounds(rag.internal.call_chain.graph_ci)?.low,
-          graphCiHigh: parseCiBounds(rag.internal.call_chain.graph_ci)?.high,
-        },
-      ]
-    : [];
+  const ragChartData = rag ? [{
+    category: "direct_callee",
+    naive: rag.graph_edge.naive,
+    graph: rag.graph_edge.graph,
+    naiveCiLow: parseCiBounds(rag.graph_edge.naive_ci)?.low,
+    naiveCiHigh: parseCiBounds(rag.graph_edge.naive_ci)?.high,
+    graphCiLow: parseCiBounds(rag.graph_edge.graph_ci)?.low,
+    graphCiHigh: parseCiBounds(rag.graph_edge.graph_ci)?.high,
+  }] : [];
 
   const hasFtData  = ft?.primary_metric.base !== null && ft?.primary_metric.base !== undefined;
-  const hasRagData = rag?.internal.cross_file.naive !== null && rag?.internal.cross_file.naive !== undefined;
+  const hasRagData = rag?.graph_edge.naive !== null && rag?.graph_edge.naive !== undefined;
 
   return (
     <div className="max-w-4xl mx-auto py-12 space-y-12">
@@ -108,7 +86,7 @@ export default async function BenchmarksPage() {
       <div className="space-y-2 border-b border-border pb-6">
         <div className="font-mono text-xs text-primary font-medium uppercase tracking-wider">codesagez / benchmarks</div>
         <p className="text-muted-foreground text-xs">
-          Evaluation matrices matching fine-tuning runs, GraphRAG retrieval accuracy, and system ingestion latencies.
+          Reproducible measurements from real indexed repositories and system retrieval latencies.
         </p>
       </div>
 
@@ -180,10 +158,10 @@ export default async function BenchmarksPage() {
       <section className="bg-surface border border-border p-6 rounded-sm">
         <div className="flex items-center gap-2 mb-2">
           <BarChart3 className="w-4 h-4 text-primary" />
-          <h2 className="text-base font-semibold text-foreground m-0">Retrieval Accuracy</h2>
+          <h2 className="text-base font-semibold text-foreground m-0">Call-Graph Retrieval</h2>
         </div>
         <p className="font-mono text-[11px] text-muted-foreground mb-6">
-          60 structural codebase queries (FastAPI, HTTPX, Celery) evaluated across 95% Wilson confidence intervals.
+          Direct-callee recall@8 across {rag?.graph_edge.edges ?? "—"} parsed call-graph edges from FastAPI, HTTPX, and Celery, with 95% Wilson confidence intervals.
           {rag?.eval_date && ` Evaluated ${rag.eval_date}.`}
         </p>
 
@@ -192,7 +170,7 @@ export default async function BenchmarksPage() {
             {hasRagData ? (
               <RagAccuracyChart data={ragChartData} />
             ) : (
-              <PendingChart label="RAG accuracy — internal benchmark" />
+              <PendingChart label="Call-graph retrieval benchmark" />
             )}
           </div>
 
@@ -201,22 +179,18 @@ export default async function BenchmarksPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-border bg-surface-hi">
-                    <th className="py-2.5 px-4 text-[10px] text-muted-foreground font-semibold uppercase tracking-wider font-mono">Category</th>
+                    <th className="py-2.5 px-4 text-[10px] text-muted-foreground font-semibold uppercase tracking-wider font-mono">Metric</th>
                     <th className="py-2.5 px-4 text-[10px] text-muted-foreground font-semibold uppercase tracking-wider font-mono">Naive RAG</th>
                     <th className="py-2.5 px-4 text-[10px] text-primary font-semibold uppercase tracking-wider font-mono">Graph RAG</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rag ? (
-                    <>
-                      <CategoryRow label="Single-function (n=20)" cat={rag.internal.single_function} />
-                      <CategoryRow label="Cross-file (n=20)"      cat={rag.internal.cross_file} />
-                      <CategoryRow label="Call-chain (n=20)"      cat={rag.internal.call_chain} />
-                    </>
+                    <CategoryRow label="Direct callee recall@8" cat={rag.graph_edge} />
                   ) : (
                     <tr>
                       <td colSpan={3} className="py-8 text-center text-xs text-muted-foreground font-mono">
-                        Run benchmarks/run_internal_eval.py to populate results.
+                        Run benchmarks/run_graph_edge_eval.py to populate results.
                       </td>
                     </tr>
                   )}
@@ -225,26 +199,8 @@ export default async function BenchmarksPage() {
             </div>
 
             <div className="bg-surface border border-primary/20 p-5 rounded-sm flex flex-col justify-center">
-              <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono mb-3">
-                RepoBench Recall@10
-              </h3>
-              <div className="space-y-3 font-mono">
-                <div>
-                  <div className="text-[10px] text-muted-foreground mb-0.5">Naive Baseline</div>
-                  <div className="text-lg text-foreground">{fmt(rag?.repobench.naive_recall_at_10 ?? null, "%")}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] text-primary mb-0.5">Graph-Augmented</div>
-                  <div className="text-xl text-primary flex items-baseline gap-2 font-semibold">
-                    {fmt(rag?.repobench.graph_recall_at_10 ?? null, "%")}
-                    {rag?.repobench.delta !== null && rag?.repobench.delta !== undefined && (
-                      <span className="text-[10px] text-success bg-success/10 px-1.5 py-0.5 rounded-sm border border-success/20 font-normal">
-                        +{rag.repobench.delta}pp
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono mb-3">Measurement scope</h3>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">{rag?.graph_edge.description ?? "Awaiting a reproducible benchmark run."}</p>
             </div>
           </div>
         </div>

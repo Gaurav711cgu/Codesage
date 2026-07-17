@@ -68,7 +68,7 @@ export function FineTuningChart({ data, yLabel }: FineTuningChartProps) {
   );
 }
 
-// ─── RAG accuracy chart (stratified 3-category) ──────────────────────────────
+// ─── Graph retrieval chart ───────────────────────────────────────────────────
 
 interface RagCategoryData {
   category: string;
@@ -108,9 +108,7 @@ export function RagAccuracyChart({ data }: RagChartProps) {
   });
 
   const CATEGORY_LABELS: Record<string, string> = {
-    single_function: "Single-fn",
-    cross_file:      "Cross-file",
-    call_chain:      "Call-chain",
+    direct_callee: "Direct callee",
   };
 
   return (

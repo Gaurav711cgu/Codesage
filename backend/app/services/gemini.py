@@ -3,7 +3,6 @@ Single point of contact for all Google AI calls.
 No other module imports google.genai directly.
 """
 import logging
-import time
 from typing import Generator
 
 from google import genai
@@ -13,7 +12,21 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-client = genai.Client(api_key=settings.gemini_api_key)
+_client: genai.Client | None = None
+
+
+def _generation_unavailable() -> str:
+    return "Generation is unavailable because the configured LLM provider could not be reached."
+
+
+def _get_client() -> genai.Client:
+    """Create the Gemini client only when an LLM call actually needs it."""
+    global _client
+    if not settings.gemini_api_key:
+        raise RuntimeError("GEMINI_API_KEY is not configured")
+    if _client is None:
+        _client = genai.Client(api_key=settings.gemini_api_key)
+    return _client
 
 
 # ─── Text generation ──────────────────────────────────────────────────────────
@@ -21,7 +34,7 @@ client = genai.Client(api_key=settings.gemini_api_key)
 def stream_llm(prompt: str) -> Generator[str, None, None]:
     """Stream tokens from Gemini Flash, with local fallback if API fails."""
     try:
-        response = client.models.generate_content_stream(
+        response = _get_client().models.generate_content_stream(
             model="gemini-2.0-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
@@ -39,56 +52,25 @@ def stream_llm(prompt: str) -> Generator[str, None, None]:
             if chunk.text:
                 yield chunk.text
     except Exception as exc:
-        import re
-        logger.warning("Gemini generation failed, using local fallback synthesizer: %s", exc)
-        # Parse the prompt to extract context symbols and the question
-        context_matches = re.findall(r'\[(?:SEED|NEIGHBOR)\]\s+([a-zA-Z_0-9\.\/]+)\s+\(([^)]+)\)', prompt)
-        question_match = re.search(r'=== Question ===\n(.*)', prompt, re.DOTALL)
-        question = question_match.group(1).strip() if question_match else ""
-        
-        fallback_text = f"Local Synthesizer: Retrieved relevant context from repository files.\n"
-        if context_matches:
-            fallback_text += "Found matching symbols:\n"
-            for symbol, file_info in context_matches:
-                # Format: symbol could be function/class, file_info contains filepath and line range
-                fallback_text += f"- Symbol `{symbol}` in file `{file_info}`\n"
-            fallback_text += f"\nThese symbols match the query related to: {question}"
-        else:
-            fallback_text += f"No matching symbols were retrieved for the question: {question}"
-            
-        for word in fallback_text.split(" "):
-            yield word + " "
-            time.sleep(0.01)
+        logger.warning("Gemini generation failed: %s", exc)
+        yield _generation_unavailable()
 
 
 def call_llm(prompt: str) -> str:
     """Single-shot Gemini call, with local fallback if API fails."""
     try:
-        response = client.models.generate_content(
+        response = _get_client().models.generate_content(
             model="gemini-2.0-flash",
             contents=prompt,
         )
         return response.text
     except Exception as exc:
-        import re
-        logger.warning("Gemini generation failed, using local fallback synthesizer: %s", exc)
-        context_matches = re.findall(r'\[(?:SEED|NEIGHBOR)\]\s+([a-zA-Z_0-9\.\/]+)\s+\(([^)]+)\)', prompt)
-        question_match = re.search(r'=== Question ===\n(.*)', prompt, re.DOTALL)
-        question = question_match.group(1).strip() if question_match else ""
-        
-        fallback_text = f"Local Synthesizer: Retrieved relevant context from repository files.\n"
-        if context_matches:
-            fallback_text += "Found matching symbols:\n"
-            for symbol, file_info in context_matches:
-                fallback_text += f"- Symbol `{symbol}` in file `{file_info}`\n"
-            fallback_text += f"\nThese symbols match the query related to: {question}"
-        else:
-            fallback_text += f"No matching symbols were retrieved for the question: {question}"
-        return fallback_text
+        logger.warning("Gemini generation failed: %s", exc)
+        return _generation_unavailable()
 
 
 
-# ─── Embeddings (Gemini) ───────────────────────────────────────────────────
+# ─── Embeddings ─────────────────────────────────────────────────────────────
 
 import hashlib
 import math
@@ -125,57 +107,6 @@ def embed_texts(
     return [local_hash_embed(t) for t in texts]
 
 
-    # --- Gemini Fallback ---
-    logger.info("Using Gemini fallback to embed %d texts", len(texts))
-    all_embeddings = []
-
-    # Group texts into batches to stay under limits
-    batches: list[list[str]] = []
-    current_batch: list[str] = []
-    current_batch_tokens = 0
-
-    for text in texts:
-        text_tokens = len(text) // 3
-        if text_tokens > 10000:
-            text = text[:30000]
-            text_tokens = len(text) // 3
-
-        if len(current_batch) >= 20 or (current_batch_tokens + text_tokens) > 12000:
-            if current_batch:
-                batches.append(current_batch)
-            current_batch = [text]
-            current_batch_tokens = text_tokens
-        else:
-            current_batch.append(text)
-            current_batch_tokens += text_tokens
-
-    if current_batch:
-        batches.append(current_batch)
-
-    for batch_idx, batch in enumerate(batches):
-        for attempt in range(max_retries * 2):
-            try:
-                res = client.models.embed_content(
-                    model="gemini-embedding-001",
-                    contents=batch,
-                )
-                embeddings = [e.values for e in res.embeddings]
-                all_embeddings.extend(embeddings)
-                time.sleep(5.0)
-                break
-            except Exception as exc:
-                if attempt == (max_retries * 2) - 1:
-                    logger.error("Gemini fallback embedding failed: %s", exc)
-                    raise
-                wait = 6 + (2 ** attempt)
-                time.sleep(wait)
-
-    return all_embeddings
-
-
 def embed_query(query: str) -> list[float]:
     """Embed a single query string using local hash embedding."""
     return local_hash_embed(query)
-
-
-

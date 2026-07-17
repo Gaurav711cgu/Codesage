@@ -19,6 +19,6 @@ COPY . .
 # Temp directory for repo clones and data directory for ChromaDB
 RUN mkdir -p /tmp/codesagez /data/chroma && chmod 777 /data /data/chroma
 
-# Two workers: one for long-lived SSE ingestion, one for queries.
-# Port 7860 is the default for Hugging Face Spaces, Render injects $PORT.
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860} --workers 2
+# A single worker is safe with the local development store. Set WEB_CONCURRENCY
+# only when CHROMADB_URL points at a shared persistent Chroma deployment.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860} --workers ${WEB_CONCURRENCY:-1}

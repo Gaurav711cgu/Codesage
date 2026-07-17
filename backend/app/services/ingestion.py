@@ -4,7 +4,7 @@ Ingestion pipeline — 7 stages:
   2. Discover Python files
   3. Tree-sitter parse → CodeUnit objects
   4. Build NetworkX call graph
-  5. Generate embeddings (text-embedding-004)
+  5. Generate local lexical hash embeddings
   6. Store in ChromaDB
   7. Finalise (update DB, cache graph, cleanup)
 
@@ -528,7 +528,7 @@ async def run_ingestion(
                     batch_docs = documents[b_start : b_start + 100]
                     batch_metas = metadatas[b_start : b_start + 100]
                     
-                    # Generate embeddings via Voyage AI
+                    # Generate deterministic local lexical hash embeddings
                     batch_embeddings = await asyncio.to_thread(
                         embed_texts, batch_docs
                     )
@@ -592,4 +592,3 @@ async def run_ingestion(
 
 # Alias for backwards compatibility with tests
 parse_python_file = parse_file
-

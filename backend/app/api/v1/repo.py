@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
+from app.core.database import AsyncSessionLocal, get_db
 from app.models.repo import Repo, Task
 from app.models.schemas import (
     ApiResponse,
@@ -87,10 +87,7 @@ async def ingest_repo(
     await db.refresh(repo)
     await db.refresh(task)
 
-    # Fire-and-forget ingestion in the background.
-    # We need a fresh DB session for the background task — get_db() yields
-    # a context-managed session so we create one directly.
-    from app.core.database import AsyncSessionLocal
+    # Fire-and-forget ingestion in the background with its own DB session.
 
     async def _run():
         try:
@@ -120,7 +117,6 @@ async def ingest_repo(
 @router.get("/repo/ingest/{task_id}/progress")
 async def ingest_progress(
     task_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
 ):
     """
     Server-Sent Events stream for ingestion progress.
@@ -135,14 +131,21 @@ async def ingest_progress(
 
         while timeout_ticks < max_idle_ticks:
             await asyncio.sleep(1)
-            result = await db.execute(
-                select(Task).where(Task.id == task_id)
-            )
-            task = result.scalar_one_or_none()
-            if task is None:
-                yield _sse_event("error", {"code": "TASK_NOT_FOUND",
-                                           "message": f"Task {task_id} not found"})
-                return
+            async with AsyncSessionLocal() as stream_db:
+                result = await stream_db.execute(
+                    select(Task).where(Task.id == task_id)
+                )
+                task = result.scalar_one_or_none()
+                if task is None:
+                    yield _sse_event("error", {"code": "TASK_NOT_FOUND",
+                                               "message": f"Task {task_id} not found"})
+                    return
+                repo = None
+                if task.status in ("complete", "failed"):
+                    repo_result = await stream_db.execute(
+                        select(Repo).where(Repo.id == task.repo_id)
+                    )
+                    repo = repo_result.scalar_one_or_none()
 
             if task.stage != last_stage or task.current_step != last_current:
                 last_stage = task.stage
@@ -150,11 +153,6 @@ async def ingest_progress(
                 timeout_ticks = 0
 
                 if task.status in ("complete", "failed"):
-                    # Fetch repo stats for the complete event
-                    repo_result = await db.execute(
-                        select(Repo).where(Repo.id == task.repo_id)
-                    )
-                    repo = repo_result.scalar_one_or_none()
                     if task.status == "complete" and repo:
                         yield _sse_event("complete", {
                             "repo_id": str(repo.id),
@@ -273,18 +271,17 @@ async def delete_repo(
 async def query_repo(
     request: Request,
     body: QueryRequest,
-    db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Repo).where(Repo.id == body.repo_id))
-    repo = result.scalar_one_or_none()
-    if not repo:
-        _err("REPO_NOT_FOUND", f"Repo {body.repo_id} not found", 404)
-    if repo.status != "complete":
-        _err("REPO_NOT_READY",
-             f"Repo is not ready (status: {repo.status}). Wait for ingestion to complete.",
-             400)
-
-    graph_data_json: str | None = repo.graph_data  # may be None pre-cache
+    async with AsyncSessionLocal() as query_db:
+        result = await query_db.execute(select(Repo).where(Repo.id == body.repo_id))
+        repo = result.scalar_one_or_none()
+        if not repo:
+            _err("REPO_NOT_FOUND", f"Repo {body.repo_id} not found", 404)
+        if repo.status != "complete":
+            _err("REPO_NOT_READY",
+                 f"Repo is not ready (status: {repo.status}). Wait for ingestion to complete.",
+                 400)
+        graph_data_json: str | None = repo.graph_data
 
     async def _stream() -> AsyncGenerator[str, None]:
         import time
@@ -306,10 +303,15 @@ async def query_repo(
 
             # Build prompt from retrieved context
             context_lines: list[str] = []
+            remaining_context = 12_000
             for c in chunks:
+                if remaining_context <= 0:
+                    break
                 tag = "[SEED]" if c.type == "seed" else "[NEIGHBOR]"
+                source = c.content[: min(3_000, remaining_context)]
+                remaining_context -= len(source)
                 context_lines.append(
-                    f"{tag} {c.name}  ({c.file}  L{c.lines[0]}–{c.lines[1]})"
+                    f"{tag} {c.name}  ({c.file}  L{c.lines[0]}–{c.lines[1]})\n{source}"
                 )
             context_str = "\n".join(context_lines)
 
@@ -340,7 +342,7 @@ async def query_repo(
             })
         except Exception as exc:
             logger.error("Error in query stream: %s", exc, exc_info=True)
-            yield _sse_event("error", {"code": "STREAM_ERROR", "message": str(exc)})
+            yield _sse_event("error", {"code": "STREAM_ERROR", "message": "The query could not be completed."})
 
     return StreamingResponse(
         _stream(),

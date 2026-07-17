@@ -1,4 +1,3 @@
-import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,13 +14,12 @@ class Settings(BaseSettings):
     environment: str = "development"
     frontend_url: str = "http://localhost:3000"
 
-    # Gemini & Voyage & Github
+    # Gemini & GitHub
     gemini_api_key: str = ""
-    voyage_api_key: str = ""
     github_token: str = ""
 
-    # Database (Supabase PostgreSQL)
-    database_url: str
+    # Database. Production must override this with PostgreSQL/Supabase.
+    database_url: str = "sqlite+aiosqlite:///./app.db"
 
     @property
     def async_database_url(self) -> str:
@@ -32,7 +30,8 @@ class Settings(BaseSettings):
         return self.database_url
 
     # ChromaDB
-    chromadb_url: str = "http://localhost:8001"
+    chromadb_url: str = ""
+    chroma_persist_directory: str = "./.chroma"
     chroma_auth_token: str = ""
 
     # Ollama
@@ -51,6 +50,17 @@ class Settings(BaseSettings):
         "tests", "test", "venv", ".venv", "__pycache__",
         "migrations", "node_modules", ".git", "dist", "build",
     ]
+
+    def validate_production_config(self) -> None:
+        if self.environment.lower() != "production":
+            return
+        missing: list[str] = []
+        if self.async_database_url.startswith("sqlite"):
+            missing.append("DATABASE_URL (PostgreSQL)")
+        if not self.chromadb_url:
+            missing.append("CHROMADB_URL (persistent Chroma server)")
+        if missing:
+            raise RuntimeError("Production configuration requires " + " and ".join(missing))
 
 
 settings = Settings()

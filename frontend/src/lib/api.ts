@@ -104,16 +104,7 @@ export interface BenchmarkData {
     eval_date: string | null;
   };
   rag: {
-    repobench: {
-      naive_recall_at_10: number | null;
-      graph_recall_at_10: number | null;
-      delta: number | null;
-    };
-    internal: {
-      single_function: CategoryResult;
-      cross_file: CategoryResult;
-      call_chain: CategoryResult;
-    };
+    graph_edge: CategoryResult & { edges: number | null; description: string | null };
     eval_date: string | null;
   };
   ingestion: {

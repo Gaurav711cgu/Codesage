@@ -1,0 +1,1102 @@
+{
+  "eval_date": "2026-07-18",
+  "metric": "direct_callee_recall_at_8",
+  "description": "For each real parsed caller-to-callee edge, retrieve context from a question naming the caller and check whether the actual direct callee appears in the top 8 chunks.",
+  "repos": [
+    "celery",
+    "fastapi",
+    "httpx"
+  ],
+  "num_real_edges": 120,
+  "naive_recall_at_8": 0.0,
+  "naive_recall_at_8_ci": "0.0-3.1",
+  "graph_recall_at_8": 53.3,
+  "graph_recall_at_8_ci": "44.4-62.0",
+  "delta_percentage_points": 53.3,
+  "naive_p50_ms": 2,
+  "naive_p95_ms": 2,
+  "graph_p50_ms": 3,
+  "graph_p95_ms": 3,
+  "raw_results": [
+    {
+      "repo": "fastapi",
+      "source": "_populate_api_route_state",
+      "target": "lenient_issubclass",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 118,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "get_all_paths",
+      "target": "iter_all_lang_paths",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "get_websocket_app",
+      "target": "solve_dependencies",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "APIRouter.__init__",
+      "target": "_wrap_gen_lifespan_context",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "get_openapi_security_definitions",
+      "target": "jsonable_encoder",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "_build_dependant_with_parameterless_dependencies",
+      "target": "_should_embed_body_fields",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "get_current_active_user",
+      "target": "HTTPException",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "_populate_api_route_state",
+      "target": "get_body_field",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "analyze_param",
+      "target": "copy_field_info",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "get_individual_sponsors",
+      "target": "get_graphql_sponsor_edges",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "get_definitions",
+      "target": "_has_computed_fields",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "fake_save_user",
+      "target": "UserInDB",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "check_translation",
+      "target": "extract_code_includes",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "_FrontendRouteGroup.add_frontend_route",
+      "target": "_FrontendRoute",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "analyze_param",
+      "target": "field_annotation_is_scalar_sequence",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "app",
+      "target": "Message",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "http_exception_handler",
+      "target": "Response",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "HTTPBearer403.make_not_authenticated_error",
+      "target": "HTTPException",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "_FrontendRouteGroup._match",
+      "target": "_frontend_path_specificity",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "get_flat_models_from_field",
+      "target": "lenient_issubclass",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "GzipRoute.custom_route_handler",
+      "target": "GzipRequest",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "app",
+      "target": "serialize_response",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "get_request_handler",
+      "target": "Response",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "verify_token",
+      "target": "HTTPException",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "_FrontendRouteGroup._match",
+      "target": "_join_frontend_paths",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "check_translation",
+      "target": "replace_code_includes_with_placeholders",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "analyze_param",
+      "target": "lenient_issubclass",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "authenticate_user",
+      "target": "get_user",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "get_openapi_operation_request_body",
+      "target": "jsonable_encoder",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "iter_all_en_paths",
+      "target": "Path",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "_get_openapi_operation_parameters",
+      "target": "get_schema_from_model_field",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "get_token_header",
+      "target": "HTTPException",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "OAuth2AuthorizationCodeBearer.__call__",
+      "target": "get_authorization_scheme_param",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "analyze_param",
+      "target": "ensure_multipart_is_installed",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "APIRoute.__init__",
+      "target": "_populate_api_route_state",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "stage_zensical_docs",
+      "target": "get_zensical_theme_language",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "is_bytes_or_nonable_bytes_annotation",
+      "target": "lenient_issubclass",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "app",
+      "target": "_extract_endpoint_context",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "get_openapi_path",
+      "target": "get_openapi_security_definitions",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "fastapi",
+      "source": "jsonable_encoder",
+      "target": "is_pydantic_v1_model_instance",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "AsyncClient.delete",
+      "target": "request",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 24,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "Headers.copy",
+      "target": "Headers",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "GZipDecoder.decode",
+      "target": "DecodingError",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "QueryParams.get_list",
+      "target": "get",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "encode_text",
+      "target": "ByteStream",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "QueryParams.remove",
+      "target": "QueryParams",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "DigestAuth._resolve_qop",
+      "target": "ProtocolError",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "Response.iter_raw",
+      "target": "StreamClosed",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "AsyncClient._init_transport",
+      "target": "AsyncHTTPTransport",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "ASGITransport.handle_async_request",
+      "target": "create_event",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "DeflateDecoder.decode",
+      "target": "DecodingError",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "AsyncHTTPTransport.handle_async_request",
+      "target": "Response",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "DigestAuth._parse_challenge",
+      "target": "ProtocolError",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "AsyncHTTPTransport.handle_async_request",
+      "target": "URL",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "Client._send_handling_redirects",
+      "target": "TooManyRedirects",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "trace",
+      "target": "print_request_headers",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "get_environment_proxies",
+      "target": "is_ipv6_hostname",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "BaseClient._merge_cookies",
+      "target": "Cookies",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "Request.__init__",
+      "target": "Headers",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "BaseClient._redirect_url",
+      "target": "RemoteProtocolError",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "normalize_port",
+      "target": "InvalidURL",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "Client._init_transport",
+      "target": "HTTPTransport",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "Client._init_proxy_transport",
+      "target": "HTTPTransport",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "ZStandardDecoder.flush",
+      "target": "DecodingError",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "Headers.__init__",
+      "target": "_normalize_header_value",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "urlparse",
+      "target": "get",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "AsyncHTTPTransport.__init__",
+      "target": "Proxy",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "BaseClient._redirect_headers",
+      "target": "Headers",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "Response._get_content_decoder",
+      "target": "MultiDecoder",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "Client.post",
+      "target": "request",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "urlparse",
+      "target": "ParseResult",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "WSGITransport.handle_request",
+      "target": "Response",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "trace",
+      "target": "format_certificate",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "AsyncClient._init_proxy_transport",
+      "target": "AsyncHTTPTransport",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "Response.aiter_bytes",
+      "target": "ByteChunker",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "post",
+      "target": "request",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "FileField.render_data",
+      "target": "to_bytes",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "Client.patch",
+      "target": "request",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "Client.options",
+      "target": "request",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "httpx",
+      "source": "BaseClient._merge_queryparams",
+      "target": "QueryParams",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_crontab_parser.test_parse_composite",
+      "target": "crontab_parser",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 65,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "Celery.__init__",
+      "target": "Signal",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_App.test_task_with_pydantic_with_non_strict_validation",
+      "target": "Model",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_saferepr.test_recursion",
+      "target": "saferepr",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_WorkController.test_process_task_raise_WorkerTerminate",
+      "target": "WorkerTerminate",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_regen.test_lookahead_consume",
+      "target": "regen",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_default_strategy_proto2.test_when_events_disabled",
+      "target": "C",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "CursesMonitor.alert",
+      "target": "callback",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "_reprtask",
+      "target": "appstr",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_Task.test_ready",
+      "target": "Task",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_group.test_group_child_with_callback_replaced",
+      "target": "get_redis_connection",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_move_by_taskmap",
+      "target": "move_by_taskmap",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_solo_TaskPool.test_info",
+      "target": "TaskPool",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_EventDispatcher.test_send_buffer_group",
+      "target": "MockProducer",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_get_exchange_default_type",
+      "target": "get_exchange",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "TaskPool.on_start",
+      "target": "Pool",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_ControlPanel.test_pool_grow",
+      "target": "MockPool",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_State.test_task_logical_clock_ordering",
+      "target": "State",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_saferepr.test_numbers_dict",
+      "target": "saferepr",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_trace.test_deduplicate_successful_tasks__root_id_fallback",
+      "target": "CacheBackend",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_MapRoute.test_route_for_task",
+      "target": "expand",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_asynloop.test_hub_timer_cleared_on_connection_error",
+      "target": "asynloop",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_RedisBackend_chords_simple.test_on_chord_part_return__ChordError__unordered",
+      "target": "raise_on_second_call",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_parse_iso8601_deprecation_warning",
+      "target": "parse_iso8601",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "memdump",
+      "target": "_memdump",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "CLIContext.pretty_dict_ok_error",
+      "target": "indent",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_stackprotection.test_stackprotection",
+      "target": "reset_worker_optimizations",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 3,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_synloop.test_no_heartbeat_support",
+      "target": "synloop",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_schedule.test_maybe_make_aware",
+      "target": "maybe_make_aware",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "Beat.set_process_title",
+      "target": "set_process_title",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_trace.test_deduplicate_successful_tasks__backend_dedup_memory_error_propagates",
+      "target": "trace",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "Request.execute_using_pool",
+      "target": "TaskRevokedError",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "extras_require",
+      "target": "extras",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "get_optional_arg",
+      "target": "is_none_type",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_Tasks.test_qos_global_worker_detect_quorum_queues_true_no_quorum_queues",
+      "target": "Tasks",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_asynloop.test_poll_err_writable",
+      "target": "asynloop",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_Gossip.setup_election",
+      "target": "Event",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "Audit.feed",
+      "target": "task_ready",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "DatabaseBackend.__init__",
+      "target": "ImproperlyConfigured",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 3
+    },
+    {
+      "repo": "celery",
+      "source": "test_trace.test_when_chord_part",
+      "target": "trace",
+      "naive_hit_at_8": 0,
+      "naive_latency_ms": 2,
+      "graph_hit_at_8": 1,
+      "graph_latency_ms": 3
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Any, Literal
-from pydantic import BaseModel, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 
 # ─── Generic response envelope ───────────────────────────────────────────────
@@ -78,6 +78,7 @@ class RetrievedChunk(BaseModel):
     lines: list[int]
     type: Literal["seed", "neighbor"]
     score: float
+    content: str = Field(default="", exclude=True)
 
 
 class RetrievalDoneEvent(BaseModel):

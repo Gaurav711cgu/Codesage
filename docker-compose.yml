@@ -14,6 +14,7 @@ services:
       - OLLAMA_URL=http://host.docker.internal:11434
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - ENVIRONMENT=${ENVIRONMENT:-development}
+      - REDIS_URL=${REDIS_URL:-}
     depends_on:
       - chromadb
     volumes:

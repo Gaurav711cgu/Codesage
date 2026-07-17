@@ -66,6 +66,21 @@ def test_parse_chroma_similarity_conversion():
     assert abs(chunks[1].vector_sim - 0.5) < 1e-6
 
 
+def test_parse_chroma_preserves_source_for_grounded_generation():
+    chunks = _parse_chroma_results(_MOCK_RESULT, "seed")
+    assert chunks[0].content == "doc1"
+
+
+def test_retrieved_source_is_not_exposed_in_sse_metadata():
+    from app.models.schemas import RetrievedChunk
+
+    chunk = RetrievedChunk(
+        name="func_a", file="a.py", lines=[1, 10], type="seed", score=0.9,
+        content="def func_a(): pass",
+    )
+    assert "content" not in chunk.model_dump()
+
+
 def test_parse_chroma_chunk_type():
     seeds = _parse_chroma_results(_MOCK_RESULT, "seed")
     assert all(c.chunk_type == "seed" for c in seeds)

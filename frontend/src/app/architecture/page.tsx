@@ -9,7 +9,7 @@ const PIPELINE_STAGES = [
   { icon: FileCode2, title: "2. Parse AST", desc: "Tree-sitter extracts function boundaries, classes, and all identifiers." },
   { icon: Network, title: "3. Call Graph", desc: "NetworkX builds a directed graph connecting callers to callees." },
   { icon: Database, title: "4. Chunking", desc: "Functions are embedded as discrete chunks to maintain semantic integrity." },
-  { icon: BrainCircuit, title: "5. Embedding", desc: "text-embedding-004 encodes each chunk into a high-dimensional vector space." },
+  { icon: BrainCircuit, title: "5. Embedding", desc: "A deterministic lexical hash encoder turns each chunk into a normalized vector for reproducible local retrieval." },
   { icon: Database, title: "6. Vector Store", desc: "ChromaDB stores embeddings with graph metadata attached to each document." },
   { icon: Search, title: "7. Graph RAG", desc: "At query time, vector hits are expanded by 1-hop using graph edges." },
 ];
