@@ -1,3 +1,4 @@
+import React from "react";
 import { api } from "@/lib/api";
 import type { BenchmarkData, CategoryResult } from "@/lib/api";
 import { FineTuningChart, RagAccuracyChart, PendingChart } from "@/components/BenchmarkChart";
@@ -6,8 +7,8 @@ import { Activity, BarChart3, Clock, Zap } from "lucide-react";
 // Next.js ISR — revalidate every 10 minutes
 export const revalidate = 600;
 
-function fmt(v: number | null, suffix = ""): string {
-  return v !== null ? `${v}${suffix}` : "—";
+function fmt(v: number | null, suffix = ""): React.ReactNode {
+  return v !== null ? `${v}${suffix}` : <span className="chip">awaiting eval run</span>;
 }
 
 function parseCiBounds(ci: string | null): { low: number; high: number } | null {
@@ -24,17 +25,17 @@ function CategoryRow({
   cat: CategoryResult;
 }) {
   return (
-    <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-      <td className="py-3 px-4 text-sm text-muted-foreground">{label}</td>
-      <td className="py-3 px-4 text-sm text-foreground font-mono">
+    <tr className="border-b border-border/50 hover:bg-surface-hi transition-colors">
+      <td className="py-3 px-4 text-xs text-muted-foreground">{label}</td>
+      <td className="py-3 px-4 text-xs text-foreground font-mono">
         {cat.naive !== null
           ? `${cat.naive}% [${cat.naive_ci ?? "—"}]`
-          : <span className="text-muted-foreground italic text-xs bg-white/5 px-2 py-1 rounded-md">pending</span>}
+          : <span className="chip">awaiting eval run</span>}
       </td>
-      <td className="py-3 px-4 text-sm text-secondary font-mono">
+      <td className="py-3 px-4 text-xs text-primary font-mono">
         {cat.graph !== null
           ? `${cat.graph}% [${cat.graph_ci ?? "—"}]`
-          : <span className="text-muted-foreground italic text-xs bg-white/5 px-2 py-1 rounded-md">pending</span>}
+          : <span className="chip">awaiting eval run</span>}
       </td>
     </tr>
   );
@@ -97,49 +98,45 @@ export default async function BenchmarksPage() {
       ]
     : [];
 
-  const hasFtData  = ft?.primary_metric.base !== null;
-  const hasRagData = rag?.internal.cross_file.naive !== null;
+  const hasFtData  = ft?.primary_metric.base !== null && ft?.primary_metric.base !== undefined;
+  const hasRagData = rag?.internal.cross_file.naive !== null && rag?.internal.cross_file.naive !== undefined;
 
   return (
-    <div className="max-w-6xl mx-auto py-16 space-y-16">
+    <div className="max-w-4xl mx-auto py-12 space-y-12">
 
       {/* Page Header */}
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight text-foreground">
-          System <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Benchmarks</span>
-        </h1>
-        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Comprehensive performance evaluation across model fine-tuning, RAG accuracy, and system latencies.
+      <div className="space-y-2 border-b border-border pb-6">
+        <div className="font-mono text-xs text-primary font-medium uppercase tracking-wider">codesagez / benchmarks</div>
+        <p className="text-muted-foreground text-xs">
+          Evaluation matrices matching fine-tuning runs, GraphRAG retrieval accuracy, and system ingestion latencies.
         </p>
       </div>
 
       {/* Fine-tuning */}
-      <section className="glass rounded-3xl p-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-primary/20 rounded-lg">
-            <Activity className="w-5 h-5 text-primary" />
-          </div>
-          <h2 className="text-2xl font-semibold text-foreground">Fine-tuning results</h2>
+      <section className="bg-surface border border-border p-6 rounded-sm">
+        <div className="flex items-center gap-2 mb-2">
+          <Activity className="w-4 h-4 text-primary" />
+          <h2 className="text-base font-semibold text-foreground m-0">Fine-tuning Results</h2>
         </div>
-        <p className="text-sm text-muted-foreground mb-8 ml-11">
+        <p className="font-mono text-[11px] text-muted-foreground mb-6">
           Model: <span className="text-foreground">{ft?.model ?? "Qwen2.5-Coder-1.5B-Instruct"}</span> ·{" "}
           <span className="text-foreground">{ft?.training_samples ?? 8000}</span> training samples ·{" "}
           <span className="text-foreground">{ft?.epochs ?? "—"}</span> epochs
           {ft?.eval_date && ` · Evaluated ${ft.eval_date}`}
         </p>
 
-        <div className="grid md:grid-cols-2 gap-8 ml-11">
-          <div className="bg-background/40 p-6 rounded-2xl border border-white/5">
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-background p-5 border border-border rounded-sm">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-base font-medium text-foreground">CodeBLEU <span className="text-muted-foreground text-sm font-normal">(Primary metric)</span></p>
+              <p className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">CodeBLEU <span className="text-muted-foreground text-[10px] font-normal lowercase">(primary)</span></p>
               {ft?.primary_metric.delta !== null && ft?.primary_metric.delta !== undefined && (
-                <div className="px-2 py-1 bg-green-500/10 text-green-400 text-xs font-mono rounded-md border border-green-500/20 flex items-center gap-1">
+                <div className="px-2 py-0.5 bg-success/10 text-success text-[10px] font-mono rounded-sm border border-success/20">
                   Δ +{ft.primary_metric.delta} pts
                 </div>
               )}
             </div>
             
-            <div className="h-64 mb-4">
+            <div className="h-48 mb-4">
               {hasFtData ? (
                 <FineTuningChart data={ftChartData} yLabel="CodeBLEU" />
               ) : (
@@ -147,19 +144,17 @@ export default async function BenchmarksPage() {
               )}
             </div>
             
-            <p className="text-xs text-muted-foreground leading-relaxed bg-white/5 p-3 rounded-lg border border-white/5">
-              CodeBLEU measures how well the model&apos;s generated bug fix matches
-              the reference fix across four dimensions: token match, AST structure
-              match, data flow match, and code keyword match.
+            <p className="text-[11px] text-muted-foreground leading-relaxed bg-surface p-3 border border-border rounded-sm">
+              Measures how well generated fixes align with ground truth references across syntax structures, keywords, and data flows.
             </p>
           </div>
 
-          <div className="bg-background/40 p-6 rounded-2xl border border-white/5">
+          <div className="bg-background p-5 border border-border rounded-sm">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-base font-medium text-foreground">HumanEval Pass@1 <span className="text-muted-foreground text-sm font-normal">(Forgetting check)</span></p>
+              <p className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">HumanEval Pass@1 <span className="text-muted-foreground text-[10px] font-normal lowercase">(forgetting check)</span></p>
             </div>
             
-            <div className="h-64 mb-4">
+            <div className="h-48 mb-4">
               {ft?.secondary_metric.base !== null && ft?.secondary_metric.base !== undefined ? (
                 <FineTuningChart data={heChartData} yLabel="Pass@1 (%)" />
               ) : (
@@ -168,13 +163,11 @@ export default async function BenchmarksPage() {
             </div>
             
             <div className="space-y-2">
-              <p className="text-xs text-muted-foreground leading-relaxed bg-white/5 p-3 rounded-lg border border-white/5">
-                HumanEval measures general code completion ability. We use it as a
-                catastrophic forgetting check — a small regression is expected since
-                our training data focuses on surgical bug fixes.
+              <p className="text-[11px] text-muted-foreground leading-relaxed bg-surface p-3 border border-border rounded-sm">
+                Surgical bug-fix fine-tuning can cause catastrophic forgetting. We measure general completion Pass@1 to watch regressions.
               </p>
               {ft?.secondary_metric.interpretation && (
-                <p className="text-xs text-secondary italic px-1">
+                <p className="text-[11px] text-primary italic px-1 font-mono">
                   {ft.secondary_metric.interpretation}
                 </p>
               )}
@@ -184,22 +177,18 @@ export default async function BenchmarksPage() {
       </section>
 
       {/* RAG accuracy */}
-      <section className="glass rounded-3xl p-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-secondary/20 rounded-lg">
-            <BarChart3 className="w-5 h-5 text-secondary" />
-          </div>
-          <h2 className="text-2xl font-semibold text-foreground">RAG Accuracy</h2>
+      <section className="bg-surface border border-border p-6 rounded-sm">
+        <div className="flex items-center gap-2 mb-2">
+          <BarChart3 className="w-4 h-4 text-primary" />
+          <h2 className="text-base font-semibold text-foreground m-0">Retrieval Accuracy</h2>
         </div>
-        <p className="text-sm text-muted-foreground mb-8 ml-11">
-          60 questions across FastAPI, HTTPX, Celery — stratified into
-          single-function, cross-file, and call-chain categories.
-          Error bars show 95% Wilson confidence intervals.
+        <p className="font-mono text-[11px] text-muted-foreground mb-6">
+          60 structural codebase queries (FastAPI, HTTPX, Celery) evaluated across 95% Wilson confidence intervals.
           {rag?.eval_date && ` Evaluated ${rag.eval_date}.`}
         </p>
 
-        <div className="ml-11 space-y-8">
-          <div className="h-80 w-full bg-background/40 p-6 rounded-2xl border border-white/5">
+        <div className="space-y-6">
+          <div className="h-64 w-full bg-background p-5 border border-border rounded-sm">
             {hasRagData ? (
               <RagAccuracyChart data={ragChartData} />
             ) : (
@@ -208,43 +197,49 @@ export default async function BenchmarksPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 overflow-hidden bg-background/40 rounded-2xl border border-white/5">
+            <div className="md:col-span-2 overflow-hidden bg-background border border-border rounded-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-white/10 bg-white/[0.02]">
-                    <th className="py-3 px-4 text-xs text-muted-foreground font-semibold uppercase tracking-wider">Category</th>
-                    <th className="py-3 px-4 text-xs text-muted-foreground font-semibold uppercase tracking-wider">Naive RAG</th>
-                    <th className="py-3 px-4 text-xs text-secondary font-semibold uppercase tracking-wider">Graph RAG</th>
+                  <tr className="border-b border-border bg-surface-hi">
+                    <th className="py-2.5 px-4 text-[10px] text-muted-foreground font-semibold uppercase tracking-wider font-mono">Category</th>
+                    <th className="py-2.5 px-4 text-[10px] text-muted-foreground font-semibold uppercase tracking-wider font-mono">Naive RAG</th>
+                    <th className="py-2.5 px-4 text-[10px] text-primary font-semibold uppercase tracking-wider font-mono">Graph RAG</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rag && (
+                  {rag ? (
                     <>
                       <CategoryRow label="Single-function (n=20)" cat={rag.internal.single_function} />
                       <CategoryRow label="Cross-file (n=20)"      cat={rag.internal.cross_file} />
                       <CategoryRow label="Call-chain (n=20)"      cat={rag.internal.call_chain} />
                     </>
+                  ) : (
+                    <tr>
+                      <td colSpan={3} className="py-8 text-center text-xs text-muted-foreground font-mono">
+                        Run benchmarks/run_internal_eval.py to populate results.
+                      </td>
+                    </tr>
                   )}
                 </tbody>
               </table>
             </div>
 
-            <div className="bg-gradient-to-br from-primary/10 to-secondary/10 p-6 rounded-2xl border border-white/10 flex flex-col justify-center">
-              <h3 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                RepoBench-R Recall@10
+            <div className="bg-surface border border-primary/20 p-5 rounded-sm flex flex-col justify-center">
+              <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono mb-3">
+                RepoBench Recall@10
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-3 font-mono">
                 <div>
-                  <div className="text-xs text-muted-foreground mb-1">Naive Baseline</div>
-                  <div className="text-2xl font-mono">{fmt(rag?.repobench.naive_recall_at_10 ?? null, "%")}</div>
+                  <div className="text-[10px] text-muted-foreground mb-0.5">Naive Baseline</div>
+                  <div className="text-lg text-foreground">{fmt(rag?.repobench.naive_recall_at_10 ?? null, "%")}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-secondary mb-1">Graph-Augmented</div>
-                  <div className="text-3xl font-mono text-secondary flex items-baseline gap-2">
+                  <div className="text-[10px] text-primary mb-0.5">Graph-Augmented</div>
+                  <div className="text-xl text-primary flex items-baseline gap-2 font-semibold">
                     {fmt(rag?.repobench.graph_recall_at_10 ?? null, "%")}
                     {rag?.repobench.delta !== null && rag?.repobench.delta !== undefined && (
-                      <span className="text-sm text-green-400 bg-green-500/10 px-2 py-0.5 rounded-md">
-                        Δ +{rag.repobench.delta}pp
+                      <span className="text-[10px] text-success bg-success/10 px-1.5 py-0.5 rounded-sm border border-success/20 font-normal">
+                        +{rag.repobench.delta}pp
                       </span>
                     )}
                   </div>
@@ -257,33 +252,26 @@ export default async function BenchmarksPage() {
 
       {/* System performance */}
       <section className="grid md:grid-cols-2 gap-6">
-        <div className="glass rounded-3xl p-8 relative overflow-hidden group">
-          <div className="absolute -right-6 -top-6 text-primary/5 group-hover:scale-110 transition-transform duration-500 pointer-events-none">
-            <Zap className="w-48 h-48" />
-          </div>
-          <div className="flex items-center gap-3 mb-6 relative z-10">
-            <div className="p-2 bg-primary/20 rounded-lg">
-              <Zap className="w-5 h-5 text-primary" />
-            </div>
-            <h2 className="text-xl font-semibold text-foreground">Ingestion Speed</h2>
+        <div className="bg-surface border border-border p-6 rounded-sm relative overflow-hidden">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-semibold text-foreground m-0">Ingestion Throughput</h2>
           </div>
           
-          <div className="bg-background/40 p-6 rounded-2xl border border-white/5 relative z-10">
-            <p className="text-sm text-muted-foreground mb-2">Average time to index 50K LOC</p>
-            <div className="flex items-baseline gap-2">
-              <p className="text-5xl font-mono font-semibold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-                {fmt(ing?.avg_seconds_50k_loc ?? null, "s")}
-              </p>
+          <div className="bg-background p-5 border border-border rounded-sm">
+            <p className="text-xs text-muted-foreground mb-1">Average time to index 50K LOC</p>
+            <div className="flex items-baseline gap-2 font-mono text-3xl font-semibold text-primary">
+              {fmt(ing?.avg_seconds_50k_loc ?? null, "s")}
             </div>
             
-            <div className="mt-6 pt-6 border-t border-white/5 grid grid-cols-2 gap-4">
+            <div className="mt-5 pt-5 border-t border-border grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">p95 Latency</p>
-                <p className="text-lg font-mono text-foreground">{fmt(ing?.p95_seconds_50k_loc ?? null, "s")}</p>
+                <p className="text-[10px] text-muted-foreground mb-0.5 uppercase tracking-wider font-mono">p95 Latency</p>
+                <p className="text-sm font-mono text-foreground">{fmt(ing?.p95_seconds_50k_loc ?? null, "s")}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Test Set</p>
-                <p className="text-sm text-foreground truncate" title={ing?.test_repos.join(", ") ?? "fastapi, httpx, celery"}>
+                <p className="text-[10px] text-muted-foreground mb-0.5 uppercase tracking-wider font-mono">Test Set</p>
+                <p className="text-xs text-foreground truncate font-mono" title={ing?.test_repos.join(", ") ?? "fastapi, httpx, celery"}>
                   {ing?.test_repos.join(", ") ?? "fastapi, httpx, celery"}
                 </p>
               </div>
@@ -291,42 +279,37 @@ export default async function BenchmarksPage() {
           </div>
         </div>
 
-        <div className="glass rounded-3xl p-8 relative overflow-hidden group">
-          <div className="absolute -right-6 -top-6 text-secondary/5 group-hover:scale-110 transition-transform duration-500 pointer-events-none">
-            <Clock className="w-48 h-48" />
-          </div>
-          <div className="flex items-center gap-3 mb-6 relative z-10">
-            <div className="p-2 bg-secondary/20 rounded-lg">
-              <Clock className="w-5 h-5 text-secondary" />
-            </div>
-            <h2 className="text-xl font-semibold text-foreground">Retrieval Latency</h2>
+        <div className="bg-surface border border-border p-6 rounded-sm relative overflow-hidden">
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-semibold text-foreground m-0">Retrieval Latency</h2>
           </div>
           
-          <div className="space-y-4 relative z-10">
-            <div className="bg-background/40 p-5 rounded-2xl border border-white/5 flex justify-between items-center">
+          <div className="space-y-4">
+            <div className="bg-background p-4 border border-border rounded-sm flex justify-between items-center">
               <div>
-                <h3 className="text-sm font-medium text-foreground">Naive RAG</h3>
-                <p className="text-xs text-muted-foreground">Standard vector search</p>
+                <h3 className="text-xs font-semibold text-foreground font-mono">Naive RAG</h3>
+                <p className="text-[10px] text-muted-foreground">Standard vector search</p>
               </div>
-              <div className="text-right">
-                <div className="text-lg font-mono text-foreground">{fmt(ret?.naive_p50_ms ?? null, "ms")} <span className="text-xs text-muted-foreground font-sans">p50</span></div>
-                <div className="text-sm font-mono text-muted-foreground">{fmt(ret?.naive_p95_ms ?? null, "ms")} <span className="text-xs font-sans">p95</span></div>
+              <div className="text-right font-mono">
+                <div className="text-sm text-foreground">{fmt(ret?.naive_p50_ms ?? null, "ms")} <span className="text-[10px] text-muted-foreground font-sans">p50</span></div>
+                <div className="text-xs text-muted-foreground">{fmt(ret?.naive_p95_ms ?? null, "ms")} <span className="text-[10px] font-sans">p95</span></div>
               </div>
             </div>
 
-            <div className="bg-primary/5 p-5 rounded-2xl border border-primary/20 flex justify-between items-center">
+            <div className="bg-primary/5 p-4 border border-primary/20 rounded-sm flex justify-between items-center">
               <div>
-                <h3 className="text-sm font-medium text-primary">Graph RAG</h3>
-                <p className="text-xs text-muted-foreground">Vector + 1-hop expansion</p>
+                <h3 className="text-xs font-semibold text-primary font-mono">Graph RAG</h3>
+                <p className="text-[10px] text-muted-foreground">Vector + 1-hop expansion</p>
               </div>
-              <div className="text-right">
-                <div className="text-lg font-mono text-primary">{fmt(ret?.graph_p50_ms ?? null, "ms")} <span className="text-xs text-muted-foreground font-sans">p50</span></div>
-                <div className="text-sm font-mono text-muted-foreground">{fmt(ret?.graph_p95_ms ?? null, "ms")} <span className="text-xs font-sans">p95</span></div>
+              <div className="text-right font-mono">
+                <div className="text-sm text-primary">{fmt(ret?.graph_p50_ms ?? null, "ms")} <span className="text-[10px] text-muted-foreground font-sans">p50</span></div>
+                <div className="text-xs text-muted-foreground">{fmt(ret?.graph_p95_ms ?? null, "ms")} <span className="text-[10px] font-sans">p95</span></div>
               </div>
             </div>
 
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              Measured over {ret?.measurement_queries ?? 100} automated queries
+            <p className="text-[10px] text-muted-foreground text-center mt-2 font-mono">
+              Measured over {ret?.measurement_queries ?? 100} queries
             </p>
           </div>
         </div>

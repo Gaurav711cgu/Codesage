@@ -1,7 +1,8 @@
+// frontend/src/app/repos/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Trash2, MessageSquare, Loader2, Send, AlertCircle, Github, Database, Search, BrainCircuit } from "lucide-react";
+import { Trash2, Loader2, Send, AlertCircle, Github, Database, BrainCircuit } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { api } from "@/lib/api";
 import type { Repo, RetrievedChunk } from "@/lib/api";
@@ -11,7 +12,6 @@ import IngestionProgress from "@/components/IngestionProgress";
 import RetrievalAccordion from "@/components/RetrievalAccordion";
 import StreamingOutput from "@/components/StreamingOutput";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface IngestionState {
   taskId: string;
@@ -31,8 +31,6 @@ interface ChatMessage {
   latency_ms?: number;
   streaming?: boolean;
 }
-
-const SESSION_ID = uuidv4();
 
 export default function ReposPage() {
   const [githubUrl, setGithubUrl]       = useState("");
@@ -70,7 +68,7 @@ export default function ReposPage() {
   const handleIngest = async () => {
     const url = githubUrl.trim();
     if (!validateUrl(url)) {
-      setUrlError("Must be https://github.com/owner/repo");
+      setUrlError("Invalid URL: must be https://github.com/owner/repo");
       return;
     }
     setUrlError("");
@@ -78,7 +76,7 @@ export default function ReposPage() {
 
     const res = await api.ingestRepo(url);
     if (res.error || !res.data) {
-      setUrlError(res.error?.message ?? "Ingestion request failed");
+      setUrlError(res.error?.message ?? "Ingestion failed");
       setIngesting(false);
       return;
     }
@@ -184,47 +182,27 @@ export default function ReposPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-10 space-y-8">
-      {/* Page Header */}
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center space-y-4"
-      >
-        <h1 className="text-4xl font-bold tracking-tight text-foreground">
-          Repository <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Dashboard</span>
-        </h1>
-        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Ingest GitHub repositories, process their ASTs, and chat with them using graph-augmented retrieval.
-        </p>
-      </motion.div>
+    <div className="max-w-[1400px] mx-auto py-10 space-y-6">
+      
+      {/* breadcrumb bar header */}
+      <div className="flex items-center justify-between border-b border-border pb-4">
+        <div className="font-mono text-xs text-primary font-medium uppercase tracking-wider">codesagez / repos</div>
+      </div>
 
       {/* Ingest section */}
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="glass-card p-6 rounded-3xl"
-      >
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+      <div className="bg-surface border border-border p-5 rounded-sm">
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="flex-1 w-full relative">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-              <Github className="w-5 h-5 text-muted-foreground" />
-            </div>
             <input
               type="url"
               value={githubUrl}
               onChange={(e) => { setGithubUrl(e.target.value); setUrlError(""); }}
               placeholder="https://github.com/owner/repo"
-              className={cn(
-                "w-full pl-12 pr-4 py-4 rounded-xl bg-background/50 border text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-inner",
-                urlError ? "border-red-500/50 focus:ring-red-500/50" : "border-white/10"
-              )}
+              className="input-field"
               aria-label="GitHub repository URL"
-              aria-describedby={urlError ? "url-error" : undefined}
             />
             {urlError && (
-              <p id="url-error" className="absolute -bottom-6 left-2 text-xs text-red-400 mt-1 flex items-center gap-1">
+              <p className="text-[11px] text-destructive mt-1.5 flex items-center gap-1 font-mono">
                 <AlertCircle className="h-3 w-3" /> {urlError}
               </p>
             )}
@@ -232,320 +210,266 @@ export default function ReposPage() {
           <button
             onClick={handleIngest}
             disabled={ingesting || !githubUrl}
-            className={cn(
-              "px-8 py-4 rounded-xl text-base font-semibold flex items-center justify-center gap-2 transition-all w-full md:w-auto shadow-lg",
-              ingesting || !githubUrl
-                ? "bg-white/5 text-white/40 cursor-not-allowed border border-white/5"
-                : "bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 hover:scale-[1.02] border border-white/10"
-            )}
+            className="btn-primary flex items-center justify-center gap-1.5 min-w-[110px]"
           >
-            {ingesting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Database className="h-5 w-5" />}
-            {ingesting ? "Ingesting..." : "Index Repository"}
+            {ingesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Database className="h-3.5 w-3.5" />}
+            {ingesting ? "Indexing" : "Index"}
           </button>
         </div>
 
-        <AnimatePresence>
-          {ingestionState && (
-            <motion.div
-              initial={{ opacity: 0, height: 0, marginTop: 0 }}
-              animate={{ opacity: 1, height: "auto", marginTop: 24 }}
-              exit={{ opacity: 0, height: 0, marginTop: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="bg-background/40 p-4 rounded-2xl border border-white/5">
-                <IngestionProgress
-                  stage={ingestionState.stage}
-                  current={ingestionState.current}
-                  total={ingestionState.total}
-                  message={ingestionState.message}
-                  status={ingestionState.status}
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+        {ingestionState && (
+          <div className="mt-4 bg-background p-4 border border-border rounded-sm">
+            <IngestionProgress
+              stage={ingestionState.stage}
+              current={ingestionState.current}
+              total={ingestionState.total}
+              message={ingestionState.message}
+              status={ingestionState.status}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Repos list + chat */}
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[700px]"
-      >
-        {/* Repo list */}
-        <div className="lg:col-span-4 glass rounded-3xl overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-white/5 bg-white/[0.02]">
-            <h2 className="font-semibold flex items-center gap-2">
-              <Database className="w-5 h-5 text-secondary" />
-              Indexed Repos
-            </h2>
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[640px]">
+        {/* Repo list sidebar */}
+        <div className="md:col-span-4 bg-surface border border-border rounded-sm overflow-hidden flex flex-col">
+          <div className="px-5 py-3 border-b border-border bg-surface-hi flex items-center gap-2">
+            <Database className="w-4 h-4 text-primary" />
+            <span className="font-mono text-xs font-semibold text-foreground uppercase tracking-wider">Repositories</span>
           </div>
           
           <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
             {repos.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-3">
-                <Search className="w-10 h-10 opacity-20" />
-                <p>No repositories indexed yet.</p>
+              <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-2 font-mono text-[11px]">
+                <p>$ no repositories indexed yet</p>
               </div>
             )}
             
-            <AnimatePresence>
-              {repos.map((repo, idx) => (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  key={repo.id}
-                  className={cn(
-                    "rounded-2xl border p-4 space-y-4 transition-all duration-300 relative group cursor-pointer",
-                    activeRepo?.id === repo.id
-                      ? "border-primary/50 bg-primary/10 shadow-[0_0_15px_rgba(var(--primary),0.2)]"
-                      : "border-white/5 bg-white/5 hover:border-white/20 hover:bg-white/10"
-                  )}
-                  onClick={() => {
-                    if (repo.status === "complete") {
-                      setActiveRepo(repo);
-                      setMessages([]);
-                    }
-                  }}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="font-semibold text-foreground truncate">
-                        {repo.name}
-                      </div>
-                      <div className="text-xs text-muted-foreground truncate opacity-80 mt-1">
-                        {repo.github_url}
-                      </div>
+            {repos.map((repo) => (
+              <div
+                key={repo.id}
+                className={cn(
+                  "border p-3.5 space-y-3 transition-colors rounded-sm cursor-pointer",
+                  activeRepo?.id === repo.id
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-background hover:border-primary/50 hover:bg-surface-hi"
+                )}
+                onClick={() => {
+                  if (repo.status === "complete") {
+                    setActiveRepo(repo);
+                    setMessages([]);
+                  }
+                }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-sans text-xs font-semibold text-foreground truncate">
+                      {repo.name}
                     </div>
-                    <span className={cn(
-                      "text-xs px-2 py-1 rounded-full border shrink-0 font-medium",
-                      repo.status === "complete"
-                        ? "bg-green-500/10 text-green-400 border-green-500/20"
-                        : "bg-white/5 text-muted-foreground border-white/10"
-                    )}>
-                      {repo.status}
-                    </span>
+                    <div className="text-[10px] font-mono text-muted-foreground truncate mt-0.5">
+                      {repo.github_url}
+                    </div>
                   </div>
-                  
-                  {repo.stats && (
-                    <div className="flex gap-4 text-xs font-mono text-muted-foreground/80 bg-background/30 p-2 rounded-lg">
-                      <div className="flex flex-col"><span className="text-foreground/70 font-semibold">{repo.stats.functions}</span> functions</div>
-                      <div className="flex flex-col"><span className="text-foreground/70 font-semibold">{repo.stats.files}</span> files</div>
-                      <div className="flex flex-col"><span className="text-foreground/70 font-semibold">{repo.stats.edges}</span> edges</div>
+                  <span className={cn(
+                    "text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 border rounded-sm shrink-0",
+                    repo.status === "complete"
+                      ? "bg-success/15 text-success border-success/20"
+                      : "bg-surface text-muted-foreground border-border"
+                  )}>
+                    {repo.status}
+                  </span>
+                </div>
+                
+                {repo.stats && (
+                  <div className="flex gap-4 text-[10px] font-mono text-muted-foreground/80 bg-background/50 border border-border/50 p-1.5 rounded-sm">
+                    <div><span className="text-foreground">{repo.stats.functions}</span> fn</div>
+                    <div><span className="text-foreground">{repo.stats.files}</span> files</div>
+                    <div><span className="text-foreground">{repo.stats.edges}</span> edges</div>
+                  </div>
+                )}
+                
+                <div className="flex gap-2 items-center">
+                  {repo.status !== "complete" && (
+                    <div className="text-[10px] font-mono text-muted-foreground flex items-center gap-1.5">
+                      <Loader2 className="h-3 w-3 animate-spin text-primary" /> processing
                     </div>
                   )}
-                  
-                  <div className="flex gap-2">
-                    {repo.status !== "complete" && (
-                       <button
-                       disabled
-                       className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-white/5 text-muted-foreground cursor-not-allowed border border-white/5"
-                     >
-                       <Loader2 className="h-4 w-4 animate-spin" /> Processing
-                     </button>
-                    )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteConfirm(repo.id);
-                      }}
-                      className="px-3 py-2 rounded-xl text-xs text-muted-foreground hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors ml-auto"
-                      aria-label={`Delete ${repo.name}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteConfirm(repo.id);
+                    }}
+                    className="p-1 text-muted-foreground hover:text-destructive transition-colors ml-auto"
+                    aria-label={`Delete ${repo.name}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Chat panel */}
-        <div className="lg:col-span-8 glass rounded-3xl flex flex-col overflow-hidden relative">
+        <div className="md:col-span-8 bg-surface border border-border rounded-sm flex flex-col overflow-hidden relative">
           {!activeRepo ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8 text-center space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 mb-2">
-                <MessageSquare className="w-8 h-8 opacity-50" />
-              </div>
-              <div>
-                <h3 className="text-xl font-medium text-foreground mb-1">No Repository Selected</h3>
-                <p>Select an indexed repository from the sidebar to start exploring its architecture.</p>
+            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8 text-center font-mono">
+              <div className="text-[11px] text-muted-foreground">
+                $ select a repo from the list to start querying
               </div>
             </div>
           ) : (
             <>
               {/* Chat header */}
-              <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between z-10 backdrop-blur-md">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
-                    <Github className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="font-semibold text-foreground">{activeRepo.name}</span>
+              <div className="px-5 py-3 border-b border-border bg-surface-hi flex items-center justify-between z-10">
+                <div className="flex items-center gap-2">
+                  <Github className="w-4 h-4 text-primary" />
+                  <span className="font-mono text-xs font-semibold text-foreground uppercase tracking-wider">{activeRepo.name}</span>
                 </div>
                 
-                <div className="flex items-center bg-background/50 p-1 rounded-lg border border-white/10">
+                <div className="flex items-center bg-background/50 p-0.5 rounded-sm border border-border font-mono">
                   <button
                     onClick={() => setMode("naive")}
                     className={cn(
-                      "px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                      "px-2.5 py-1 rounded-sm text-[10px] uppercase font-mono tracking-wider transition-colors",
                       retrievalMode === "naive"
-                        ? "bg-white/10 text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                        ? "bg-surface-hi text-primary border border-border"
+                        : "text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    Naive RAG
+                    Naive
                   </button>
                   <button
                     onClick={() => setMode("graph")}
                     className={cn(
-                      "px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                      "px-2.5 py-1 rounded-sm text-[10px] uppercase font-mono tracking-wider transition-colors",
                       retrievalMode === "graph"
-                        ? "bg-primary text-white shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                        ? "bg-surface-hi text-primary border border-border"
+                        : "text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    Graph RAG
+                    Graph
                   </button>
                 </div>
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar scroll-smooth">
+              <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar scroll-smooth">
                 {messages.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-70">
-                    <BrainCircuit className="w-12 h-12 text-primary/50" />
-                    <p className="text-lg">Ask me anything about <span className="font-semibold text-foreground">{activeRepo.name}</span></p>
+                  <div className="flex flex-col items-center justify-center h-full text-center space-y-3 opacity-80 font-mono text-[11px]">
+                    <BrainCircuit className="w-10 h-10 text-primary/55" />
+                    <p className="text-xs">Ask anything about <span className="text-foreground">{activeRepo.name}</span></p>
                     <div className="flex flex-wrap justify-center gap-2 max-w-md mt-4">
-                      <span className="text-xs bg-white/5 border border-white/10 px-3 py-1.5 rounded-full cursor-pointer hover:bg-white/10 transition-colors" onClick={() => setInput("How is the database connected?")}>How is the database connected?</span>
-                      <span className="text-xs bg-white/5 border border-white/10 px-3 py-1.5 rounded-full cursor-pointer hover:bg-white/10 transition-colors" onClick={() => setInput("Where are the API routes defined?")}>Where are the API routes defined?</span>
+                      <span className="chip cursor-pointer hover:border-primary/50" onClick={() => setInput("How is the database connected?")}>How is the database connected?</span>
+                      <span className="chip cursor-pointer hover:border-primary/50" onClick={() => setInput("Where are the API routes defined?")}>Where are the API routes defined?</span>
                     </div>
                   </div>
                 )}
                 
-                <AnimatePresence>
-                  {messages.map((msg) => (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      key={msg.id}
-                      className={cn(
-                        "max-w-[85%] flex flex-col space-y-2",
-                        msg.role === "user" ? "ml-auto items-end" : "mr-auto items-start"
-                      )}
-                    >
-                      <div className={cn(
-                        "rounded-2xl px-5 py-3 text-sm shadow-sm",
-                        msg.role === "user"
-                          ? "bg-primary text-white rounded-tr-sm"
-                          : "bg-white/5 border border-white/10 text-foreground rounded-tl-sm backdrop-blur-md"
-                      )}>
-                        {msg.role === "user" ? (
-                          <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                        ) : (
-                          <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-black/40 prose-pre:border prose-pre:border-white/10">
-                            <StreamingOutput
-                              text={msg.content}
-                              streaming={msg.streaming ?? false}
-                            />
-                          </div>
-                        )}
-                      </div>
-                      
-                      {msg.chunks && msg.chunks.length > 0 && (
-                        <div className="w-full max-w-[90%] opacity-90">
-                          <RetrievalAccordion chunks={msg.chunks} latency_ms={msg.latency_ms} />
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={cn(
+                      "max-w-[90%] flex flex-col space-y-1.5",
+                      msg.role === "user" ? "ml-auto items-end" : "mr-auto items-start"
+                    )}
+                  >
+                    <div className={cn(
+                      "rounded-sm px-4 py-2.5 text-xs font-sans border shadow-sm leading-relaxed",
+                      msg.role === "user"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border text-foreground"
+                    )}>
+                      {msg.role === "user" ? (
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      ) : (
+                        <div className="prose prose-invert prose-xs max-w-none prose-pre:bg-black/40 prose-pre:border prose-pre:border-border font-mono leading-relaxed">
+                          <StreamingOutput
+                            text={msg.content}
+                            streaming={msg.streaming ?? false}
+                          />
                         </div>
                       )}
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                    </div>
+                    
+                    {msg.chunks && msg.chunks.length > 0 && (
+                      <div className="w-full max-w-none">
+                        <RetrievalAccordion chunks={msg.chunks} latency_ms={msg.latency_ms} />
+                      </div>
+                    )}
+                  </div>
+                ))}
                 <div ref={messagesEndRef} className="h-4" />
               </div>
 
               {/* Input */}
-              <div className="p-4 bg-white/[0.02] border-t border-white/5 backdrop-blur-md">
-                <div className="relative flex items-end gap-2 bg-background/50 rounded-2xl border border-white/10 p-2 shadow-inner focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all">
+              <div className="p-4 bg-surface-hi border-t border-border">
+                <div className="relative flex items-end gap-2 bg-background rounded-sm border border-border p-2 focus-within:border-primary/50 transition-colors">
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask about the codebase... (⌘+Enter to send)"
+                    placeholder="Ask about the codebase... (Enter to send)"
                     rows={1}
                     disabled={querying}
-                    className="flex-1 resize-none bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 min-h-[40px] max-h-[120px]"
+                    className="flex-1 resize-none bg-transparent px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 min-h-[36px] max-h-[120px] font-sans"
                     aria-label="Message input"
                   />
                   <button
                     onClick={handleSend}
                     disabled={querying || !input.trim()}
                     className={cn(
-                      "p-3 rounded-xl transition-all shrink-0 mb-0.5 mr-0.5",
+                      "p-2.5 rounded-sm transition-colors shrink-0 mb-0.5 mr-0.5",
                       querying || !input.trim()
-                        ? "bg-white/5 text-white/30 cursor-not-allowed"
-                        : "bg-gradient-to-r from-primary to-secondary text-white shadow-md hover:scale-105"
+                        ? "bg-surface text-muted-foreground/30 cursor-not-allowed"
+                        : "bg-primary text-primary-foreground hover:opacity-85"
                     )}
                     aria-label="Send message"
                   >
                     {querying
-                      ? <Loader2 className="h-4 w-4 animate-spin" />
-                      : <Send className="h-4 w-4 ml-0.5" />}
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      : <Send className="h-3.5 w-3.5" />}
                   </button>
                 </div>
               </div>
             </>
           )}
         </div>
-      </motion.div>
+      </div>
 
       {/* Delete confirmation dialog */}
-      <AnimatePresence>
-        {deleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Confirm deletion"
-          >
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="glass-card border border-white/10 rounded-2xl p-6 max-w-sm w-full space-y-5 shadow-2xl"
-            >
-              <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-2 border border-red-500/30">
-                <AlertCircle className="w-6 h-6 text-red-500" />
-              </div>
-              <div className="text-center">
-                <h3 className="text-lg font-semibold text-foreground mb-2">Delete repository?</h3>
-                <p className="text-sm text-muted-foreground">
-                  This will permanently delete the repo, its ChromaDB collections,
-                  and all chat history. This action cannot be undone.
-                </p>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setDeleteConfirm(null)}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleDelete(deleteConfirm)}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-red-600 hover:bg-red-500 text-white shadow-md transition-colors"
-                >
-                  Delete Repo
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {deleteConfirm && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm deletion"
+        >
+          <div className="bg-surface border border-border rounded-sm p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <div className="text-center font-mono space-y-2">
+              <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">Delete repository?</h3>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Permanently delete repo, ChromaDB collections, and chat logs. This cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="btn-ghost flex-1 py-2 text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirm)}
+                className="btn-primary flex-1 py-2 text-xs bg-destructive text-destructive-foreground hover:opacity-85"
+              >
+                Delete Repo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

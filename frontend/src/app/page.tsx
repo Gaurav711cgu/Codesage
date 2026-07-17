@@ -1,156 +1,115 @@
 // frontend/src/app/page.tsx
-"use client";
-
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { ArrowRight, Code2, GitBranch, Cpu, LineChart } from "lucide-react";
 
-const STATS = [
-  { label: "retrieval strategy",  value: "graph-augmented" },
-  { label: "embedding model",     value: "text-embedding-004" },
-  { label: "graph depth",         value: "1-hop expansion"  },
-  { label: "context window",      value: "top-8 chunks"     },
+const TERMINAL_STATS = [
+  { label: "retrieval",  value: "graph-augmented"   },
+  { label: "embeddings", value: "text-embedding-004" },
+  { label: "expansion",  value: "1-hop AST"          },
+  { label: "context",    value: "top-8 chunks"       },
 ];
 
-const FEATURES = [
+const PAGES = [
   {
     href: "/repos",
-    tag: "01",
-    title: "Repo Explorer",
-    desc: "Index any public GitHub repo. Ask cross-file questions. The system retrieves callers and callees alongside the direct match.",
-    icon: GitBranch,
+    label: "Repo Explorer",
+    desc: "Index a GitHub repo. Ask cross-file questions. Callers and callees are retrieved alongside the direct match.",
   },
   {
     href: "/playground",
-    tag: "02",
-    title: "Code Playground",
-    desc: "Paste any snippet. Get a structured review with severity-ranked issues, a bug fix, or a generated test suite.",
-    icon: Code2,
+    label: "Code Playground",
+    desc: "Paste any snippet. Get severity-ranked issues, an explained bug fix, or a generated test suite.",
   },
   {
     href: "/benchmarks",
-    tag: "03",
-    title: "Benchmarks",
-    desc: "Internal stratified eval across single-function, cross-file, and call-chain questions. Graph vs. naive delta measured.",
-    icon: LineChart,
+    label: "Benchmarks",
+    desc: "Stratified eval: single-function, cross-file, call-chain. Graph RAG vs naive delta.",
   },
   {
     href: "/architecture",
-    tag: "04",
-    title: "Architecture",
-    desc: "7-stage ingestion pipeline. tree-sitter parse → NetworkX call graph → ChromaDB. Read how it works.",
-    icon: Cpu,
+    label: "Architecture",
+    desc: "7-stage ingestion: tree-sitter → NetworkX call graph → ChromaDB. How it works.",
   },
 ];
 
 export default function Home() {
   return (
-    <div className="max-w-5xl mx-auto py-24 relative">
-      
-      {/* Hero Section */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="flex flex-col items-center text-center mb-24 relative z-10"
-      >
-        {/* Eyebrow */}
-        <div className="flex items-center gap-2 mb-8 glass px-4 py-1.5 rounded-full border-primary/30 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
-          <div className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(6,182,212,0.8)] animate-pulse" />
-          <span className="font-mono text-xs text-foreground uppercase tracking-widest font-medium">
-            Next-Gen RAG Architecture
-          </span>
-        </div>
+    <div className="max-w-[720px] mx-auto px-6 py-[72px] md:py-24">
+      {/* Eyebrow — small, factual, not marketing */}
+      <p className="label-accent mb-5">
+        graph-augmented rag · python codebases
+      </p>
 
-        {/* Headline */}
-        <h1 className="text-5xl md:text-6xl font-bold text-foreground leading-[1.1] mb-6 tracking-tight">
-          Code intelligence that understands<br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-            the entire call graph.
-          </span>
-        </h1>
+      {/* Headline — monospace, no gradient */}
+      <h1 className="font-mono text-3xl md:text-4xl font-normal leading-tight tracking-tight text-foreground mb-6">
+        Ask questions about
+        <br />
+        <span className="text-primary">any codebase.</span>
+      </h1>
 
-        <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mb-10">
-          Naive RAG retrieves isolated chunks. CodeSage retrieves the structural context. 
-          By augmenting vector search with 1-hop AST expansion, we pass the exact callers 
-          and callees straight into the LLM context window.
-        </p>
+      {/* Body — one clear paragraph, no bullet sells */}
+      <p className="font-sans text-[15px] leading-relaxed text-muted-foreground max-w-[560px] mb-10">
+        Naive RAG retrieves isolated chunks. CodeSageZ retrieves the function
+        you asked about{" "}
+        <em className="text-foreground not-italic font-medium">
+          and its callers and callees
+        </em>
+        . One-hop call graph expansion, scored and ranked, fed straight into
+        context.
+      </p>
 
-        {/* CTA */}
-        <div className="flex items-center gap-4">
+      {/* CTAs */}
+      <div className="flex gap-3 mb-16">
+        <Link
+          href="/repos"
+          className="font-sans text-xs font-semibold px-5 py-2.5 bg-primary text-primary-foreground rounded-sm transition-opacity hover:opacity-85 no-underline"
+        >
+          Index a repo
+        </Link>
+        <Link
+          href="/architecture"
+          className="font-sans text-xs font-normal px-5 py-2.5 border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 rounded-sm transition-colors no-underline"
+        >
+          How it works
+        </Link>
+      </div>
+
+      {/* ── Terminal stat bar — the signature element ── */}
+      <div className="terminal-bar mb-16">
+        {TERMINAL_STATS.map((s) => (
+          <div key={s.label} className="terminal-bar-item flex-1">
+            <span className="t-label">{s.label}</span>
+            <span className="t-value">{s.value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Feature list — NOT cards, rows with left border accent on hover ── */}
+      <div className="flex flex-col">
+        {PAGES.map((p, i) => (
           <Link
-            href="/repos"
-            className="px-6 py-3 bg-foreground text-background font-semibold 
-                       rounded-xl hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all duration-300 flex items-center gap-2"
+            key={p.href}
+            href={p.href}
+            className="flex gap-5 px-4 py-5 hover:bg-surface border-t border-border/40 hover:border-t-border transition-colors duration-150 -mx-4 rounded-sm no-underline group"
           >
-            Index a repo <ArrowRight className="w-4 h-4" />
-          </Link>
-          <Link
-            href="/architecture"
-            className="px-6 py-3 glass text-foreground font-medium 
-                       rounded-xl hover:bg-white/10 transition-all duration-300"
-          >
-            How it works
-          </Link>
-        </div>
-      </motion.div>
+            {/* Index number */}
+            <span className="font-mono text-[10px] text-border/60 mt-1 w-4 shrink-0 tracking-wide">
+              {String(i + 1).padStart(2, "0")}
+            </span>
 
-      {/* Inline stats — monospace data strip */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-        className="glass rounded-2xl mb-24 overflow-hidden"
-      >
-        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-white/10">
-          {STATS.map((s) => (
-            <div key={s.label} className="p-6 text-center">
-              <div className="font-mono text-xs text-muted-foreground mb-2 uppercase tracking-wider">{s.label}</div>
-              <div className="font-mono text-sm text-foreground font-semibold">{s.value}</div>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Bento Grid Features */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.4 }}
-        className="grid md:grid-cols-2 gap-6"
-      >
-        {FEATURES.map((f, i) => (
-          <Link
-            key={f.href}
-            href={f.href}
-            className="glass-card p-8 rounded-3xl group relative overflow-hidden"
-          >
-            {/* Hover Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            
-            <div className="relative z-10 flex flex-col h-full">
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:scale-110 transition-transform duration-500">
-                  <f.icon className="w-6 h-6 text-primary" />
-                </div>
-                <span className="font-mono text-xl text-white/20 font-bold group-hover:text-secondary/40 transition-colors duration-500">
-                  {f.tag}
+            <div>
+              <div className="font-sans text-sm font-semibold text-foreground mb-1 flex items-center gap-1.5">
+                {p.label}
+                <span className="text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                  →
                 </span>
               </div>
-              
-              <h3 className="text-xl font-semibold text-foreground mb-3 flex items-center gap-2">
-                {f.title}
-                <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-secondary" />
-              </h3>
-              
-              <p className="text-sm text-muted-foreground leading-relaxed mt-auto">
-                {f.desc}
+              <p className="font-sans text-xs text-muted-foreground leading-relaxed m-0">
+                {p.desc}
               </p>
             </div>
           </Link>
         ))}
-      </motion.div>
-
+      </div>
     </div>
   );
 }
