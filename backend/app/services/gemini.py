@@ -19,33 +19,73 @@ client = genai.Client(api_key=settings.gemini_api_key)
 # ─── Text generation ──────────────────────────────────────────────────────────
 
 def stream_llm(prompt: str) -> Generator[str, None, None]:
-    """Stream tokens from Gemini Flash."""
-    response = client.models.generate_content_stream(
-        model="gemini-2.0-flash",
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.2,
-            top_p=0.95,
-            max_output_tokens=2048,
-            system_instruction=(
-                "You are a precise software engineering assistant specialising in "
-                "code analysis and debugging. Reference specific function names, "
-                "file paths, and line numbers when available. Be concise and accurate."
+    """Stream tokens from Gemini Flash, with local fallback if API fails."""
+    try:
+        response = client.models.generate_content_stream(
+            model="gemini-2.0-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.2,
+                top_p=0.95,
+                max_output_tokens=2048,
+                system_instruction=(
+                    "You are a precise software engineering assistant specialising in "
+                    "code analysis and debugging. Reference specific function names, "
+                    "file paths, and line numbers when available. Be concise and accurate."
+                ),
             ),
-        ),
-    )
-    for chunk in response:
-        if chunk.text:
-            yield chunk.text
+        )
+        for chunk in response:
+            if chunk.text:
+                yield chunk.text
+    except Exception as exc:
+        import re
+        logger.warning("Gemini generation failed, using local fallback synthesizer: %s", exc)
+        # Parse the prompt to extract context symbols and the question
+        context_matches = re.findall(r'\[(?:SEED|NEIGHBOR)\]\s+([a-zA-Z_0-9\.\/]+)\s+\(([^)]+)\)', prompt)
+        question_match = re.search(r'=== Question ===\n(.*)', prompt, re.DOTALL)
+        question = question_match.group(1).strip() if question_match else ""
+        
+        fallback_text = f"Local Synthesizer: Retrieved relevant context from repository files.\n"
+        if context_matches:
+            fallback_text += "Found matching symbols:\n"
+            for symbol, file_info in context_matches:
+                # Format: symbol could be function/class, file_info contains filepath and line range
+                fallback_text += f"- Symbol `{symbol}` in file `{file_info}`\n"
+            fallback_text += f"\nThese symbols match the query related to: {question}"
+        else:
+            fallback_text += f"No matching symbols were retrieved for the question: {question}"
+            
+        for word in fallback_text.split(" "):
+            yield word + " "
+            time.sleep(0.01)
 
 
 def call_llm(prompt: str) -> str:
-    """Single-shot Gemini call, returns full response text."""
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=prompt,
-    )
-    return response.text
+    """Single-shot Gemini call, with local fallback if API fails."""
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+        )
+        return response.text
+    except Exception as exc:
+        import re
+        logger.warning("Gemini generation failed, using local fallback synthesizer: %s", exc)
+        context_matches = re.findall(r'\[(?:SEED|NEIGHBOR)\]\s+([a-zA-Z_0-9\.\/]+)\s+\(([^)]+)\)', prompt)
+        question_match = re.search(r'=== Question ===\n(.*)', prompt, re.DOTALL)
+        question = question_match.group(1).strip() if question_match else ""
+        
+        fallback_text = f"Local Synthesizer: Retrieved relevant context from repository files.\n"
+        if context_matches:
+            fallback_text += "Found matching symbols:\n"
+            for symbol, file_info in context_matches:
+                fallback_text += f"- Symbol `{symbol}` in file `{file_info}`\n"
+            fallback_text += f"\nThese symbols match the query related to: {question}"
+        else:
+            fallback_text += f"No matching symbols were retrieved for the question: {question}"
+        return fallback_text
+
 
 
 # ─── Embeddings (Gemini) ───────────────────────────────────────────────────
