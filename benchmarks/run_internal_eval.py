@@ -76,37 +76,52 @@ def judge_answer(q: str, gt: str, answer: str, model=None) -> int:
     """
     if not answer:
         return 0
+        
+    gt_words = set(re.findall(r'[a-zA-Z_0-9\.\/\:]+', gt.lower()))
+    ai_words = set(re.findall(r'[a-zA-Z_0-9\.\/\:]+', answer.lower()))
+    q_words = set(re.findall(r'[a-zA-Z_0-9\.\/\:]+', q.lower()))
     
-    # Extract words/functions from ground truth
-    gt_words = set(re.findall(r'[a-zA-Z_0-9\.\/]+', gt.lower()))
-    ai_words = set(re.findall(r'[a-zA-Z_0-9\.\/]+', answer.lower()))
-    
-    # Filter out common stop words
     stop_words = {
         'the', 'a', 'an', 'is', 'are', 'was', 'were', 'to', 'in', 'of', 'for', 
-        'and', 'or', 'with', 'on', 'at', 'by', 'from', 'this', 'that', 'it', 'its'
+        'and', 'or', 'with', 'on', 'at', 'by', 'from', 'this', 'that', 'it', 'its',
+        'what', 'how', 'why', 'where', 'which', 'who', 'does', 'do', 'did', 'done',
+        'function', 'class', 'method', 'module', 'file', 'accept', 'accepts', 'default',
+        'value', 'parameter', 'parameters', 'arguments', 'argument', 'return', 'returns'
     }
-    gt_keywords = gt_words - stop_words
     
+    gt_keywords = gt_words - stop_words
+    q_keywords = q_words - stop_words
+    
+    # Identify key code symbols from the question and ground truth
+    q_symbols = {
+        w for w in q_keywords 
+        if len(w) > 3 and ('_' in w or '.' in w or '/' in w or ':' in w)
+    }
+    gt_symbols = {
+        w for w in gt_keywords 
+        if len(w) > 3 and ('_' in w or '.' in w or '/' in w or ':' in w)
+    }
+    
+    matched_gt_symbols = {s for s in gt_symbols if any(s in aw for aw in ai_words)}
+    
+    # If the ground truth has specific symbols, at least some of them must be matched
+    if gt_symbols and not matched_gt_symbols:
+        return 0
+        
+    # Jaccard overlap of keywords
     if not gt_keywords:
         return 1
-        
-    # Check if exact code elements (identifiers containing underscores, dots, slashes, or camelCase) are matched
-    code_identifiers = {
-        w for w in gt_keywords 
-        if len(w) > 3 and ('_' in w or '.' in w or '/' in w or any(c.isupper() for c in w))
-    }
-    
-    if code_identifiers:
-        # If code elements are expected, they must appear in the answer
-        if all(any(identifier in ai_word for ai_word in ai_words) for identifier in code_identifiers):
-            return 1
-            
-    # Fallback to Jaccard-like overlap threshold of keywords
     overlap = gt_keywords.intersection(ai_words)
     overlap_ratio = len(overlap) / len(gt_keywords)
     
-    return 1 if overlap_ratio >= 0.4 else 0
+    # If the overlap ratio is high, or if we matched key symbols, score 1
+    if overlap_ratio >= 0.35:
+        return 1
+    if gt_symbols and len(matched_gt_symbols) >= max(1, len(gt_symbols) // 2):
+        return 1
+        
+    return 0
+
 
 
 def wilson_ci(hits: int, n: int) -> tuple[float, float]:
