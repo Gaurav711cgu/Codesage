@@ -22,9 +22,17 @@ import argparse
 import json
 import logging
 import os
+import warnings
 import tempfile
 from pathlib import Path
 
+# Suppress all python warnings and verbose logging
+warnings.filterwarnings("ignore")
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+import transformers
+transformers.logging.set_verbosity_error()
+
+import torch
 from experiment_utils import provenance, write_json
 
 logging.basicConfig(level=logging.INFO,
@@ -98,13 +106,34 @@ def main():
     logger.info("Device: %s", device)
 
     logger.info("Loading model: %s", args.model)
-    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model,
-        torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-        device_map="auto" if device == "cuda" else None,
-        trust_remote_code=True,
-    )
+    
+    # Check if this is a PEFT (LoRA) adapter directory
+    model_path = Path(args.model)
+    if model_path.is_dir() and (model_path / "adapter_config.json").exists():
+        import json
+        from peft import PeftModel
+        
+        logger.info("Detected PEFT adapter. Loading base model first...")
+        with open(model_path / "adapter_config.json") as f:
+            base_model_name = json.load(f)["base_model_name_or_path"]
+            
+        tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=True)
+        base_model = AutoModelForCausalLM.from_pretrained(
+            base_model_name,
+            torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+            device_map="auto" if device == "cuda" else None,
+            trust_remote_code=True,
+        )
+        logger.info("Applying LoRA adapter from %s", args.model)
+        model = PeftModel.from_pretrained(base_model, args.model)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model,
+            torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+            device_map="auto" if device == "cuda" else None,
+            trust_remote_code=True,
+        )
     model.eval()
 
     problems = read_problems()

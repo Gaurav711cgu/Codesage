@@ -14,7 +14,15 @@ After training:
 import argparse
 import json
 import logging
+import os
+import warnings
 from pathlib import Path
+
+# Suppress all python warnings and verbose logging
+warnings.filterwarnings("ignore")
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+import transformers
+transformers.logging.set_verbosity_error()
 
 from experiment_utils import provenance, sha256_file, write_json
 
@@ -68,7 +76,7 @@ def train():
             "gate_proj", "up_proj", "down_proj",
         ],
         lora_alpha=32,
-        lora_dropout=0.05,
+        lora_dropout=0,       # Unsloth optimization: 0 dropout for faster, better deterministic training
         bias="none",
         use_gradient_checkpointing="unsloth",
         random_state=RANDOM_SEED,
@@ -86,19 +94,17 @@ def train():
         output_dir=str(CHECKPOINT_DIR),
         per_device_train_batch_size=2,
         gradient_accumulation_steps=4,   # effective batch size = 8
-        warmup_ratio=0.05,
+        warmup_ratio=0.1,                # Increased warmup for stability
         num_train_epochs=3,
         learning_rate=2e-4,
+        lr_scheduler_type="cosine",      # Cosine schedule yields better convergence than linear
+        optim="adamw_8bit",              # 8-bit optimizer for memory efficiency and stability
+        weight_decay=0.01,               # Prevent overfitting
         bf16=torch.cuda.is_bf16_supported(),
         fp16=not torch.cuda.is_bf16_supported(),
         logging_steps=25,
-        evaluation_strategy="steps",
-        eval_steps=200,
-        save_strategy="steps",
-        save_steps=200,
-        load_best_model_at_end=True,
-        metric_for_best_model="eval_loss",
-        greater_is_better=False,
+        eval_strategy="epoch",
+        save_strategy="no",
         seed=RANDOM_SEED,
         report_to="none",
     )
