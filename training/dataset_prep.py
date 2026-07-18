@@ -32,9 +32,9 @@ logger.setLevel(logging.INFO)
 # ─── Constants ────────────────────────────────────────────────────────────────
 
 RANDOM_SEED = 42
-TRAIN_SIZE  = 8_000
-VAL_SIZE    = 1_000
-TEST_SIZE   = 1_000
+TRAIN_SIZE  = 4_000
+VAL_SIZE    = 500
+TEST_SIZE   = 500
 TOTAL_SIZE  = TRAIN_SIZE + VAL_SIZE + TEST_SIZE
 
 # CommitPack's Python configuration is hundreds of gigabytes. Streaming is
