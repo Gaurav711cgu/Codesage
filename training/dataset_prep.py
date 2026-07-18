@@ -2,13 +2,13 @@
 Dataset preparation for QLoRA fine-tuning on CommitPack Python bug-fix commits.
 
 Pipeline:
-  1. Load bigcode/commitpack "python" split
+  1. Stream the bigcode/commitpack "python" split (never download it in full)
   2. Apply 7 sequential filters (see PRD §4.2)
   3. Shuffle with seed=42, split 8K/1K/1K (train/val/test)
   4. Format each sample as Alpaca-style prompt
   5. Save train.jsonl, val.jsonl, test.jsonl + split_indices.json
 
-Usage (Colab A100 recommended for the full dataset):
+Usage:
     python dataset_prep.py
 
 The test split is sacred — never look at it until final evaluation.
@@ -20,6 +20,7 @@ import json
 import logging
 import random
 import re
+import argparse
 from pathlib import Path
 
 from experiment_utils import count_jsonl, provenance, sha256_file, write_json
@@ -34,6 +35,10 @@ TRAIN_SIZE  = 8_000
 VAL_SIZE    = 1_000
 TEST_SIZE   = 1_000
 TOTAL_SIZE  = TRAIN_SIZE + VAL_SIZE + TEST_SIZE
+
+# CommitPack's Python configuration is hundreds of gigabytes. Streaming is
+# mandatory on notebook runtimes; this ceiling makes resource use explicit.
+DEFAULT_SOURCE_SCAN_LIMIT = 750_000
 
 MAX_FILE_CHARS = 3_500
 MAX_DIFF_LINES = 30
@@ -135,6 +140,17 @@ def format_sample(example: dict) -> dict:
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Create a fixed CommitPack bug-fix dataset without downloading it all."
+    )
+    parser.add_argument(
+        "--source-scan-limit",
+        type=int,
+        default=DEFAULT_SOURCE_SCAN_LIMIT,
+        help="Maximum streamed source rows to inspect before failing (default: %(default)s).",
+    )
+    args = parser.parse_args()
+
     try:
         import datasets
     except ImportError:
@@ -142,12 +158,18 @@ def main():
             "datasets not installed. Run: pip install datasets"
         )
 
-    logger.info("Loading bigcode/commitpack python split…")
-    ds = datasets.load_dataset("bigcode/commitpack", "python", split="train",
-                               trust_remote_code=True)
-    logger.info("Loaded %d rows", len(ds))
+    logger.info(
+        "Streaming bigcode/commitpack python split (scan limit: %d rows; full download disabled)…",
+        args.source_scan_limit,
+    )
+    ds = datasets.load_dataset(
+        "bigcode/commitpack",
+        "python",
+        split="train",
+        streaming=True,
+        trust_remote_code=True,
+    ).shuffle(seed=RANDOM_SEED, buffer_size=10_000)
 
-    # Apply filters in sequence
     filters = [
         ("language",       filter_language),
         ("message_quality",filter_message_quality),
@@ -158,24 +180,38 @@ def main():
         ("syntax_valid",   filter_syntax_valid),
     ]
 
-    for name, fn in filters:
-        before = len(ds)
-        ds = ds.filter(fn, num_proc=4)
-        logger.info("After filter %-20s: %d → %d (-%d)",
-                    name, before, len(ds), before - len(ds))
+    accepted = []
+    rejected = {name: 0 for name, _ in filters}
+    scanned = 0
+    for row in ds:
+        scanned += 1
+        for name, fn in filters:
+            if not fn(row):
+                rejected[name] += 1
+                break
+        else:
+            accepted.append(row)
+            if len(accepted) == TOTAL_SIZE:
+                break
 
-    total_available = len(ds)
-    logger.info("Total samples after all filters: %d", total_available)
+        if scanned % 10_000 == 0:
+            logger.info("Scanned %d rows; accepted %d / %d", scanned, len(accepted), TOTAL_SIZE)
 
-    if total_available < TOTAL_SIZE:
+        if scanned >= args.source_scan_limit:
+            break
+
+    if len(accepted) < TOTAL_SIZE:
         raise SystemExit(
-            f"Only {total_available} samples after filtering, need {TOTAL_SIZE}. "
-            "Relax filters or use a larger dataset split."
+            f"Only {len(accepted)} samples passed filtering after scanning {scanned} rows; "
+            f"need {TOTAL_SIZE}. Re-run with a higher --source-scan-limit."
         )
+
+    logger.info("Collected %d accepted samples after scanning %d streamed rows", len(accepted), scanned)
+    logger.info("First-rejection counts by filter: %s", rejected)
 
     # Reproducible shuffle and split
     random.seed(RANDOM_SEED)
-    indices = list(range(total_available))
+    indices = list(range(len(accepted)))
     random.shuffle(indices)
 
     train_indices = indices[:TRAIN_SIZE]
@@ -189,7 +225,9 @@ def main():
         "val":   val_indices,
         "test":  test_indices,
         "random_seed": RANDOM_SEED,
-        "total_available": total_available,
+        "accepted_samples": len(accepted),
+        "source_rows_scanned": scanned,
+        "source_scan_limit": args.source_scan_limit,
     })
     logger.info("Saved split indices to %s", split_file)
 
@@ -203,7 +241,7 @@ def main():
         written = 0
         with out_path.open("w") as f:
             for idx in split_indices:
-                row = ds[idx]
+                row = accepted[idx]
                 sample = format_sample(row)
                 f.write(json.dumps(sample) + "\n")
                 written += 1
@@ -221,7 +259,14 @@ def main():
             "bugfix_keyword_filter": True,
             "syntax_valid_python": True,
         },
-        "source_rows_after_filtering": total_available,
+        "source_access": {
+            "mode": "streaming",
+            "source_rows_scanned": scanned,
+            "source_scan_limit": args.source_scan_limit,
+            "accepted_samples": len(accepted),
+            "shuffle_seed": RANDOM_SEED,
+            "shuffle_buffer_size": 10_000,
+        },
         "splits": {
             split: {
                 "path": f"training/data/{split}.jsonl",
