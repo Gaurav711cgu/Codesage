@@ -26,6 +26,7 @@ from pathlib import Path
 from experiment_utils import count_jsonl, provenance, sha256_file, write_json
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-8s %(message)s")
+logging.getLogger("datasets").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 # ─── Constants ────────────────────────────────────────────────────────────────
