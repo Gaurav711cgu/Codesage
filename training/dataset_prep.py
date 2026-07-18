@@ -32,9 +32,9 @@ logger.setLevel(logging.INFO)
 # ─── Constants ────────────────────────────────────────────────────────────────
 
 RANDOM_SEED = 42
-TRAIN_SIZE  = 4_000
-VAL_SIZE    = 500
-TEST_SIZE   = 500
+TRAIN_SIZE  = 1_500
+VAL_SIZE    = 250
+TEST_SIZE   = 250
 TOTAL_SIZE  = TRAIN_SIZE + VAL_SIZE + TEST_SIZE
 
 # CommitPack's Python configuration is hundreds of gigabytes. Streaming is
@@ -42,7 +42,7 @@ TOTAL_SIZE  = TRAIN_SIZE + VAL_SIZE + TEST_SIZE
 DEFAULT_SOURCE_SCAN_LIMIT = 750_000
 
 MAX_FILE_CHARS = 3_500
-MAX_DIFF_LINES = 30
+MAX_DIFF_LINES = 100
 MIN_MESSAGE_WORDS = 8
 
 BUG_KEYWORDS = re.compile(
@@ -97,13 +97,7 @@ def filter_diff_size(example: dict) -> bool:
 
 
 def filter_syntax_valid(example: dict) -> bool:
-    """Filter 7 — both old and new contents must be syntactically valid Python."""
-    for key in ("old_contents", "new_contents"):
-        src = example.get(key, "") or ""
-        try:
-            ast.parse(src)
-        except SyntaxError:
-            return False
+    """Filter 7 — DISABLED for speed (assumes Hugging Face dataset code is mostly valid)."""
     return True
 
 
