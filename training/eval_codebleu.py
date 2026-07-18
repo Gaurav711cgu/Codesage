@@ -41,7 +41,7 @@ def load_test_samples(path: Path) -> list[dict]:
     return samples
 
 
-def generate_fix(model, tokenizer, prompt: str, device: str) -> str:
+def generate_fix(model, tokenizer, prompt: str, device: str, temperature: float) -> str:
     """Generate a fixed code snippet for the given prompt."""
     inputs = tokenizer(prompt, return_tensors="pt",
                        truncation=True, max_length=1800).to(device)
@@ -49,7 +49,7 @@ def generate_fix(model, tokenizer, prompt: str, device: str) -> str:
         output_ids = model.generate(
             **inputs,
             max_new_tokens=MAX_NEW_TOKENS,
-            temperature=TEMPERATURE,
+            temperature=temperature if temperature > 0 else None,
             do_sample=temperature > 0,
             pad_token_id=tokenizer.eos_token_id,
         )
@@ -111,7 +111,7 @@ def main():
         try:
             prompt     = sample["prompt"]
             reference  = sample["completion"].replace("```", "").strip()
-            prediction = generate_fix(model, tokenizer, prompt, device)
+            prediction = generate_fix(model, tokenizer, prompt, device, args.temperature)
 
             predictions.append(prediction)
             references.append(reference)
