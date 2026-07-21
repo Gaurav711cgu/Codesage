@@ -52,7 +52,7 @@ const SECTIONS = [
     badgeColor: 'blue',
     title: 'Live Playground',
     desc: 'Code completion, review, test generation, and documentation — powered by Gemini.',
-    icon: <Code2 className="w-[22px] h-[22px]" stroke="var(--cs-blue-l)" strokeWidth={1.5} />
+    icon: <Code2 className="w-[22px] h-[22px]" color="var(--cs-blue-l)" strokeWidth={1.5} />
   },
   {
     to: '/training',
@@ -60,7 +60,7 @@ const SECTIONS = [
     badgeColor: 'amber',
     title: 'Training Deep-Dive',
     desc: 'Dataset curation, QLoRA config, W&B tracking, adapter merging, Modal deployment.',
-    icon: <Sliders className="w-[22px] h-[22px]" stroke="var(--cs-amber)" strokeWidth={1.5} />
+    icon: <Sliders className="w-[22px] h-[22px]" color="var(--cs-amber)" strokeWidth={1.5} />
   },
   {
     to: '/benchmarks',
@@ -68,7 +68,7 @@ const SECTIONS = [
     badgeColor: 'green',
     title: 'Benchmarks',
     desc: 'HumanEval, MBPP, HumanEval+, SQL generation — animated charts and comparisons.',
-    icon: <LineChart className="w-[22px] h-[22px]" stroke="var(--cs-green)" strokeWidth={1.5} />
+    icon: <LineChart className="w-[22px] h-[22px]" color="var(--cs-green)" strokeWidth={1.5} />
   },
   {
     to: '/inference',
@@ -76,7 +76,7 @@ const SECTIONS = [
     badgeColor: 'purple',
     title: 'Inference Stack',
     desc: 'vLLM + PagedAttention: 12,500 tok/s, interactive architecture diagram.',
-    icon: <Database className="w-[22px] h-[22px]" stroke="var(--cs-purple-l)" strokeWidth={1.5} />
+    icon: <Database className="w-[22px] h-[22px]" color="var(--cs-purple-l)" strokeWidth={1.5} />
   },
   {
     to: '/failures',
@@ -84,7 +84,7 @@ const SECTIONS = [
     badgeColor: 'red',
     title: 'What Breaks',
     desc: '6 real failure modes — catastrophic forgetting, OOM, quantization noise, and more.',
-    icon: <Search className="w-[22px] h-[22px]" stroke="var(--cs-red)" strokeWidth={1.5} />
+    icon: <Search className="w-[22px] h-[22px]" color="var(--cs-red)" strokeWidth={1.5} />
   },
   {
     to: '/mcp',
@@ -92,7 +92,7 @@ const SECTIONS = [
     badgeColor: 'purple',
     title: 'MCP Server',
     desc: '4 tools exposed via Model Context Protocol — usable by Claude, Cursor, any agent.',
-    icon: <Terminal className="w-[22px] h-[22px]" stroke="var(--cs-purple-l)" strokeWidth={1.5} />
+    icon: <Terminal className="w-[22px] h-[22px]" color="var(--cs-purple-l)" strokeWidth={1.5} />
   },
 ];
 
@@ -107,33 +107,32 @@ export default function Home() {
   const [visibleLines, setVisibleLines] = useState<any[]>([]);
   const [isVisible, setIsVisible] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<NodeJS.Timeout[]>([]);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const startAnimation = useCallback(() => {
-    setVisibleLines([]);
-    timerRef.current.forEach(clearTimeout);
-    timerRef.current = [];
-    TERMINAL_LINES.forEach((line) => {
-      const t = setTimeout(() => {
-        setVisibleLines(prev => [...prev, line]);
-      }, line.delay);
-      timerRef.current.push(t);
-    });
-    const loopTimer = setTimeout(() => startAnimation(), 15000);
-    timerRef.current.push(loopTimer);
-  }, []);
-
   useEffect(() => {
-    if (mounted) {
-      startAnimation();
-    }
-    return () => timerRef.current.forEach(clearTimeout);
-  }, [startAnimation, mounted]);
+    let timeouts: NodeJS.Timeout[] = [];
+    const runSequence = () => {
+      setVisibleLines([]);
+      TERMINAL_LINES.forEach(line => {
+        const t = setTimeout(() => {
+          setVisibleLines(prev => [...prev, line]);
+        }, line.delay);
+        timeouts.push(t);
+      });
+      const loop = setTimeout(runSequence, 15000);
+      timeouts.push(loop);
+    };
+
+    runSequence();
+
+    return () => {
+      timeouts.forEach(clearTimeout);
+    };
+  }, []);
 
   useEffect(() => {
     if (!mounted) return;
@@ -144,8 +143,6 @@ export default function Home() {
     if (statsRef.current) observer.observe(statsRef.current);
     return () => observer.disconnect();
   }, [mounted]);
-
-  if (!mounted) return null;
 
   return (
     <div>
@@ -189,7 +186,7 @@ export default function Home() {
                     codesage-train — Modal A100 80GB — epoch 3/3
                   </span>
                 </div>
-                <div className="p-4 font-mono text-xs sm:text-sm overflow-x-auto" style={{ minHeight: 300, lineHeight: '1.7' }}>
+                <div className="p-4 font-mono text-xs sm:text-sm overflow-y-auto" style={{ height: 380, lineHeight: '1.7' }}>
                   {visibleLines.map((line, i) => (
                     <div key={i} style={{ color: colorMap[line.color] || 'var(--cs-text3)' }}>
                       {line.text}

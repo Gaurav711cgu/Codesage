@@ -1,7 +1,13 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Link from "next/link";
 import Image from "next/image";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
 
 export const metadata: Metadata = {
   title: "CodeSageZ",
@@ -15,53 +21,25 @@ const NAV = [
   { href: "/architecture", label: "Architecture" },
 ];
 
+import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import Nav from "@/components/Nav";
+import Footer from "@/components/Footer";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space-grotesk" });
+const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono" });
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
-      <body className="font-sans antialiased bg-background text-foreground relative overflow-x-hidden">
-        {/* Animated background grid */}
-        <div className="absolute inset-0 z-0 bg-grid-pattern pointer-events-none opacity-50" />
-        
-        <div className="min-h-screen flex flex-col relative z-10">
-
-          {/* Nav ── glassmorphism upgrade */}
-          <header className="sticky top-0 z-50 border-b border-white/10 bg-background/60 backdrop-blur-xl">
-            <nav className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-              {/* Logo */}
-              <Link
-                href="/"
-                className="font-mono text-sm font-bold text-foreground tracking-tight flex items-center gap-2 no-underline hover:text-primary transition-colors group"
-              >
-                <div className="relative w-6 h-6 rounded overflow-hidden">
-                  <Image 
-                    src="/logo.png" 
-                    alt="CodeSageZ Logo" 
-                    fill 
-                    className="object-cover invert mix-blend-screen group-hover:brightness-125 transition-all"
-                  />
-                </div>
-                codesage<span className="text-primary group-hover:text-glow">z</span>
-                <span className="font-mono text-[10px] font-normal text-primary border border-primary/40 bg-primary/10 px-1.5 py-0.5 rounded-sm tracking-widest uppercase shadow-[0_0_8px_rgba(0,255,65,0.3)]">
-                  v2
-                </span>
-              </Link>
-
-              {/* Nav links */}
-              <div className="flex items-center gap-1">
-                {NAV.map(({ href, label }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    className="font-sans text-xs font-medium text-muted-foreground hover:text-primary hover:bg-white/5 px-3 py-1.5 rounded-md transition-all duration-200 no-underline"
-                  >
-                    {label}
-                  </Link>
-                ))}
-              </div>
-            </nav>
-          </header>
-
-          <main className="flex-1 max-w-7xl mx-auto w-full px-6 flex flex-col">{children}</main>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased text-foreground relative overflow-x-hidden`} style={{ background: 'var(--cs-bg)' }}>
+        <div className="cs-noise" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+          <a href="#main-content" className="skip-link">Skip to content</a>
+          <Nav />
+          <main id="main-content" role="main" className="flex-1 flex flex-col pt-16">
+            {children}
+          </main>
+          <Footer />
         </div>
       </body>
     </html>
