@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import RevealSection from '@/components/RevealSection';
 import { TERMINAL_LINES, RESUME_BULLET } from '@/constants/content';
 import { Database, Sliders, LineChart, Merge, Cloud, Code2, Search, FlaskConical, Book, Terminal } from 'lucide-react';
 
@@ -125,21 +124,41 @@ export default function Home() {
 
   useEffect(() => {
     let timeouts: NodeJS.Timeout[] = [];
+    let isRunning = true;
+    let sequenceIndex = 0;
+    
     const runSequence = () => {
-      setVisibleLines([]);
-      TERMINAL_LINES.forEach(line => {
-        const t = setTimeout(() => {
-          setVisibleLines(prev => [...prev, line]);
-        }, line.delay);
-        timeouts.push(t);
-      });
-      const loop = setTimeout(runSequence, 15000);
-      timeouts.push(loop);
+      if (!isRunning) return;
+      
+      const playSequence = async () => {
+        while (isRunning) {
+          setVisibleLines([]);
+          for (let i = 0; i < TERMINAL_LINES.length; i++) {
+            if (!isRunning) break;
+            const line = TERMINAL_LINES[i];
+            const delay = i === 0 ? line.delay : line.delay - TERMINAL_LINES[i - 1].delay;
+            await new Promise(resolve => {
+              const t = setTimeout(resolve, delay);
+              timeouts.push(t);
+            });
+            if (isRunning) {
+              setVisibleLines(prev => [...prev, line]);
+            }
+          }
+          if (!isRunning) break;
+          await new Promise(resolve => {
+            const t = setTimeout(resolve, 3000);
+            timeouts.push(t);
+          });
+        }
+      };
+      playSequence();
     };
 
     runSequence();
 
     return () => {
+      isRunning = false;
       timeouts.forEach(clearTimeout);
     };
   }, []);
@@ -158,156 +177,147 @@ export default function Home() {
     <div>
       {/* Hero */}
       <section className="pt-28 pb-10 sm:pt-32 sm:pb-14 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <RevealSection>
-            <div className="flex flex-wrap gap-2 mb-6 justify-center">
-              <span className="px-3 py-1 rounded-full text-xs font-medium"
-                style={{ background: 'rgba(59,130,246,0.12)', color: 'var(--cs-blue-l)', border: '1px solid rgba(59,130,246,0.25)' }}>
-                Llama 3.3 8B Fine-Tuned
-              </span>
-              <span className="px-3 py-1 rounded-full text-xs font-medium"
-                style={{ background: 'rgba(59,130,246,0.12)', color: 'var(--cs-blue-l)', border: '1px solid rgba(59,130,246,0.25)' }}>
-                vLLM Production Serving
-              </span>
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
+          
+          <div className="flex-1">
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="flex items-center gap-2 mb-6">
+                <span className="px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold tracking-widest uppercase border"
+                  style={{ background: 'rgba(255,51,102,0.1)', color: 'var(--cs-primary)', borderColor: 'rgba(255,51,102,0.2)' }}>
+                  <span className="inline-block w-1.5 h-1.5 rounded-full mr-2" style={{ background: 'var(--cs-primary)' }}></span>
+                  A Next-Gen Code Model
+                </span>
+              </div>
+              <h1 className="font-playfair font-bold leading-[1.1] mb-5"
+                style={{ fontSize: 'clamp(48px, 7vw, 84px)', color: 'var(--cs-text)', letterSpacing: '-0.02em' }}>
+                Code Intelligence.<br/>
+                <span className="italic" style={{ color: 'var(--cs-primary)' }}>Simplified.</span>
+              </h1>
+              <p className="mb-10" style={{ maxWidth: 480, color: 'var(--cs-text2)', fontSize: '18px', lineHeight: '1.6' }}>
+                Curated code datasets, QLoRA fine-tuning, and robust evaluations — <span className="italic">all in one open-source package.</span>
+              </p>
             </div>
-            <h1 className="font-head font-bold text-center leading-none mb-5"
-              style={{ fontSize: 'clamp(40px, 6vw, 68px)', color: 'var(--cs-text)', letterSpacing: '-0.02em' }}>
-              A Code Model That<br/>Actually Improves.
-            </h1>
-            <p className="text-center mx-auto mb-10" style={{ maxWidth: 540, color: 'var(--cs-text2)', fontSize: '16px', lineHeight: '1.75' }}>
-              QLoRA fine-tuned on curated code datasets.
-              Benchmarked against base Llama 3.3 8B on HumanEval and MBPP.
-              Served at 12,500 tok/s via vLLM + PagedAttention.
-              Exposed as an MCP tool to any agent or IDE.
-            </p>
-          </RevealSection>
 
-          {/* Terminal */}
-          <RevealSection delay={120}>
-            <div data-testid="hero-terminal" className="mx-auto mb-10" style={{ maxWidth: 680 }}>
-              <div className="rounded-xl overflow-hidden" style={{ background: 'var(--cs-code-bg)', border: '1px solid var(--cs-border)' }}>
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+              <div className="flex flex-wrap gap-4 mb-10">
+                <Link href="/playground" data-testid="hero-try-playground-button"
+                  className="px-8 py-3.5 rounded-full font-semibold text-sm text-white transition-all duration-300 hover:scale-105 shadow-lg no-underline flex items-center gap-2"
+                  style={{ background: 'linear-gradient(135deg, #FF3366, #FB7185)' }}>
+                  Enter the flow &rarr;
+                </Link>
+                <Link href="/benchmarks" data-testid="hero-view-benchmarks-button"
+                  className="px-8 py-3.5 rounded-full text-sm font-medium transition-all duration-300 hover:bg-white/5 no-underline flex items-center gap-2"
+                  style={{ border: '1px solid var(--cs-border)', color: 'var(--cs-text)' }}>
+                  <span style={{ color: 'var(--cs-primary)' }}>✦</span> Try the demo
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 w-full max-w-lg relative">
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+              <div className="absolute -inset-4 bg-gradient-to-r from-pink-500/10 to-purple-500/10 blur-xl opacity-50 rounded-[2rem]"></div>
+              
+              {/* Terminal / Floating Cards simulation */}
+              <div data-testid="hero-terminal" className="relative shadow-2xl rounded-2xl overflow-hidden transition-transform duration-500 hover:-translate-y-2 hover:rotate-1" 
+                style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)' }}>
                 <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid var(--cs-border)' }}>
-                  <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#EF4444' }}></div>
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#F59E0B' }}></div>
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#22C55E' }}></div>
+                  <div className="font-playfair font-semibold text-sm">Training Run #1024</div>
+                  <div className="ml-auto flex items-center gap-2">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full border border-pink-500/30 text-pink-400 bg-pink-500/10">In Progress</span>
+                    <span className="text-gray-500">...</span>
                   </div>
-                  <span className="font-mono text-xs ml-2" style={{ color: 'var(--cs-text3)' }}>
-                    codesage-train — Modal A100 80GB — epoch 3/3
-                  </span>
                 </div>
-                <div className="p-4 font-mono text-xs sm:text-sm overflow-y-auto" style={{ height: 380, lineHeight: '1.7' }}>
+                <div className="p-5 font-mono text-xs overflow-y-auto" style={{ height: 260, lineHeight: '1.8' }}>
                   {visibleLines.map((line, i) => (
-                    <div key={i} style={{ color: colorMap[line.color] || 'var(--cs-text3)' }}>
+                    <div key={i} style={{ color: colorMap[line.color] || 'var(--cs-text2)' }}>
                       {line.text}
                       {line.check && <span style={{ color: 'var(--cs-green)' }}> &#10003;</span>}
                     </div>
                   ))}
                   {visibleLines.length > 0 && (
-                    <span className="cursor-blink inline-block w-2 h-4 ml-0.5" style={{ background: 'var(--cs-green-l)' }}></span>
+                    <span className="cursor-blink inline-block w-2 h-4 ml-0.5" style={{ background: 'var(--cs-primary)' }}></span>
                   )}
                 </div>
               </div>
-            </div>
-          </RevealSection>
 
-          {/* Stats */}
-          <RevealSection delay={200}>
-            <div ref={statsRef} className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl mx-auto mb-10">
-              {STATS.map((stat, i) => (
-                <StatCard key={i} stat={stat} isVisible={isVisible} />
-              ))}
+              {/* Decorative floating card */}
+              <div className="absolute -bottom-6 -left-8 rounded-xl p-4 shadow-2xl backdrop-blur-md hidden sm:block animate-bounce"
+                style={{ background: 'rgba(18,18,20,0.85)', border: '1px solid var(--cs-border)', animationDuration: '4s' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-400 font-serif font-bold text-xs border border-pink-500/30">
+                    CS
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-white">Llama 3.3 8B</div>
+                    <div className="text-[10px] text-gray-400">Model Configuration</div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </RevealSection>
+          </div>
 
-          {/* CTA */}
-          <RevealSection delay={280}>
-            <div className="flex flex-wrap justify-center gap-3 mb-16">
-              <Link href="/playground" data-testid="hero-try-playground-button"
-                className="px-6 py-3 rounded-lg font-semibold text-sm text-white transition-all duration-200 hover:translate-y-[-1px] hover:shadow-lg no-underline"
-                style={{ background: 'linear-gradient(135deg, #3B82F6, #60A5FA)' }}>
-                Try Live Playground &rarr;
-              </Link>
-              <Link href="/benchmarks" data-testid="hero-view-benchmarks-button"
-                className="px-6 py-3 rounded-lg text-sm transition-colors duration-150 no-underline"
-                style={{ border: '1px solid var(--cs-border)', color: 'var(--cs-text2)', background: 'transparent' }}>
-                View Benchmarks
-              </Link>
-              <a href="https://github.com/Gaurav711cgu" target="_blank" rel="noopener noreferrer"
-                className="px-6 py-3 rounded-lg text-sm transition-colors duration-150 no-underline"
-                style={{ border: '1px solid var(--cs-border)', color: 'var(--cs-text2)', background: 'transparent' }}>
-                GitHub Repository
-              </a>
-            </div>
-          </RevealSection>
         </div>
       </section>
 
       {/* Section cards */}
       <section className="pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
-          <RevealSection>
-            <h2 className="font-head font-semibold text-2xl sm:text-3xl text-center mb-2" style={{ color: 'var(--cs-text)' }}>
+          <div>
+            <h2 className="font-playfair font-semibold text-3xl sm:text-4xl text-center mb-2" style={{ color: 'var(--cs-text)' }}>
               Explore the Project
             </h2>
-            <p className="text-center mb-10 text-sm" style={{ color: 'var(--cs-text3)' }}>
+            <p className="text-center mb-10 text-sm" style={{ color: 'var(--cs-text2)' }}>
               Each section dives deep into a different aspect of CodeSage.
             </p>
-          </RevealSection>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {SECTIONS.map((sec, i) => {
-              const cmap: Record<string, any> = {
-                blue: { bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)', text: 'var(--cs-blue-l)' },
-                amber: { bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.2)', text: 'var(--cs-amber)' },
-                green: { bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.2)', text: 'var(--cs-green)' },
-                purple: { bg: 'rgba(168,85,247,0.08)', border: 'rgba(168,85,247,0.2)', text: 'var(--cs-purple-l)' },
-                red: { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)', text: 'var(--cs-red)' },
-              };
-              const c = cmap[sec.badgeColor] || cmap.blue;
+              const c = { bg: 'rgba(255,51,102,0.05)', border: 'rgba(255,51,102,0.15)', text: 'var(--cs-primary)', hoverBorder: 'rgba(255,51,102,0.4)' };
               return (
-                <RevealSection key={i} delay={i * 80}>
+                <div key={i} className="h-full">
                   <Link href={sec.to}
                     data-testid={`home-card-${sec.to.slice(1)}`}
-                    className="block rounded-xl p-5 transition-all duration-200 hover:translate-y-[-3px] group h-full no-underline"
+                    className="block rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 group h-full no-underline shadow-lg"
                     style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)' }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = c.border}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = c.hoverBorder}
                     onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--cs-border)'}>
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 rounded-lg flex items-center justify-center" style={{ background: c.bg }}>
-                        {sec.icon}
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2.5 rounded-xl flex items-center justify-center transition-colors group-hover:bg-pink-500/10" style={{ background: c.bg }}>
+                        {React.cloneElement(sec.icon, { color: c.text })}
                       </div>
-                      <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                      <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider transition-colors group-hover:bg-pink-500/10"
                         style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}>
                         {sec.badge}
                       </span>
                     </div>
-                    <h3 className="font-head font-semibold text-base mb-1.5 group-hover:text-blue-400 transition-colors"
+                    <h3 className="font-playfair font-semibold text-xl mb-2 group-hover:text-pink-400 transition-colors"
                       style={{ color: 'var(--cs-text)' }}>{sec.title}</h3>
-                    <p className="text-xs" style={{ color: 'var(--cs-text3)', lineHeight: '1.6' }}>{sec.desc}</p>
-                    <div className="mt-3 text-xs font-medium flex items-center gap-1" style={{ color: c.text }}>
+                    <p className="text-sm" style={{ color: 'var(--cs-text2)', lineHeight: '1.6' }}>{sec.desc}</p>
+                    <div className="mt-4 text-xs font-semibold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" style={{ color: c.text }}>
                       Explore
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                     </div>
                   </Link>
-                </RevealSection>
+                </div>
               );
             })}
           </div>
 
           {/* Resume & Tech Stack */}
-          <RevealSection delay={300}>
-            <div className="mt-16 pt-16 border-t" style={{ borderColor: 'var(--cs-border)' }}>
+          <div>
+            <div className="mt-20 pt-16 border-t" style={{ borderColor: 'var(--cs-border)' }}>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                 
                 {/* Tech Stack */}
                 <div>
-                  <h3 className="font-head font-semibold text-xl mb-6" style={{ color: 'var(--cs-text)' }}>Core Tech Stack</h3>
+                  <h3 className="font-playfair font-semibold text-2xl mb-6" style={{ color: 'var(--cs-text)' }}>Core Tech Stack</h3>
                   <div className="flex flex-wrap gap-3">
                     {TECH_LOGOS.map((tech) => (
-                      <div key={tech.name} className="flex flex-col items-center justify-center gap-2 p-3 rounded-lg transition-colors hover:bg-white/5" 
+                      <div key={tech.name} className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl transition-colors hover:bg-white/5" 
                         style={{ width: tech.isWide ? '120px' : '80px', background: 'var(--cs-surface)', border: '1px solid var(--cs-border)' }}>
-                        <img src={tech.src} alt={tech.name} className={`object-contain ${tech.invert ? 'invert' : ''} ${tech.isWide ? 'w-16 h-8' : 'w-8 h-8'}`} />
+                        <img src={tech.src} alt={tech.name} className={`object-contain ${tech.invert ? 'invert opacity-90' : ''} ${tech.isWide ? 'w-16 h-8' : 'w-8 h-8'}`} />
                         <span className="text-[10px] font-medium text-center" style={{ color: 'var(--cs-text2)' }}>{tech.name}</span>
                       </div>
                     ))}
@@ -316,18 +326,18 @@ export default function Home() {
 
                 {/* Resume Bullet */}
                 <div>
-                  <h3 className="font-head font-semibold text-xl mb-6 flex items-center gap-2" style={{ color: 'var(--cs-text)' }}>
+                  <h3 className="font-playfair font-semibold text-2xl mb-6 flex items-center gap-3" style={{ color: 'var(--cs-text)' }}>
                     Resume Bullet
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono" style={{ background: 'rgba(59,130,246,0.12)', color: 'var(--cs-blue-l)', border: '1px solid rgba(59,130,246,0.25)' }}>TL;DR</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono uppercase tracking-widest" style={{ background: 'rgba(255,51,102,0.1)', color: 'var(--cs-primary)', border: '1px solid rgba(255,51,102,0.2)' }}>TL;DR</span>
                   </h3>
-                  <div className="p-5 rounded-xl font-mono text-sm leading-relaxed" style={{ background: 'var(--cs-code-bg)', border: '1px solid var(--cs-border)', color: 'var(--cs-text2)' }}>
+                  <div className="p-6 rounded-2xl font-mono text-sm leading-relaxed shadow-lg" style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', color: 'var(--cs-text2)' }}>
                     {RESUME_BULLET}
                   </div>
                 </div>
 
               </div>
             </div>
-          </RevealSection>
+          </div>
         </div>
       </section>
     </div>

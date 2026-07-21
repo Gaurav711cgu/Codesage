@@ -39,23 +39,23 @@ export default function Nav() {
         role="navigation"
         aria-label="Main navigation"
         style={{
-          background: scrolled ? 'rgba(8,11,18,0.92)' : 'transparent',
+          background: scrolled ? 'rgba(10,10,11,0.92)' : 'transparent',
           backdropFilter: scrolled ? 'blur(16px)' : 'none',
           borderBottom: scrolled ? '1px solid var(--cs-border)' : '1px solid transparent',
         }}
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group no-underline" aria-label="CodeSage Home">
-            <div className="relative w-8 h-8 rounded-md overflow-hidden bg-white shadow-sm flex items-center justify-center p-0.5">
+          <Link href="/" className="flex items-center gap-3 group no-underline" aria-label="CodeSage Home">
+            <div className="relative w-8 h-8 rounded-full flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105 shadow-sm" style={{ background: 'var(--cs-primary)' }}>
               <Image 
                 src="/logo.png" 
                 alt="CodeSageZ Logo" 
                 fill 
-                className="object-cover group-hover:scale-105 transition-transform"
+                className="object-cover invert opacity-90"
               />
             </div>
-            <span className="font-head font-bold text-lg" style={{ color: 'var(--cs-text)' }}>CodeSage</span>
+            <span className="font-playfair font-bold text-xl tracking-tight" style={{ color: 'var(--cs-text)' }}>CodeSage</span>
           </Link>
 
           {/* Center links (desktop) */}
@@ -67,10 +67,10 @@ export default function Nav() {
                   key={link.to}
                   href={link.to}
                   data-testid={`nav-link-${link.to.slice(1)}`}
-                  className="text-sm px-3 py-1.5 rounded-md transition-all duration-150 no-underline"
+                  className="text-sm px-4 py-2 rounded-full transition-all duration-300 no-underline"
                   style={{
-                    color: active ? 'var(--cs-blue-l)' : 'var(--cs-text3)',
-                    background: active ? 'rgba(59,130,246,0.08)' : 'transparent',
+                    color: active ? 'var(--cs-primary)' : 'var(--cs-text2)',
+                    background: active ? 'rgba(255,51,102,0.08)' : 'transparent',
                   }}
                 >
                   {link.label}
@@ -80,14 +80,14 @@ export default function Nav() {
           </div>
 
           {/* Right buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <a
               href="https://github.com/Gaurav711cgu"
               target="_blank"
               rel="noopener noreferrer"
               data-testid="nav-github-link"
-              className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors duration-150 no-underline"
-              style={{ border: '1px solid var(--cs-border)', color: 'var(--cs-text2)' }}
+              className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 hover:bg-white/5 no-underline"
+              style={{ border: '1px solid var(--cs-border)', color: 'var(--cs-text)' }}
             >
               <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
               GitHub
@@ -95,10 +95,10 @@ export default function Nav() {
 
             {/* Mobile menu button */}
             <button
-              className="md:hidden p-3 rounded-lg transition-colors duration-150 active:scale-95"
+              className="md:hidden p-3 rounded-full transition-colors duration-150 active:scale-95"
               style={{ 
-                color: 'var(--cs-text2)', 
-                background: mobileOpen ? 'rgba(59,130,246,0.1)' : 'transparent',
+                color: 'var(--cs-text)', 
+                background: mobileOpen ? 'rgba(255,51,102,0.1)' : 'transparent',
                 minWidth: '44px',
                 minHeight: '44px'
               }}
@@ -119,8 +119,8 @@ export default function Nav() {
             <Link
               href="/playground"
               data-testid="nav-open-playground-button"
-              className="hidden sm:inline-flex px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150 hover:translate-y-[-1px] no-underline"
-              style={{ background: 'linear-gradient(135deg, #3B82F6, #60A5FA)', color: 'white' }}
+              className="hidden sm:inline-flex px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 hover:scale-105 shadow-md no-underline"
+              style={{ background: 'linear-gradient(135deg, #FF3366, #FB7185)', color: 'white' }}
             >
               Try Live Demo
             </Link>
