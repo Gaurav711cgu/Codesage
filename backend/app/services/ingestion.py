@@ -226,7 +226,7 @@ def parse_file(
         root = tree.root_node
         imports = _extract_imports(root, src_bytes)
     except Exception as exc:
-        logger.warning("Tree-sitter parse failed for %s: %s", file_path, exc)
+        logger.exception("Tree-sitter parse failed for %s: %s", file_path, exc)
         return []
     units: list[CodeUnit] = []
 
@@ -298,7 +298,7 @@ def parse_file(
         for node in root.children:
             process_node(node)
     except Exception as exc:
-        logger.warning("Tree-sitter AST walk failed for %s: %s", file_path, exc)
+        logger.exception("Tree-sitter AST walk failed for %s: %s", file_path, exc)
 
     return units
 
@@ -369,6 +369,7 @@ async def run_ingestion(
             str(clone_dir),
             depth=1,
             single_branch=True,
+            multi_options=["-c", "core.symlinks=false"],
         )
         logger.info("Cloned %s to %s", github_url, clone_dir)
 
@@ -390,8 +391,12 @@ async def run_ingestion(
         
         # 1MB limit for files
         MAX_FILE_SIZE = 1024 * 1024
+        MAX_FILES = 10000
 
         for root, dirs, files in os.walk(clone_dir):
+            if len(target_files) >= MAX_FILES:
+                break
+                
             # Prune excluded dirs in-place so os.walk doesn't descend into them
             dirs[:] = [d for d in dirs if d not in excluded and not d.startswith(".")]
             
@@ -423,6 +428,9 @@ async def run_ingestion(
                     continue
                     
                 target_files.append(fpath)
+                if len(target_files) >= MAX_FILES:
+                    logger.warning("Reached MAX_FILES limit (%d). Stopping file discovery.", MAX_FILES)
+                    break
 
         total_files = len(target_files)
         await emit({"stage": "discovering", "total_files": total_files})

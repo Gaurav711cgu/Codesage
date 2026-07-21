@@ -19,6 +19,13 @@ COPY . .
 # Temp directory for repo clones and data directory for ChromaDB
 RUN mkdir -p /tmp/codesagez /data/chroma && chmod 777 /data /data/chroma
 
+# Add a non-root user
+RUN addgroup --system --gid 1001 codesagegroup && \
+    adduser --system --uid 1001 --gid 1001 codesage && \
+    chown -R codesage:codesagegroup /app /tmp/codesagez /data
+
+USER codesage
+
 # A single worker is safe with the local development store. Set WEB_CONCURRENCY
 # only when CHROMADB_URL points at a shared persistent Chroma deployment.
 CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860} --workers ${WEB_CONCURRENCY:-1}
