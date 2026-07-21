@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { to: '/inference', label: 'Inference' },
   { to: '/failures', label: 'Failures' },
   { to: '/mcp', label: 'MCP' },
+  { to: '/stories', label: 'Stories' },
 ];
 
 export default function Nav() {
