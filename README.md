@@ -1,4 +1,5 @@
 <div align="center">
+  <img src="frontend/public/logo.png" width="100" height="100" alt="CodeSageZ Logo" />
   <h1>CodeSageZ v2</h1>
   <p><strong>Graph-Augmented Retrieval for Repository-Level Code Understanding</strong></p>
 
