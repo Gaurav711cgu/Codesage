@@ -4,6 +4,8 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Terminal, Code2, BarChart3, Network, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import ProcessTimeline from "@/components/ProcessTimeline";
+import ResearchSection from "@/components/ResearchSection";
 
 const TERMINAL_STATS = [
   { label: "retrieval",  value: "graph-augmented"   },
@@ -137,7 +139,7 @@ export default function Home() {
       </motion.div>
 
       {/* Bento Grid Features */}
-      <div className="w-full max-w-[900px] grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+      <div className="w-full max-w-[900px] grid grid-cols-1 md:grid-cols-3 gap-6 text-left mb-24">
         {PAGES.map((p, i) => {
           const Icon = p.icon;
           return (
@@ -174,6 +176,12 @@ export default function Home() {
           );
         })}
       </div>
+
+      <ProcessTimeline />
+      
+      <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-12" />
+
+      <ResearchSection />
       
     </div>
   );
