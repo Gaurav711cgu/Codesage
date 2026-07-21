@@ -1,7 +1,7 @@
-// frontend/src/app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
+import { SquareTerminal } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "CodeSageZ",
@@ -32,8 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 href="/"
                 className="font-mono text-sm font-bold text-foreground tracking-tight flex items-center gap-2 no-underline hover:text-primary transition-colors group"
               >
+                <SquareTerminal className="w-5 h-5 text-primary group-hover:text-glow" />
                 codesage<span className="text-primary group-hover:text-glow">z</span>
-                <span className="font-mono text-[10px] font-normal text-primary border border-primary/40 bg-primary/10 px-1.5 py-0.5 rounded-sm tracking-widest uppercase shadow-[0_0_8px_rgba(35,196,232,0.3)]">
+                <span className="font-mono text-[10px] font-normal text-primary border border-primary/40 bg-primary/10 px-1.5 py-0.5 rounded-sm tracking-widest uppercase shadow-[0_0_8px_rgba(0,255,65,0.3)]">
                   v2
                 </span>
               </Link>

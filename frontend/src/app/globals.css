@@ -17,14 +17,14 @@
 
     --border:              224 40% 15%;   /* #1a2540 */
     --input:               224 40% 15%;
-    --ring:                196 85% 58%;
+    --ring:                135 100% 50%;
 
     --card:                var(--surface);
     --card-foreground:     var(--foreground);
 
-    --primary:             196 85% 58%;   /* #23c4e8 — cyan accent */
+    --primary:             135 100% 50%;   /* matrix green */
     --primary-foreground:  224 71% 4%;
-    --primary-dim:         196 60% 20%;   /* accent bg tint */
+    --primary-dim:         135 100% 20%;   /* accent bg tint */
 
     --secondary:           224 50% 10%;
     --secondary-foreground: 213 25% 88%;
@@ -127,9 +127,9 @@
   font-weight: 500;
   padding: 2px 6px;
   border-radius: 2px;
-  border: 1px solid hsl(196 85% 58% / 0.3);
-  background: hsl(196 85% 58% / 0.08);
-  color: hsl(196 85% 68%);
+  border: 1px solid hsl(135 100% 50% / 0.3);
+  background: hsl(135 100% 50% / 0.08);
+  color: hsl(135 100% 68%);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }

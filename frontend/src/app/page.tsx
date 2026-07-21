@@ -66,7 +66,7 @@ export default function Home() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="label-accent mb-6 bg-primary/10 border border-primary/30 px-3 py-1 rounded-full shadow-[0_0_15px_rgba(35,196,232,0.15)] backdrop-blur-md inline-block"
+        className="label-accent mb-6 bg-primary/10 border border-primary/30 px-3 py-1 rounded-sm shadow-[0_0_15px_rgba(0,255,65,0.15)] backdrop-blur-md inline-block"
       >
         graph-augmented rag · python codebases
       </motion.div>
@@ -79,7 +79,7 @@ export default function Home() {
         className="font-mono text-4xl md:text-6xl font-bold leading-tight tracking-tight text-foreground mb-6"
       >
         Understand <br className="md:hidden" />
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400 text-glow">
+        <span className="text-primary text-glow">
           any codebase.
         </span>
       </motion.h1>
@@ -107,7 +107,7 @@ export default function Home() {
       >
         <Link
           href="/repos"
-          className="font-sans text-sm font-semibold px-8 py-3 bg-primary text-primary-foreground rounded-md shadow-[0_0_20px_rgba(35,196,232,0.4)] transition-all hover:shadow-[0_0_30px_rgba(35,196,232,0.6)] hover:scale-105 no-underline flex items-center justify-center gap-2 group"
+          className="font-sans text-sm font-semibold px-8 py-3 bg-primary text-primary-foreground rounded-sm shadow-[0_0_20px_rgba(0,255,65,0.4)] transition-all hover:shadow-[0_0_30px_rgba(0,255,65,0.6)] hover:scale-105 no-underline flex items-center justify-center gap-2 group"
         >
           Index a repo
           <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -153,13 +153,13 @@ export default function Home() {
             >
               <Link
                 href={p.href}
-                className="glass-panel block p-8 rounded-2xl h-full border border-white/10 hover:border-primary/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(35,196,232,0.15)] hover:-translate-y-1 no-underline relative overflow-hidden"
+                className="glass-panel block p-8 rounded-sm h-full border border-white/10 hover:border-primary/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,255,65,0.15)] hover:-translate-y-1 no-underline relative overflow-hidden"
               >
                 {/* Background glow blob */}
-                <div className="absolute -right-20 -top-20 w-40 h-40 bg-primary/10 rounded-full blur-[50px] group-hover:bg-primary/20 transition-all duration-500" />
+                <div className="absolute -right-20 -top-20 w-40 h-40 bg-primary/10 rounded-none blur-[50px] group-hover:bg-primary/20 transition-all duration-500" />
                 
                 <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-primary/40 group-hover:bg-primary/10 transition-colors">
+                  <div className="w-12 h-12 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-primary/40 group-hover:bg-primary/10 transition-colors">
                     <Icon className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                   

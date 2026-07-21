@@ -54,7 +54,7 @@ export default function ProcessTimeline() {
         {/* The glowing vertical line */}
         <div className="absolute left-[39px] md:left-1/2 top-0 bottom-0 w-[2px] bg-white/10 md:-translate-x-1/2">
           <motion.div 
-            className="absolute top-0 left-0 w-full bg-primary shadow-[0_0_10px_#23c4e8]"
+            className="absolute top-0 left-0 w-full bg-primary shadow-[0_0_10px_#00ff41]"
             initial={{ height: "0%" }}
             whileInView={{ height: "100%" }}
             viewport={{ once: true, margin: "-100px" }}
@@ -76,7 +76,7 @@ export default function ProcessTimeline() {
                   whileInView={{ scale: 1, opacity: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.3, type: "spring" }}
-                  className="absolute left-[20px] md:left-1/2 w-10 h-10 rounded-full bg-background border-2 border-primary flex items-center justify-center shadow-[0_0_15px_rgba(35,196,232,0.4)] z-10 -translate-x-1/2"
+                  className="absolute left-[20px] md:left-1/2 w-10 h-10 rounded-full bg-background border-2 border-primary flex items-center justify-center shadow-[0_0_15px_rgba(0,255,65,0.4)] z-10 -translate-x-1/2"
                 >
                   <div className="w-3 h-3 bg-primary rounded-full" />
                 </motion.div>
@@ -87,10 +87,10 @@ export default function ProcessTimeline() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.3 + 0.2, duration: 0.5 }}
-                  className={`ml-16 md:ml-0 md:w-[45%] glass-panel p-6 rounded-2xl border border-white/10 hover:border-primary/50 transition-colors group`}
+                  className={`ml-16 md:ml-0 md:w-[45%] glass-panel p-6 rounded-sm border border-white/10 hover:border-primary/50 transition-colors group`}
                 >
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:bg-primary/20 transition-colors">
+                    <div className="w-12 h-12 rounded-sm bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:bg-primary/20 transition-colors">
                       <Icon className="w-6 h-6 text-primary" />
                     </div>
                     <h3 className="font-mono text-xl font-bold text-foreground">{step.title}</h3>
