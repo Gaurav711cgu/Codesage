@@ -1,188 +1,308 @@
 "use client";
 
-import Link from "next/link";
-import { motion } from "framer-motion";
-import { Terminal, Code2, BarChart3, Network, ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
-import ProcessTimeline from "@/components/ProcessTimeline";
-import ResearchSection from "@/components/ResearchSection";
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
+import RevealSection from '@/components/RevealSection';
+import { TERMINAL_LINES } from '@/constants/content';
+import { Database, Sliders, LineChart, Merge, Cloud, Code2, Search, FlaskConical, Book, Terminal } from 'lucide-react';
 
-const TERMINAL_STATS = [
-  { label: "retrieval",  value: "graph-augmented"   },
-  { label: "embeddings", value: "local lexical hash" },
-  { label: "expansion",  value: "1-hop AST"          },
-  { label: "context",    value: "top-8 chunks"       },
+function useCountUp(target: string | number, duration = 1500, trigger = false) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (!trigger) return;
+    const num = parseFloat(String(target).replace(/[^0-9.]/g, ''));
+    if (isNaN(num)) { setValue(target as number); return; }
+    const start = performance.now();
+    const step = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(eased * num * 10) / 10);
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [target, duration, trigger]);
+  return value;
+}
+
+function StatCard({ stat, isVisible }: { stat: any; isVisible: boolean }) {
+  const animVal = useCountUp(stat.value, 1500, isVisible);
+  return (
+    <div className="rounded-xl p-4 text-center transition-all duration-200 hover:translate-y-[-2px]"
+      style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)' }}>
+      <div className="font-head font-bold text-2xl sm:text-3xl" style={{ color: stat.color }}>
+        {stat.prefix || ''}{typeof animVal === 'number' ? (stat.value.includes('.') ? animVal.toFixed(1) : Math.round(animVal).toLocaleString()) : stat.value}{stat.suffix}
+      </div>
+      <div className="text-xs mt-1" style={{ color: 'var(--cs-text2)' }}>{stat.label}</div>
+      <div className="text-xs mt-0.5" style={{ color: 'var(--cs-text3)' }}>{stat.sub}</div>
+    </div>
+  );
+}
+
+const STATS = [
+  { value: '+7.1', suffix: 'pp', color: 'var(--cs-green)', label: 'HumanEval improvement', sub: 'vs base Llama 3.3 8B (pass@1)' },
+  { value: '12500', suffix: '', color: 'var(--cs-blue)', label: 'tokens/sec throughput', sub: 'vLLM + PagedAttention on H100' },
+  { value: '9.40', suffix: '', color: 'var(--cs-orange)', label: 'total fine-tuning cost', sub: '8B model, A100 80GB, Modal', prefix: '$' },
+  { value: '4', suffix: '-bit', color: 'var(--cs-purple)', label: 'NF4 QLoRA quantization', sub: '80-90% of full fine-tune quality' },
 ];
 
-const PAGES = [
+const SECTIONS = [
   {
-    href: "/repos",
-    label: "Repo Explorer",
-    desc: "Index a GitHub repo. Ask cross-file questions. Callers and callees are retrieved alongside the direct match.",
-    icon: Network,
-    delay: 0.1,
-    colSpan: "md:col-span-2",
+    to: '/playground',
+    badge: 'Interactive',
+    badgeColor: 'blue',
+    title: 'Live Playground',
+    desc: 'Code completion, review, test generation, and documentation — powered by Gemini.',
+    icon: <Code2 className="w-[22px] h-[22px]" stroke="var(--cs-blue-l)" strokeWidth={1.5} />
   },
   {
-    href: "/playground",
-    label: "Code Playground",
-    desc: "Paste any snippet. Get severity-ranked issues, an explained bug fix, or a generated test suite.",
-    icon: Code2,
-    delay: 0.2,
-    colSpan: "md:col-span-1",
+    to: '/training',
+    badge: 'Pipeline',
+    badgeColor: 'amber',
+    title: 'Training Deep-Dive',
+    desc: 'Dataset curation, QLoRA config, W&B tracking, adapter merging, Modal deployment.',
+    icon: <Sliders className="w-[22px] h-[22px]" stroke="var(--cs-amber)" strokeWidth={1.5} />
   },
   {
-    href: "/benchmarks",
-    label: "Benchmarks",
-    desc: "Real call-graph edge recall and retrieval latency from indexed open-source repositories.",
-    icon: BarChart3,
-    delay: 0.3,
-    colSpan: "md:col-span-1",
+    to: '/benchmarks',
+    badge: 'Results',
+    badgeColor: 'green',
+    title: 'Benchmarks',
+    desc: 'HumanEval, MBPP, HumanEval+, SQL generation — animated charts and comparisons.',
+    icon: <LineChart className="w-[22px] h-[22px]" stroke="var(--cs-green)" strokeWidth={1.5} />
   },
   {
-    href: "/architecture",
-    label: "Architecture",
-    desc: "7-stage ingestion: tree-sitter → NetworkX call graph → ChromaDB. Dive into how it works under the hood.",
-    icon: Terminal,
-    delay: 0.4,
-    colSpan: "md:col-span-2",
+    to: '/inference',
+    badge: 'Architecture',
+    badgeColor: 'purple',
+    title: 'Inference Stack',
+    desc: 'vLLM + PagedAttention: 12,500 tok/s, interactive architecture diagram.',
+    icon: <Database className="w-[22px] h-[22px]" stroke="var(--cs-purple-l)" strokeWidth={1.5} />
+  },
+  {
+    to: '/failures',
+    badge: 'Analysis',
+    badgeColor: 'red',
+    title: 'What Breaks',
+    desc: '6 real failure modes — catastrophic forgetting, OOM, quantization noise, and more.',
+    icon: <Search className="w-[22px] h-[22px]" stroke="var(--cs-red)" strokeWidth={1.5} />
+  },
+  {
+    to: '/mcp',
+    badge: 'Integration',
+    badgeColor: 'purple',
+    title: 'MCP Server',
+    desc: '4 tools exposed via Model Context Protocol — usable by Claude, Cursor, any agent.',
+    icon: <Terminal className="w-[22px] h-[22px]" stroke="var(--cs-purple-l)" strokeWidth={1.5} />
   },
 ];
+
+const colorMap: Record<string, string> = {
+  text3: 'var(--cs-text3)',
+  blue: 'var(--cs-blue)',
+  amber: 'var(--cs-amber)',
+  green: 'var(--cs-green-l)',
+};
 
 export default function Home() {
+  const [visibleLines, setVisibleLines] = useState<any[]>([]);
+  const [isVisible, setIsVisible] = useState(false);
+  const statsRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<NodeJS.Timeout[]>([]);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const startAnimation = useCallback(() => {
+    setVisibleLines([]);
+    timerRef.current.forEach(clearTimeout);
+    timerRef.current = [];
+    TERMINAL_LINES.forEach((line) => {
+      const t = setTimeout(() => {
+        setVisibleLines(prev => [...prev, line]);
+      }, line.delay);
+      timerRef.current.push(t);
+    });
+    const loopTimer = setTimeout(() => startAnimation(), 15000);
+    timerRef.current.push(loopTimer);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      startAnimation();
+    }
+    return () => timerRef.current.forEach(clearTimeout);
+  }, [startAnimation, mounted]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setIsVisible(true); },
+      { threshold: 0.2 }
+    );
+    if (statsRef.current) observer.observe(statsRef.current);
+    return () => observer.disconnect();
+  }, [mounted]);
+
   if (!mounted) return null;
 
   return (
-    <div className="max-w-[900px] mx-auto px-4 py-20 md:py-32 flex flex-col items-center text-center relative z-10">
-      
-      {/* Eyebrow */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="label-accent mb-6 bg-primary/10 border border-primary/30 px-3 py-1 rounded-sm shadow-[0_0_15px_rgba(0,255,65,0.15)] backdrop-blur-md inline-block"
-      >
-        graph-augmented rag · python codebases
-      </motion.div>
-
-      {/* Headline */}
-      <motion.h1 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="font-mono text-4xl md:text-6xl font-bold leading-tight tracking-tight text-foreground mb-6"
-      >
-        Understand <br className="md:hidden" />
-        <span className="text-primary text-glow">
-          any codebase.
-        </span>
-      </motion.h1>
-
-      {/* Body */}
-      <motion.p 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="font-sans text-base md:text-lg leading-relaxed text-muted-foreground max-w-[600px] mb-12"
-      >
-        Naive RAG retrieves isolated chunks. CodeSageZ retrieves the function you asked about{" "}
-        <span className="text-foreground font-medium border-b border-primary/50 pb-0.5">
-          and its callers and callees
-        </span>
-        . One-hop call graph expansion, scored and ranked, fed straight into context.
-      </motion.p>
-
-      {/* CTAs */}
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="flex flex-col sm:flex-row gap-4 mb-20 w-full sm:w-auto"
-      >
-        <Link
-          href="/repos"
-          className="font-sans text-sm font-semibold px-8 py-3 bg-primary text-primary-foreground rounded-sm shadow-[0_0_20px_rgba(0,255,65,0.4)] transition-all hover:shadow-[0_0_30px_rgba(0,255,65,0.6)] hover:scale-105 no-underline flex items-center justify-center gap-2 group"
-        >
-          Index a repo
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-        </Link>
-        <Link
-          href="/architecture"
-          className="font-sans text-sm font-medium px-8 py-3 border border-white/20 bg-white/5 text-foreground hover:bg-white/10 rounded-md transition-all hover:border-primary/50 hover:shadow-[0_0_15px_rgba(255,255,255,0.05)] no-underline flex items-center justify-center"
-        >
-          How it works
-        </Link>
-      </motion.div>
-
-      {/* Terminal stat bar */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
-        className="w-full max-w-[800px] mb-24"
-      >
-        <div className="terminal-bar glass-panel flex-col md:flex-row shadow-[0_0_30px_rgba(0,0,0,0.5)] border-white/10">
-          {TERMINAL_STATS.map((s, i) => (
-            <div key={s.label} className="terminal-bar-item flex-1 py-4 border-b md:border-b-0 md:border-r border-white/10 last:border-0 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-primary/5 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-              <span className="t-label relative z-10 text-white/50">{s.label}</span>
-              <span className="t-value relative z-10 text-primary font-bold group-hover:text-glow transition-all">{s.value}</span>
+    <div>
+      {/* Hero */}
+      <section className="pt-28 pb-10 sm:pt-32 sm:pb-14 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto">
+          <RevealSection>
+            <div className="flex flex-wrap gap-2 mb-6 justify-center">
+              <span className="px-3 py-1 rounded-full text-xs font-medium"
+                style={{ background: 'rgba(59,130,246,0.12)', color: 'var(--cs-blue-l)', border: '1px solid rgba(59,130,246,0.25)' }}>
+                Llama 3.3 8B Fine-Tuned
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-medium"
+                style={{ background: 'rgba(59,130,246,0.12)', color: 'var(--cs-blue-l)', border: '1px solid rgba(59,130,246,0.25)' }}>
+                vLLM Production Serving
+              </span>
             </div>
-          ))}
-        </div>
-      </motion.div>
+            <h1 className="font-head font-bold text-center leading-none mb-5"
+              style={{ fontSize: 'clamp(40px, 6vw, 68px)', color: 'var(--cs-text)', letterSpacing: '-0.02em' }}>
+              A Code Model That<br/>Actually Improves.
+            </h1>
+            <p className="text-center mx-auto mb-10" style={{ maxWidth: 540, color: 'var(--cs-text2)', fontSize: '16px', lineHeight: '1.75' }}>
+              QLoRA fine-tuned on curated code datasets.
+              Benchmarked against base Llama 3.3 8B on HumanEval and MBPP.
+              Served at 12,500 tok/s via vLLM + PagedAttention.
+              Exposed as an MCP tool to any agent or IDE.
+            </p>
+          </RevealSection>
 
-      {/* Bento Grid Features */}
-      <div className="w-full max-w-[900px] grid grid-cols-1 md:grid-cols-3 gap-6 text-left mb-24">
-        {PAGES.map((p, i) => {
-          const Icon = p.icon;
-          return (
-            <motion.div
-              key={p.href}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.6, delay: p.delay }}
-              className={`group ${p.colSpan}`}
-            >
-              <Link
-                href={p.href}
-                className="glass-panel block p-8 rounded-sm h-full border border-white/10 hover:border-primary/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,255,65,0.15)] hover:-translate-y-1 no-underline relative overflow-hidden"
-              >
-                {/* Background glow blob */}
-                <div className="absolute -right-20 -top-20 w-40 h-40 bg-primary/10 rounded-none blur-[50px] group-hover:bg-primary/20 transition-all duration-500" />
-                
-                <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-primary/40 group-hover:bg-primary/10 transition-colors">
-                    <Icon className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+          {/* Terminal */}
+          <RevealSection delay={120}>
+            <div data-testid="hero-terminal" className="mx-auto mb-10" style={{ maxWidth: 680 }}>
+              <div className="rounded-xl overflow-hidden" style={{ background: 'var(--cs-code-bg)', border: '1px solid var(--cs-border)' }}>
+                <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid var(--cs-border)' }}>
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#EF4444' }}></div>
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#F59E0B' }}></div>
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#22C55E' }}></div>
                   </div>
-                  
-                  <div className="font-mono text-lg font-bold text-foreground mb-3 flex items-center gap-2">
-                    {p.label}
-                    <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
-                  </div>
-                  <p className="font-sans text-sm text-muted-foreground leading-relaxed">
-                    {p.desc}
-                  </p>
+                  <span className="font-mono text-xs ml-2" style={{ color: 'var(--cs-text3)' }}>
+                    codesage-train — Modal A100 80GB — epoch 3/3
+                  </span>
                 </div>
+                <div className="p-4 font-mono text-xs sm:text-sm overflow-x-auto" style={{ minHeight: 300, lineHeight: '1.7' }}>
+                  {visibleLines.map((line, i) => (
+                    <div key={i} style={{ color: colorMap[line.color] || 'var(--cs-text3)' }}>
+                      {line.text}
+                      {line.check && <span style={{ color: 'var(--cs-green)' }}> &#10003;</span>}
+                    </div>
+                  ))}
+                  {visibleLines.length > 0 && (
+                    <span className="cursor-blink inline-block w-2 h-4 ml-0.5" style={{ background: 'var(--cs-green-l)' }}></span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </RevealSection>
+
+          {/* Stats */}
+          <RevealSection delay={200}>
+            <div ref={statsRef} className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl mx-auto mb-10">
+              {STATS.map((stat, i) => (
+                <StatCard key={i} stat={stat} isVisible={isVisible} />
+              ))}
+            </div>
+          </RevealSection>
+
+          {/* CTA */}
+          <RevealSection delay={280}>
+            <div className="flex flex-wrap justify-center gap-3 mb-16">
+              <Link href="/playground" data-testid="hero-try-playground-button"
+                className="px-6 py-3 rounded-lg font-semibold text-sm text-white transition-all duration-200 hover:translate-y-[-1px] hover:shadow-lg no-underline"
+                style={{ background: 'linear-gradient(135deg, #3B82F6, #60A5FA)' }}>
+                Try Live Playground &rarr;
               </Link>
-            </motion.div>
-          );
-        })}
-      </div>
+              <Link href="/benchmarks" data-testid="hero-view-benchmarks-button"
+                className="px-6 py-3 rounded-lg text-sm transition-colors duration-150 no-underline"
+                style={{ border: '1px solid var(--cs-border)', color: 'var(--cs-text2)', background: 'transparent' }}>
+                View Benchmarks
+              </Link>
+              <a href="https://github.com/Gaurav711cgu" target="_blank" rel="noopener noreferrer"
+                className="px-6 py-3 rounded-lg text-sm transition-colors duration-150 no-underline"
+                style={{ border: '1px solid var(--cs-border)', color: 'var(--cs-text2)', background: 'transparent' }}>
+                GitHub Repository
+              </a>
+            </div>
+          </RevealSection>
+        </div>
+      </section>
 
-      <ProcessTimeline />
-      
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-12" />
+      {/* Section cards */}
+      <section className="pb-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto">
+          <RevealSection>
+            <h2 className="font-head font-semibold text-2xl sm:text-3xl text-center mb-2" style={{ color: 'var(--cs-text)' }}>
+              Explore the Project
+            </h2>
+            <p className="text-center mb-10 text-sm" style={{ color: 'var(--cs-text3)' }}>
+              Each section dives deep into a different aspect of CodeSage.
+            </p>
+          </RevealSection>
 
-      <ResearchSection />
-      
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {SECTIONS.map((sec, i) => {
+              const cmap: Record<string, any> = {
+                blue: { bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)', text: 'var(--cs-blue-l)' },
+                amber: { bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.2)', text: 'var(--cs-amber)' },
+                green: { bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.2)', text: 'var(--cs-green)' },
+                purple: { bg: 'rgba(168,85,247,0.08)', border: 'rgba(168,85,247,0.2)', text: 'var(--cs-purple-l)' },
+                red: { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)', text: 'var(--cs-red)' },
+              };
+              const c = cmap[sec.badgeColor] || cmap.blue;
+              return (
+                <RevealSection key={i} delay={i * 80}>
+                  <Link href={sec.to}
+                    data-testid={`home-card-${sec.to.slice(1)}`}
+                    className="block rounded-xl p-5 transition-all duration-200 hover:translate-y-[-3px] group h-full no-underline"
+                    style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)' }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = c.border}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--cs-border)'}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 rounded-lg flex items-center justify-center" style={{ background: c.bg }}>
+                        {sec.icon}
+                      </div>
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                        style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}>
+                        {sec.badge}
+                      </span>
+                    </div>
+                    <h3 className="font-head font-semibold text-base mb-1.5 group-hover:text-blue-400 transition-colors"
+                      style={{ color: 'var(--cs-text)' }}>{sec.title}</h3>
+                    <p className="text-xs" style={{ color: 'var(--cs-text3)', lineHeight: '1.6' }}>{sec.desc}</p>
+                    <div className="mt-3 text-xs font-medium flex items-center gap-1" style={{ color: c.text }}>
+                      Explore
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </div>
+                  </Link>
+                </RevealSection>
+              );
+            })}
+          </div>
+
+          {/* Additional links row */}
+          <RevealSection delay={500}>
+            <div className="flex flex-wrap justify-center gap-3 mt-10">
+              <Link href="/stack" className="px-4 py-2 rounded-lg text-xs transition-all duration-150 hover:translate-y-[-1px] no-underline"
+                style={{ background: 'var(--cs-surface)', color: 'var(--cs-text2)', border: '1px solid var(--cs-border)' }}>
+                Tech Stack
+              </Link>
+              <Link href="/resume" className="px-4 py-2 rounded-lg text-xs transition-all duration-150 hover:translate-y-[-1px] no-underline"
+                style={{ background: 'var(--cs-surface)', color: 'var(--cs-text2)', border: '1px solid var(--cs-border)' }}>
+                Resume Bullet
+              </Link>
+            </div>
+          </RevealSection>
+        </div>
+      </section>
     </div>
   );
 }
