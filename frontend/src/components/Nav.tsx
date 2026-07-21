@@ -47,14 +47,6 @@ export default function Nav() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group no-underline" aria-label="CodeSage Home">
-            <div className="relative w-8 h-8 rounded-full flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105 shadow-sm" style={{ background: 'var(--cs-primary)' }}>
-              <Image 
-                src="/logo.png" 
-                alt="CodeSageZ Logo" 
-                fill 
-                className="object-cover invert opacity-90"
-              />
-            </div>
             <span className="font-playfair font-bold text-xl tracking-tight" style={{ color: 'var(--cs-text)' }}>CodeSage</span>
           </Link>
 
