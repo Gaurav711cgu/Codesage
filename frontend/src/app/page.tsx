@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import RevealSection from '@/components/RevealSection';
-import { TERMINAL_LINES } from '@/constants/content';
+import { TERMINAL_LINES, RESUME_BULLET } from '@/constants/content';
 import { Database, Sliders, LineChart, Merge, Cloud, Code2, Search, FlaskConical, Book, Terminal } from 'lucide-react';
 
 function useCountUp(target: string | number, duration = 1500, trigger = false) {
@@ -102,6 +102,16 @@ const colorMap: Record<string, string> = {
   amber: 'var(--cs-amber)',
   green: 'var(--cs-green-l)',
 };
+
+const TECH_LOGOS = [
+  { name: 'Python', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg' },
+  { name: 'TypeScript', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg' },
+  { name: 'React', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg' },
+  { name: 'Next.js', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/nextjs/nextjs-original.svg', invert: true },
+  { name: 'Tailwind', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/tailwindcss/tailwindcss-original.svg' },
+  { name: 'PyTorch', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/pytorch/pytorch-original.svg' },
+  { name: 'vLLM', src: 'https://raw.githubusercontent.com/vllm-project/vllm/main/docs/source/assets/logos/vllm-logo-text-light.png', isWide: true },
+];
 
 export default function Home() {
   const [visibleLines, setVisibleLines] = useState<any[]>([]);
@@ -285,17 +295,37 @@ export default function Home() {
             })}
           </div>
 
-          {/* Additional links row */}
-          <RevealSection delay={500}>
-            <div className="flex flex-wrap justify-center gap-3 mt-10">
-              <Link href="/stack" className="px-4 py-2 rounded-lg text-xs transition-all duration-150 hover:translate-y-[-1px] no-underline"
-                style={{ background: 'var(--cs-surface)', color: 'var(--cs-text2)', border: '1px solid var(--cs-border)' }}>
-                Tech Stack
-              </Link>
-              <Link href="/resume" className="px-4 py-2 rounded-lg text-xs transition-all duration-150 hover:translate-y-[-1px] no-underline"
-                style={{ background: 'var(--cs-surface)', color: 'var(--cs-text2)', border: '1px solid var(--cs-border)' }}>
-                Resume Bullet
-              </Link>
+          {/* Resume & Tech Stack */}
+          <RevealSection delay={300}>
+            <div className="mt-16 pt-16 border-t" style={{ borderColor: 'var(--cs-border)' }}>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                
+                {/* Tech Stack */}
+                <div>
+                  <h3 className="font-head font-semibold text-xl mb-6" style={{ color: 'var(--cs-text)' }}>Core Tech Stack</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {TECH_LOGOS.map((tech) => (
+                      <div key={tech.name} className="flex flex-col items-center justify-center gap-2 p-3 rounded-lg transition-colors hover:bg-white/5" 
+                        style={{ width: tech.isWide ? '120px' : '80px', background: 'var(--cs-surface)', border: '1px solid var(--cs-border)' }}>
+                        <img src={tech.src} alt={tech.name} className={`object-contain ${tech.invert ? 'invert' : ''} ${tech.isWide ? 'w-16 h-8' : 'w-8 h-8'}`} />
+                        <span className="text-[10px] font-medium text-center" style={{ color: 'var(--cs-text2)' }}>{tech.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Resume Bullet */}
+                <div>
+                  <h3 className="font-head font-semibold text-xl mb-6 flex items-center gap-2" style={{ color: 'var(--cs-text)' }}>
+                    Resume Bullet
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono" style={{ background: 'rgba(59,130,246,0.12)', color: 'var(--cs-blue-l)', border: '1px solid rgba(59,130,246,0.25)' }}>TL;DR</span>
+                  </h3>
+                  <div className="p-5 rounded-xl font-mono text-sm leading-relaxed" style={{ background: 'var(--cs-code-bg)', border: '1px solid var(--cs-border)', color: 'var(--cs-text2)' }}>
+                    {RESUME_BULLET}
+                  </div>
+                </div>
+
+              </div>
             </div>
           </RevealSection>
         </div>
