@@ -1,64 +1,34 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Terminal, Code, ArrowRight } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import { Terminal, Code, ArrowRight, Zap } from "lucide-react";
 
-const HF_MODEL = "Qwen/Qwen2.5-Coder-1.5B-Instruct";
-const HF_API_URL = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
-
-// Uses HF Inference API (free tier, no key needed for public models)
-async function queryModel(prompt: string): Promise<string> {
-  const systemPrompt =
-    "You are CodeSage, an expert Python coding assistant. " +
-    "Respond only with clean, well-commented code. No prose unless asked.";
-
-  const fullPrompt = `<|im_start|>system\n${systemPrompt}<|im_end|>\n<|im_start|>user\n${prompt}<|im_end|>\n<|im_start|>assistant\n`;
-
-  const res = await fetch(HF_API_URL, {
+async function callGemini(prompt: string): Promise<string> {
+  const res = await fetch("/api/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      inputs: fullPrompt,
-      parameters: {
-        max_new_tokens: 512,
-        temperature: 0.2,
-        do_sample: true,
-        return_full_text: false,
-        stop: ["<|im_end|>"],
-      },
-    }),
+    body: JSON.stringify({ prompt }),
   });
-
-  if (res.status === 503) {
-    // Model is loading (cold start) — HF free tier warms up in ~20s
-    const data = await res.json();
-    const wait = (data?.estimated_time ?? 20) * 1000;
-    throw new Error(`MODEL_LOADING:${Math.ceil(wait / 1000)}`);
-  }
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`API error ${res.status}: ${err}`);
-  }
-
   const data = await res.json();
-  const raw: string =
-    Array.isArray(data) ? data[0]?.generated_text ?? "" : data?.generated_text ?? "";
-
-  return raw.replace(/<\|im_end\|>/g, "").trim();
+  if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+  return data.result as string;
 }
+
+const EXAMPLES = [
+  "Write a palindrome checker in Python",
+  "Implement a binary search tree with insert and search",
+  "Write a function to flatten a nested list",
+  "Explain how graph neural networks work",
+];
 
 export default function PlaygroundPage() {
   const [input, setInput] = useState("");
   const [history, setHistory] = useState([
-    {
-      type: "system",
-      content: `CodeSage — ${HF_MODEL}`,
-    },
+    { type: "system", content: "CodeSage — powered by Gemini 1.5 Flash" },
     {
       type: "system",
       content:
-        'Type a prompt to generate Python code. e.g. "Write a palindrome checker"',
+        'Ask anything about code or Python. e.g. "Write a palindrome checker"',
     },
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -71,109 +41,99 @@ export default function PlaygroundPage() {
   const addMsg = (type: string, content: string) =>
     setHistory((prev) => [...prev, { type, content }]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isGenerating) return;
-
-    const query = input.trim();
+  const submit = async (query: string) => {
+    if (!query.trim() || isGenerating) return;
     setInput("");
     addMsg("user", "> " + query);
     setIsGenerating(true);
-
-    let attempt = 0;
-    const maxAttempts = 3;
-
-    while (attempt < maxAttempts) {
-      try {
-        const result = await queryModel(query);
-        addMsg("assistant", result || "(empty response — try rephrasing)");
-        break;
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.startsWith("MODEL_LOADING:")) {
-          const secs = msg.split(":")[1];
-          addMsg(
-            "system",
-            `Model is warming up on HuggingFace (cold start ~${secs}s). Retrying…`
-          );
-          await new Promise((r) => setTimeout(r, parseInt(secs) * 1000 + 2000));
-          attempt++;
-        } else {
-          addMsg(
-            "error",
-            `Error: ${msg}\n\nNote: HuggingFace free tier has rate limits. Wait a moment and try again.`
-          );
-          break;
-        }
-      }
+    try {
+      const result = await callGemini(query);
+      addMsg("assistant", result);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      addMsg("error", "Error: " + msg);
+    } finally {
+      setIsGenerating(false);
     }
+  };
 
-    setIsGenerating(false);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submit(input.trim());
   };
 
   return (
-    <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center p-4 sm:p-8">
+    <div className="min-h-screen bg-[#090909] text-green-400 font-mono flex flex-col items-center p-4 sm:p-8">
       <main className="flex-1 w-full max-w-4xl mt-24 mb-16 space-y-8 flex flex-col">
         {/* Header */}
-        <div className="space-y-4 text-center shrink-0">
-          <div className="inline-block px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-sm font-semibold mb-2">
-            Live · No Mock Data
+        <div className="space-y-3 text-center shrink-0">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-sm font-semibold">
+            <Zap size={13} className="animate-pulse" />
+            Live · Gemini 1.5 Flash
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight font-sans">
             Live Playground
           </h1>
-          <p className="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
-            Calls{" "}
-            <span className="text-green-400 font-semibold">
-              {HF_MODEL}
-            </span>{" "}
-            directly via HuggingFace Inference API.
+          <p className="text-gray-500 text-base leading-relaxed max-w-xl mx-auto font-sans">
+            Real AI responses — no mocks, no hardcoded outputs.
           </p>
         </div>
 
+        {/* Example chips */}
+        <div className="flex flex-wrap gap-2 justify-center">
+          {EXAMPLES.map((ex) => (
+            <button
+              key={ex}
+              onClick={() => submit(ex)}
+              disabled={isGenerating}
+              className="px-3 py-1.5 rounded-full text-xs border border-white/10 text-gray-400 hover:border-green-500/40 hover:text-green-400 transition-all font-sans disabled:opacity-40"
+            >
+              {ex}
+            </button>
+          ))}
+        </div>
+
         {/* Terminal */}
-        <div className="flex-1 min-h-[500px] max-h-[700px] border border-white/20 rounded-xl bg-[#0a0a0a] flex flex-col overflow-hidden shadow-2xl shadow-green-900/20">
-          {/* Terminal Header */}
-          <div className="h-12 bg-white/5 border-b border-white/10 flex items-center px-4 gap-2 shrink-0">
-            <div className="flex gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500/80" />
-              <div className="w-3 h-3 rounded-full bg-amber-500/80" />
-              <div className="w-3 h-3 rounded-full bg-green-500/80" />
+        <div className="flex-1 min-h-[500px] max-h-[680px] border border-white/10 rounded-xl bg-[#0a0a0a] flex flex-col overflow-hidden shadow-2xl shadow-green-900/10">
+          {/* Bar */}
+          <div className="h-11 bg-white/[0.03] border-b border-white/10 flex items-center px-4 gap-3 shrink-0">
+            <div className="flex gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-red-500/70" />
+              <div className="w-3 h-3 rounded-full bg-amber-500/70" />
+              <div className="w-3 h-3 rounded-full bg-green-500/70" />
             </div>
-            <div className="ml-4 flex items-center text-xs text-gray-400 font-sans gap-2 font-semibold">
-              <Terminal size={14} />
-              <span>codesage@hf-inference:~$</span>
+            <div className="ml-2 flex items-center text-xs text-gray-500 font-sans gap-1.5">
+              <Terminal size={13} />
+              <span>codesage ~ gemini-1.5-flash</span>
             </div>
           </div>
 
-          {/* Output */}
-          <div className="flex-1 p-6 overflow-y-auto space-y-4 text-sm font-mono leading-relaxed">
+          {/* Output area */}
+          <div className="flex-1 p-5 overflow-y-auto space-y-5 text-sm leading-relaxed">
             {history.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${
-                  msg.type === "user"
-                    ? "text-blue-400"
-                    : msg.type === "system"
-                    ? "text-gray-500"
-                    : msg.type === "error"
-                    ? "text-red-400"
-                    : "text-green-400"
-                }`}
-              >
-                {msg.type === "assistant" ? (
-                  <pre className="whitespace-pre-wrap break-words w-full">
+              <div key={i}>
+                {msg.type === "user" && (
+                  <div className="text-blue-400">{msg.content}</div>
+                )}
+                {msg.type === "system" && (
+                  <div className="text-gray-600 text-xs">{msg.content}</div>
+                )}
+                {msg.type === "error" && (
+                  <div className="text-red-400 text-xs">{msg.content}</div>
+                )}
+                {msg.type === "assistant" && (
+                  <pre className="whitespace-pre-wrap break-words text-green-300 font-mono text-sm leading-relaxed">
                     {msg.content}
                   </pre>
-                ) : (
-                  <span>{msg.content}</span>
                 )}
               </div>
             ))}
             {isGenerating && (
-              <div className="text-green-400 animate-pulse flex items-center gap-2">
-                <span className="inline-block w-2 h-4 bg-green-400" />
-                <span className="text-gray-500 text-xs font-sans">generating…</span>
+              <div className="flex items-center gap-2 text-green-500">
+                <span className="inline-block w-2 h-4 bg-green-400 animate-pulse rounded-sm" />
+                <span className="text-gray-500 text-xs font-sans">
+                  Gemini is thinking…
+                </span>
               </div>
             )}
             <div ref={bottomRef} />
@@ -182,32 +142,31 @@ export default function PlaygroundPage() {
           {/* Input */}
           <form
             onSubmit={handleSubmit}
-            className="shrink-0 p-4 bg-white/5 border-t border-white/10 flex items-center gap-3"
+            className="shrink-0 px-4 py-3 bg-white/[0.03] border-t border-white/10 flex items-center gap-3"
           >
-            <Code size={18} className="text-gray-500 shrink-0" />
+            <Code size={16} className="text-gray-600 shrink-0" />
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask CodeSage to write some code…"
-              className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-gray-600 font-mono"
+              placeholder="Ask CodeSage anything…"
+              className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-gray-700 font-mono text-sm"
               disabled={isGenerating}
               autoComplete="off"
+              autoFocus
             />
             <button
               type="submit"
               disabled={isGenerating || !input.trim()}
-              className="p-2 rounded bg-green-500/20 text-green-400 hover:bg-green-500/30 disabled:opacity-50 transition-colors"
+              className="p-1.5 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 disabled:opacity-30 transition-colors"
             >
-              <ArrowRight size={18} />
+              <ArrowRight size={16} />
             </button>
           </form>
         </div>
 
-        {/* Footer note */}
-        <p className="text-center text-xs text-gray-600 font-sans">
-          Powered by HuggingFace free Inference API · Cold starts may take ~20s ·
-          Rate limited on free tier
+        <p className="text-center text-xs text-gray-700 font-sans">
+          API key is server-side only · never exposed to the browser
         </p>
       </main>
     </div>
