@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="frontend/public/logo.png" width="96" height="96" alt="CodeSageZ Logo" />
+  
   <h1>CodeSageZ</h1>
   <p><strong>Graph-Augmented Code Intelligence & Repository-Level RAG Engine</strong></p>
 
