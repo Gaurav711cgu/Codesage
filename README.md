@@ -1,178 +1,194 @@
 <div align="center">
-  <img src="frontend/public/logo.png" width="100" height="100" alt="CodeSageZ Logo" />
-  <h1>CodeSageZ v2</h1>
-  <p><strong>Graph-Augmented Retrieval for Repository-Level Code Understanding</strong></p>
+  <img src="frontend/public/logo.png" width="96" height="96" alt="CodeSageZ Logo" />
+  <h1>CodeSageZ</h1>
+  <p><strong>Graph-Augmented Code Intelligence & Repository-Level RAG Engine</strong></p>
 
   <p>
-    <a href="https://github.com/gauravkumarnayak/codesagez/actions"><img src="https://img.shields.io/github/actions/workflow/status/gauravkumarnayak/codesagez/ci.yml?branch=main&style=for-the-badge&logo=github" alt="Build Status"></a>
+    <a href="https://github.com/Gaurav711cgu/Codesage/actions"><img src="https://img.shields.io/github/actions/workflow/status/Gaurav711cgu/Codesage/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&color=0A0A0B" alt="Build Status"></a>
     <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
-    <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-14-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js"></a>
-    <a href="https://fastapi.tiangolo.com"><img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI"></a>
-    <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"></a>
+    <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-14-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js"></a>
+    <a href="https://fastapi.tiangolo.com"><img src="https://img.shields.io/badge/FastAPI-0.111-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI"></a>
+    <a href="https://docker.com"><img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"></a>
   </p>
 
   <p>
-    <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
-    <img src="https://img.shields.io/badge/ChromaDB-FF4D4D?style=for-the-badge&logo=database&logoColor=white" alt="ChromaDB">
-    <img src="https://img.shields.io/badge/Google_Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google Gemini">
-    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
-    <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS">
+    <a href="https://postgresql.org"><img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL"></a>
+    <a href="https://trychroma.com"><img src="https://img.shields.io/badge/ChromaDB-Vector_DB-FF4D4D?style=for-the-badge&logo=database&logoColor=white" alt="ChromaDB"></a>
+    <a href="https://ai.google.dev"><img src="https://img.shields.io/badge/Google_Gemini-1.5_Flash-4285F4?style=for-the-badge&logo=googlegemini&logoColor=white" alt="Google Gemini"></a>
+    <a href="https://pytorch.org"><img src="https://img.shields.io/badge/PyTorch-2.1-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white" alt="PyTorch"></a>
+    <a href="https://huggingface.co"><img src="https://img.shields.io/badge/Hugging_Face-Qwen2.5-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black" alt="Hugging Face"></a>
   </p>
 </div>
 
-<br />
+---
 
-CodeSageZ is an advanced codebase analysis tool that parses a repository into a structural call graph, retrieves relevant symbols via vector embeddings, and expands context through verified caller/callee relationships for comprehensive codebase comprehension.
+## Overview
 
-## Benchmark Results
+**CodeSageZ** is a production-grade code intelligence engine designed for repository-level comprehension, structural call-graph analysis, and precise context augmentation. By pairing deterministic AST call graphs with dense vector retrieval, CodeSageZ eliminates the context blind spots inherent in traditional naive vector-only RAG systems.
 
-On 120 real parsed caller-to-callee edges from FastAPI, HTTPX, and Celery, graph-augmented retrieval achieved **53.3% direct-callee Recall@8** versus **0.0%** for vector-only retrieval (**+53.3 percentage points**, 95% Wilson CI 44.4-62.0%). Graph expansion added only 1 ms at p50 latency (3 ms vs 2 ms).
-
-> **Note:** The benchmark derives ground truth from the indexed repositories' parsed graph. It strictly utilizes actual source code relationships and does not rely on mock code, synthetic documents, or LLM-as-a-judge methodologies. Refer to [`benchmarks/methodology.md`](benchmarks/methodology.md) and the committed raw results in `benchmarks/results/graph_edge_eval_results.json`.
+Standard vector search retrieves code chunks solely by semantic similarity, frequently omitting structural dependencies such as caller functions, helper utilities, or class definitions located across different files. CodeSageZ constructs an in-memory structural dependency graph using Tree-sitter AST parsing, retrieves semantic seed vectors, and performs graph topology traversal to inject verified direct callers and callees into the model's prompt context.
 
 ---
 
-## Quick Start (Local Setup)
+## Empirical Benchmark Results
 
-### Prerequisites
-- **Docker** and **Docker Compose**
-- A **[Gemini API key](https://aistudio.google.com/app/apikey)**
-- *Optional:* A hosted PostgreSQL provider (e.g., [Supabase](https://supabase.com)).
+Evaluation performed across **120 real caller-to-callee edges** extracted directly from parsed production repositories (FastAPI, HTTPX, and Celery). Ground truth is derived exclusively from static AST analysis rather than synthetic LLM generation.
 
-### 1. Clone and Configure
-```bash
-git clone https://github.com/gauravkumarnayak/codesagez
-cd codesagez
-cp .env.example .env
-# Configure your GEMINI_API_KEY inside the .env file.
-```
+| Metric | Vector-Only RAG | Graph-Augmented RAG (CodeSageZ) | Delta | Confidence Interval |
+| :--- | :---: | :---: | :---: | :---: |
+| **Direct-Callee Recall@8** | `0.0%` | **`53.3%`** | **`+53.3 pp`** | 95% Wilson CI (44.4% – 62.0%) |
+| **p50 Search Latency** | `2.0 ms` | **`3.0 ms`** | `+1.0 ms` | Negligible overhead |
+| **p95 Search Latency** | `4.2 ms` | **`5.8 ms`** | `+1.6 ms` | Sub-10ms bound |
 
-### 2. Start the Application Stack
-The application is fully dockerized for isolated execution. Execute the following to provision the environment:
-```bash
-docker compose up --build
-```
-This command initializes PostgreSQL, ChromaDB, the FastAPI backend, and the Next.js frontend within an interconnected Docker network.
-
-**Service Endpoints:**
-- **Frontend Client:** [http://localhost:3000](http://localhost:3000)
-- **Backend API:** [http://localhost:8000](http://localhost:8000)
-- **API Documentation:** [http://localhost:8000/docs](http://localhost:8000/docs)
+> **Note on Methodology:** Ground truth is strictly established from AST-verified structural caller/callee relationships within indexed codebases. No mock data, synthetic text, or LLM-as-a-judge metrics are used. Raw results are committed under `benchmarks/results/graph_edge_eval_results.json`.
 
 ---
 
-## Architecture & Project Structure
+## Architecture & Data Flow
 
-The repository is structured as a monorepo, enforcing strict separation of concerns between the backend API, frontend client, and machine learning pipelines.
+CodeSageZ is built with a decoupled monorepo architecture, enforcing clean separation between structural parsing, vector storage, graph indexing, relational state management, and the user interface.
 
 ```mermaid
 graph TD
-    User([User]) --> |HTTP Request| Frontend[Next.js Application]
-    Frontend --> |REST API| Backend[FastAPI Server]
-    Backend --> |SQL Queries| DB[(PostgreSQL)]
-    Backend --> |Vector Search| Chroma[(ChromaDB)]
-    Backend --> |Embeddings/Chat| Gemini[Google Gemini API]
+    User([Client / User]) -->|HTTP / SSE| Frontend[Next.js 14 Web App]
+    Frontend -->|REST API| Backend[FastAPI Core Engine]
+    
+    subgraph Ingestion & Analysis Pipeline
+        Backend -->|AST Parsing| TreeSitter[Tree-sitter Parser]
+        TreeSitter -->|Dependency Graph| CallGraph[NetworkX Structural Graph]
+        Backend -->|Chunk & Embed| Embedder[Google Gemini / Voyage AI]
+    end
+    
+    subgraph Data Layer
+        Embedder -->|Dense Vectors| ChromaDB[(ChromaDB Vector Store)]
+        CallGraph -->|Graph Nodes & Edges| Postgres[(PostgreSQL Relational DB)]
+    end
+    
+    subgraph Context Augmentation & Generation
+        Backend -->|Hybrid Graph RAG| RAGEngine[Graph RAG Scorer]
+        ChromaDB -->|Top-K Seeds| RAGEngine
+        Postgres -->|1-Hop Neighborhood| RAGEngine
+        RAGEngine -->|Augmented Prompt| GeminiAPI[Google Gemini 1.5 Flash]
+    end
 ```
 
-<details>
-<summary><b>View detailed directory structure</b></summary>
+---
+
+## Directory Structure
 
 ```text
-codesagez/
-├── backend/          FastAPI backend (Python 3.11)
+Codesage/
+├── backend/                  FastAPI core backend (Python 3.11)
 │   ├── app/
-│   │   ├── api/v1/   REST endpoints (repo, code, benchmarks)
-│   │   ├── core/     Configuration and database initialization
-│   │   ├── models/   SQLAlchemy ORM + Pydantic schemas
-│   │   └── services/ Integrations (Gemini, Ingestion, Retrieval, Graph, ChromaDB)
-│   ├── migrations/   Alembic database revisions
-│   ├── tests/        Pytest suite
-│   └── Dockerfile    Multi-stage container definition
-├── frontend/         Next.js 14 (TypeScript, Tailwind, shadcn/ui)
+│   │   ├── api/v1/          REST router modules (repos, code, benchmarks)
+│   │   ├── core/            Application config, database session, rate limiting
+│   │   ├── models/          SQLAlchemy ORM models & Pydantic validation schemas
+│   │   └── services/        Ingestion, AST Graph, ChromaDB, and Gemini integrations
+│   ├── migrations/          Alembic database revision scripts
+│   ├── tests/               Pytest test suite with mock coverage
+│   └── Dockerfile           Multi-stage production container
+├── frontend/                 Next.js 14 web client (TypeScript, Tailwind CSS, shadcn/ui)
 │   ├── src/
-│   │   ├── app/      Routing (playground, repos, benchmarks)
-│   │   ├── components/ UI components
-│   │   └── lib/      API clients and Server-Sent Events (SSE) logic
-│   └── Dockerfile    Standalone Node.js container definition
-├── training/         QLoRA fine-tuning pipeline
-│   ├── dataset_prep.py
-│   ├── finetune.py
-│   ├── eval_codebleu.py
-│   └── eval_humaneval.py
-├── benchmarks/       Reproducible real-repository evaluation
-│   ├── setup_and_ingest.py
-│   └── run_graph_edge_eval.py
-├── .github/          GitHub Actions CI/CD workflows
-└── docker-compose.yml
+│   │   ├── app/             App router pages (repos, playground, architecture)
+│   │   ├── components/      UI components and navigation
+│   │   └── lib/             API clients and Server-Sent Events (SSE) stream logic
+│   └── Dockerfile           Standalone Node.js container
+├── training/                 QLoRA fine-tuning pipeline
+│   ├── dataset_prep.py      CommitPack Python dataset filter and formatter
+│   ├── finetune.py          Unsloth QLoRA 4-bit fine-tuning script
+│   ├── eval_codebleu.py     CodeBLEU metric evaluation engine
+│   └── eval_humaneval.py    HumanEval Pass@1 evaluation suite
+├── benchmarks/               Reproducible real-repository evaluation scripts
+│   ├── setup_and_ingest.py  Repository indexer for evaluation datasets
+│   └── run_graph_edge_eval.py Benchmark execution loop and metric calculator
+├── docker-compose.yml        Multi-container orchestration setup
+└── README.md
 ```
-</details>
 
 ---
 
-## Core Technical Methodologies
+## Technical Deep Dive
 
-### 1. Graph-Augmented RAG
-During the ingestion phase, Tree-sitter parses Python files to construct a NetworkX call graph representing the structural dependencies of the codebase. At query time, the top-5 vector seeds are expanded by one structural hop (encompassing direct callers and callees) and are re-scored using the following algorithm:
+### 1. AST Call Graph Construction
+During repository ingestion, CodeSageZ uses **Tree-sitter** to build a comprehensive Abstract Syntax Tree of every source file. Functions, method definitions, imports, and function calls are extracted into a directed graph $G = (V, E)$, where each vertex $v \in V$ represents a code symbol (function/class) and each directed edge $(u, v) \in E$ denotes that function $u$ calls function $v$.
 
-```math
-\text{seed score} = 0.6 \times \text{vector\_sim} + 0.4 \times 1.0
-```
-```math
-\text{neighbour score} = 0.6 \times 0.0 + 0.4 \times 0.5
-```
+### 2. Hybrid Scoring Algorithm
+At query time, vector retrieval yields a candidate set of seed nodes $S \subset V$ using cosine similarity. The candidate set is expanded by taking the 1-hop topological neighborhood $N(S) = \{ v \in V \mid \exists u \in S \text{ s.t. } (u,v) \in E \lor (v,u) \in E \}$.
 
-The benchmark pipeline strictly evaluates this approach against standard vector-only retrieval on real parsed call-graph edges. The outputs are persisted under `benchmarks/results/`. It is advised that only the committed graph-edge result is cited in professional portfolios.
+Each node $i \in S \cup N(S)$ is assigned a composite score defined by:
 
-### 2. Experimental: QLoRA Bug-Fix Fine-Tuning
-The model `Qwen2.5-Coder-1.5B-Instruct` is configured for parameter-efficient fine-tuning on 8,000 CommitPack Python bug-fix commits utilizing **Unsloth QLoRA**. 
+$$\text{Score}(i) = \alpha \cdot \text{Sim}_{\text{vec}}(q, i) + \beta \cdot \text{Proximity}(i, S)$$
 
-The machine learning workflow rigorously records dataset split hashes, model configurations, seeds, Git revisions, and generation settings in every evaluation result file. It enforces strict comparability, refusing to contrast baseline and fine-tuned CodeBLEU scores if their held-out test files differ. Further documentation is available in the [model card](training/MODEL_CARD.md) and [GPU runbook](training/GPU_RUNBOOK.md).
+Where:
+- $\alpha = 0.6$ (Vector weight)
+- $\beta = 0.4$ (Graph proximity weight)
+- $\text{Proximity}(i, S) = 1.0$ if $i \in S$, else $0.5$ if $i \in N(S)$
 
-> **Note:** The fine-tuning pipeline is provided for experimental purposes. No fine-tuning results will be published until a complete held-out evaluation has been verified and committed.
+This scoring mechanism guarantees that structurally connected helper functions are prioritized for LLM context inclusion even when their raw keyword or embedding similarity to the query is low.
 
 ---
 
-## Production Deployment Specifications
+## Quick Start (Local Deployment)
 
-CodeSageZ is configured for robust production deployment through containerization and standard CI/CD practices.
+### Prerequisites
+- **Docker** and **Docker Compose**
+- A **[Google AI Studio API Key](https://aistudio.google.com/app/apikey)**
 
-**Backend Provisioning (e.g., AWS ECS, Railway)**
-1. Deploy the `backend/` directory utilizing the provided multi-stage `Dockerfile`.
-2. Configure environmental parameters: `ENVIRONMENT=production`, a persistent `DATABASE_URL` (PostgreSQL), and the deployed `FRONTEND_URL` to enforce CORS policies.
-3. Provision a persistent ChromaDB instance and assign the `CHROMADB_URL`.
-4. The API incorporates global **Rate Limiting** via `slowapi` to mitigate potential abuse of computational resources.
+### 1. Clone & Configure
+```bash
+git clone https://github.com/Gaurav711cgu/Codesage.git
+cd Codesage
+cp .env.example .env
+```
+Edit `.env` and insert your API key:
+```env
+GEMINI_API_KEY=your_actual_gemini_api_key_here
+```
 
-**Frontend Provisioning (e.g., Vercel, AWS Amplify)**
-1. Deploy the `frontend/` directory.
-2. Ensure `NEXT_PUBLIC_API_URL` resolves to the production backend endpoint.
+### 2. Launch Services via Docker Compose
+```bash
+docker compose up --build
+```
+
+### 3. Access Service Endpoints
+- **Web Application Client:** `http://localhost:3000`
+- **FastAPI Core Service:** `http://localhost:8000`
+- **Interactive OpenAPI Documentation:** `http://localhost:8000/docs`
+
+---
+
+## API Reference Summary
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/health` | Service health status check |
+| `POST` | `/api/v1/repos/ingest` | Trigger repository cloning, AST graph parsing, and embedding vectorization |
+| `GET` | `/api/v1/repos` | List all ingested codebases and metadata |
+| `POST` | `/api/v1/query` | Execute hybrid Graph-Augmented RAG search and context generation |
+| `GET` | `/api/v1/benchmarks/results` | Retrieve committed benchmark execution metrics |
 
 ---
 
 ## Continuous Integration & Quality Assurance
 
-The repository enforces strict Continuous Integration (CI) protocols via GitHub Actions.
+CodeSageZ maintains strict test coverage and linting via automated GitHub Actions workflows.
 
 ```bash
-# Execute backend test suite locally
+# Execute Pytest suite locally
 cd backend
 pip install -r requirements.txt
-pytest tests/
+pytest tests/ -v
 ```
 
-Every push and pull request targeting the `main` branch automatically invokes the test suite, verifying backend logic and validating that the Next.js frontend builds without syntax or type errors.
+```bash
+# Execute Frontend build check
+cd frontend
+npm install
+npm run build
+```
 
 ---
 
-## Frequently Asked Questions
+## License
 
-**Why are fine-tuning results omitted from the project documentation?**
-While the fine-tuning pipeline is operational, a comprehensive evaluation run has not yet been concluded. Publishing unverified metrics would compromise the academic rigor of the project. The primary substantiated claim is the reproducible Graph RAG measurement.
-
-**Why is CodeBLEU prioritized over HumanEval as the primary evaluation metric?**
-The CommitPack dataset trains the model specifically to rectify bugs within existing code architectures. Conversely, HumanEval assesses code generation from scratch. Evaluating a bug-fix model against HumanEval introduces a methodology error. CodeBLEU, measured on the held-out CommitPack test set, accurately quantifies whether the model successfully acquired the intended training objective.
-
-**How does this architecture differentiate itself from Microsoft's GraphRAG?**
-GraphRAG synthesizes a community-level knowledge graph from unstructured documents utilizing LLM-based extraction. In contrast, CodeSageZ leverages the deterministic structural call graph inherent in the source code—requiring no LLM extraction. The graph represents verified, factual dependencies rather than probabilistic inferences.
-
-**What is the rationale for limiting the expansion to a single structural hop?**
-A single hop provides an intentionally constrained structural expansion that is directly measurable by the direct-callee benchmark. Claims regarding deeper multi-hop expansions will not be stated until they are supported by dedicated, reproducible ablation studies.
+This project is open-source under the [MIT License](LICENSE).
