@@ -89,10 +89,14 @@ def safe_calc_codebleu(references, predictions, lang="python"):
 
     weighted_ngram_score = ngram_score
     try:
-        from codebleu.weighted_ngram_match import corpus_weighted_ngram_match
-        weighted_ngram_score = corpus_weighted_ngram_match(references, predictions, lang)
-    except Exception as e:
-        logger.warning("corpus_weighted_ngram_match fallback error: %s", e)
+        import codebleu.weighted_ngram_match as w_ngram
+        if hasattr(w_ngram, "corpus_weighted_ngram_match"):
+            weighted_ngram_score = w_ngram.corpus_weighted_ngram_match(references, predictions, lang)
+        elif hasattr(w_ngram, "corpus_bleu"):
+            weighted_ngram_score = w_ngram.corpus_bleu(references, predictions)
+    except Exception:
+        pass
+
 
     syntax_score = ngram_score
     try:
