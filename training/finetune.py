@@ -221,6 +221,15 @@ def train() -> None:
         packing=False,
     )
 
+    # Fix Unsloth AttributeError: 'int' object has no attribute 'mean' on transformers >= 4.46
+    _orig_training_step = trainer.training_step
+    def _safe_training_step(model, inputs, num_items_in_batch=None):
+        if isinstance(num_items_in_batch, int):
+            num_items_in_batch = None
+        return _orig_training_step(model, inputs, num_items_in_batch)
+    trainer.training_step = _safe_training_step
+
+
     # Print memory before training
     torch.cuda.reset_peak_memory_stats()
     logger.info("Starting training…")
