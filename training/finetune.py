@@ -54,11 +54,15 @@ logger = logging.getLogger(__name__)
 _TRAINING_DIR  = Path(__file__).parent
 DATA_DIR       = _TRAINING_DIR / "data"
 RESULTS_DIR    = _TRAINING_DIR / "results"
-CHECKPOINT_DIR = Path("/content/checkpoints")  # Colab ephemeral storage
-DRIVE_CKPT_DIR = Path("/content/drive/MyDrive/codesagez/checkpoints")  # Drive backup
+if Path("/kaggle/working").exists():
+    CHECKPOINT_DIR = Path("/kaggle/working/checkpoints")
+else:
+    CHECKPOINT_DIR = Path("/content/checkpoints")
+DRIVE_CKPT_DIR = Path("/content/drive/MyDrive/codesagez/checkpoints")  # Drive backup if mounted
 
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+
 
 # ── Hyperparameters ───────────────────────────────────────────────────────────
 # T4-safe values. Do NOT increase MAX_SEQ_LENGTH or BATCH_SIZE without
