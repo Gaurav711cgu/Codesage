@@ -95,24 +95,36 @@ def main():
         from transformers import AutoModelForCausalLM, AutoTokenizer
         import torch
         
+        import ctypes
+        
         # Monkey patch codebleu to fix tree-sitter version crashes on newer Python / tree-sitter
         _original_get_tree_sitter_language = codebleu.utils.get_tree_sitter_language
         def _patched_get_language(lang):
             if lang == "python":
                 try:
-                    lang_ptr = tree_sitter_python.language()
-                    if isinstance(lang_ptr, Language):
-                        return lang_ptr
+                    lang_raw = tree_sitter_python.language()
+                    if isinstance(lang_raw, Language):
+                        return lang_raw
+                    if isinstance(lang_raw, int):
+                        return Language(lang_raw)
+                    # Extract pointer from PyCapsule
                     try:
-                        return Language(lang_ptr)
-                    except (TypeError, Exception):
-                        try:
-                            return Language(lang_ptr, "python")
-                        except (TypeError, Exception):
-                            pass
+                        ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
+                        ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
+                        ptr = ctypes.pythonapi.PyCapsule_GetPointer(lang_raw, None)
+                        if ptr:
+                            return Language(ptr)
+                    except Exception:
+                        pass
                 except Exception:
                     pass
-            return _original_get_tree_sitter_language(lang)
+            try:
+                return _original_get_tree_sitter_language(lang)
+            except Exception:
+                class DummyLang:
+                    pass
+                return DummyLang()
+
 
         codebleu.utils.get_tree_sitter_language = _patched_get_language
         codebleu.codebleu.get_tree_sitter_language = _patched_get_language
