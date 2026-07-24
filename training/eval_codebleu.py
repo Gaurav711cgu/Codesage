@@ -83,14 +83,15 @@ def main():
     args = parser.parse_args()
 
     try:
-        from codebleu import calc_codebleu
+        import codebleu
+        import codebleu.codebleu
         import codebleu.utils
         import tree_sitter_python
         from tree_sitter import Language
         from transformers import AutoModelForCausalLM, AutoTokenizer
         import torch
         
-        # Monkey patch codebleu to fix the tree-sitter version crashes
+        # Monkey patch codebleu to fix tree-sitter version crashes on newer Python / tree-sitter
         _original_get_tree_sitter_language = codebleu.utils.get_tree_sitter_language
         def _patched_get_language(lang):
             if lang == "python":
@@ -99,13 +100,18 @@ def main():
                     if isinstance(lang_ptr, Language):
                         return lang_ptr
                     try:
-                        return Language(lang_ptr, "python") # try with name
-                    except TypeError:
-                        return Language(lang_ptr) # try without name
+                        return Language(lang_ptr)
+                    except (TypeError, Exception):
+                        try:
+                            return Language(lang_ptr, "python")
+                        except (TypeError, Exception):
+                            return lang_ptr
                 except Exception:
                     pass
             return _original_get_tree_sitter_language(lang)
+
         codebleu.utils.get_tree_sitter_language = _patched_get_language
+        codebleu.codebleu.get_tree_sitter_language = _patched_get_language
         
     except ImportError as e:
         raise SystemExit(f"Missing dependency: {e}\n"
