@@ -84,6 +84,7 @@ def main():
 
     try:
         import codebleu
+        from codebleu import calc_codebleu
         import codebleu.codebleu
         import codebleu.utils
         import tree_sitter_python
