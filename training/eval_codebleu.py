@@ -87,7 +87,10 @@ def main():
         from codebleu import calc_codebleu
         import codebleu.codebleu
         import codebleu.utils
+        import codebleu.syntax_match
+        import codebleu.dataflow_match
         import tree_sitter_python
+        import tree_sitter
         from tree_sitter import Language
         from transformers import AutoModelForCausalLM, AutoTokenizer
         import torch
@@ -106,13 +109,15 @@ def main():
                         try:
                             return Language(lang_ptr, "python")
                         except (TypeError, Exception):
-                            return lang_ptr
+                            pass
                 except Exception:
                     pass
             return _original_get_tree_sitter_language(lang)
 
         codebleu.utils.get_tree_sitter_language = _patched_get_language
         codebleu.codebleu.get_tree_sitter_language = _patched_get_language
+        codebleu.syntax_match.get_tree_sitter_language = _patched_get_language
+        codebleu.dataflow_match.get_tree_sitter_language = _patched_get_language
         
     except ImportError as e:
         raise SystemExit(f"Missing dependency: {e}\n"
@@ -201,12 +206,22 @@ def main():
 
 
     # Compute CodeBLEU
-    result = calc_codebleu(
-        references=[[r] for r in references],
-        predictions=predictions,
-        lang="python",
-        weights=(0.25, 0.25, 0.25, 0.25),  # equal weights for all 4 components
-    )
+    try:
+        result = calc_codebleu(
+            references=[[r] for r in references],
+            predictions=predictions,
+            lang="python",
+            weights=(0.25, 0.25, 0.25, 0.25),  # equal weights for all 4 components
+        )
+    except Exception as exc:
+        logger.warning("Full CodeBLEU syntax check failed (%s). Falling back to n-gram match CodeBLEU.", exc)
+        result = calc_codebleu(
+            references=[[r] for r in references],
+            predictions=predictions,
+            lang="python",
+            weights=(0.5, 0.5, 0.0, 0.0),
+        )
+
     codebleu_score = result["codebleu"]
     logger.info("CodeBLEU: %.4f (×100 = %.2f)", codebleu_score, codebleu_score * 100)
 
