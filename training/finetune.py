@@ -248,6 +248,15 @@ def train() -> None:
             except Exception:
                 pass
 
+    # Monkey-patch trl.SFTConfig to ignore legacy push_to_hub_token from Unsloth's internal args dict
+    import trl
+    if hasattr(trl, "SFTConfig"):
+        _orig_sftconfig_init = trl.SFTConfig.__init__
+        def _safe_sftconfig_init(self, *args, **kwargs):
+            kwargs.pop("push_to_hub_token", None)
+            return _orig_sftconfig_init(self, *args, **kwargs)
+        trl.SFTConfig.__init__ = _safe_sftconfig_init
+
     trainer = SFTTrainer(
         model=model,
         tokenizer=tokenizer,
@@ -259,7 +268,6 @@ def train() -> None:
         packing=False,
     )
 
-
     # Fix Unsloth AttributeError: 'int' object has no attribute 'mean' on transformers >= 4.46
     _orig_training_step = trainer.training_step
     def _safe_training_step(model, inputs, num_items_in_batch=None):
@@ -267,6 +275,7 @@ def train() -> None:
             num_items_in_batch = None
         return _orig_training_step(model, inputs, num_items_in_batch)
     trainer.training_step = _safe_training_step
+
 
 
     # Print memory before training
