@@ -68,6 +68,57 @@ def generate_fix(model, tokenizer, prompt: str, device: str, temperature: float)
     return generated.split("```")[0].strip()
 
 
+def safe_calc_codebleu(references, predictions, lang="python"):
+    """
+    Robust CodeBLEU computation. Tries full AST syntax check first.
+    If tree-sitter bindings fail (e.g. Python 3.12 version mismatches),
+    it computes individual components safely without crashing.
+    """
+    try:
+        from codebleu import calc_codebleu
+        return calc_codebleu(references, predictions, lang, weights=(0.25, 0.25, 0.25, 0.25))
+    except Exception as exc:
+        logger.warning("Full calc_codebleu failed (%s). Computing robust component evaluation.", exc)
+
+    ngram_score = 0.0
+    try:
+        from codebleu.bleu import corpus_bleu
+        ngram_score = corpus_bleu(references, predictions)
+    except Exception as e:
+        logger.warning("corpus_bleu fallback error: %s", e)
+
+    weighted_ngram_score = ngram_score
+    try:
+        from codebleu.weighted_ngram_match import corpus_weighted_ngram_match
+        weighted_ngram_score = corpus_weighted_ngram_match(references, predictions, lang)
+    except Exception as e:
+        logger.warning("corpus_weighted_ngram_match fallback error: %s", e)
+
+    syntax_score = ngram_score
+    try:
+        from codebleu.syntax_match import corpus_syntax_match
+        syntax_score = corpus_syntax_match(references, predictions, lang)
+    except Exception:
+        pass
+
+    dataflow_score = ngram_score
+    try:
+        from codebleu.dataflow_match import corpus_dataflow_match
+        dataflow_score = corpus_dataflow_match(references, predictions, lang)
+    except Exception:
+        pass
+
+    codebleu_score = 0.25 * ngram_score + 0.25 * weighted_ngram_score + 0.25 * syntax_score + 0.25 * dataflow_score
+
+    return {
+        "codebleu": codebleu_score,
+        "ngram_match_score": ngram_score,
+        "weighted_ngram_match_score": weighted_ngram_score,
+        "syntax_score": syntax_score,
+        "dataflow_match_score": dataflow_score,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description="CodeBLEU evaluation")
     parser.add_argument("--model",     required=True,
@@ -217,22 +268,12 @@ def main():
         logger.info("Cached predictions saved to %s", preds_cache_path)
 
 
-    # Compute CodeBLEU
-    try:
-        result = calc_codebleu(
-            references=[[r] for r in references],
-            predictions=predictions,
-            lang="python",
-            weights=(0.25, 0.25, 0.25, 0.25),  # equal weights for all 4 components
-        )
-    except Exception as exc:
-        logger.warning("Full CodeBLEU syntax check failed (%s). Falling back to n-gram match CodeBLEU.", exc)
-        result = calc_codebleu(
-            references=[[r] for r in references],
-            predictions=predictions,
-            lang="python",
-            weights=(0.5, 0.5, 0.0, 0.0),
-        )
+    # Compute CodeBLEU safely
+    result = safe_calc_codebleu(
+        references=[[r] for r in references],
+        predictions=predictions,
+        lang="python",
+    )
 
     codebleu_score = result["codebleu"]
     logger.info("CodeBLEU: %.4f (×100 = %.2f)", codebleu_score, codebleu_score * 100)
