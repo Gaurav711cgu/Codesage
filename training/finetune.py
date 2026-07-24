@@ -264,9 +264,11 @@ def train() -> None:
         eval_dataset=val_dataset,
         dataset_text_field="text",
         max_seq_length=MAX_SEQ_LENGTH,
-        args=training_args,
+        dataset_num_proc=2,
         packing=False,
+        args=training_args,
     )
+
 
     # Fix Unsloth AttributeError: 'int' object has no attribute 'mean' on transformers >= 4.46
     _orig_training_step = trainer.training_step
