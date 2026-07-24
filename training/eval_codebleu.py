@@ -123,63 +123,81 @@ def main():
         torch.cuda.manual_seed_all(args.seed)
     logger.info("Device: %s", device)
 
-    logger.info("Loading model: %s", args.model)
-    
-    # Check if this is a PEFT (LoRA) adapter directory
-    model_path = Path(args.model)
-    if model_path.is_dir() and (model_path / "adapter_config.json").exists():
-        import json
-        from peft import PeftModel
-        
-        logger.info("Detected PEFT adapter. Loading base model first...")
-        with open(model_path / "adapter_config.json") as f:
-            base_model_name = json.load(f)["base_model_name_or_path"]
-            
-        tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=True)
-        base_model = AutoModelForCausalLM.from_pretrained(
-            base_model_name,
-            torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-            device_map="auto" if device == "cuda" else None,
-            trust_remote_code=True,
-        )
-        logger.info("Applying LoRA adapter from %s", args.model)
-        model = PeftModel.from_pretrained(base_model, args.model)
-    else:
-        tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model,
-            torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-            device_map="auto" if device == "cuda" else None,
-            trust_remote_code=True,
-        )
-    model.eval()
-
-    samples = load_test_samples(Path(args.test_data))
-    if args.max_samples:
-        samples = samples[:args.max_samples]
-    logger.info("Evaluating on %d samples…", len(samples))
+    out_path = Path(args.output)
+    preds_cache_path = out_path.with_suffix(".preds.json")
 
     predictions: list[str] = []
     references:  list[str] = []
     errors = 0
 
-    for i, sample in enumerate(samples):
-        try:
-            prompt     = sample["prompt"]
-            reference  = sample["completion"].replace("```", "").strip()
-            prediction = generate_fix(model, tokenizer, prompt, device, args.temperature)
+    if preds_cache_path.exists():
+        logger.info("Found cached predictions in %s — loading from disk!", preds_cache_path)
+        with preds_cache_path.open() as f:
+            cached_data = json.load(f)
+            predictions = cached_data["predictions"]
+            references = cached_data["references"]
+            errors = cached_data.get("errors", 0)
+    else:
+        logger.info("Loading model: %s", args.model)
+        
+        # Check if this is a PEFT (LoRA) adapter directory
+        model_path = Path(args.model)
+        if model_path.is_dir() and (model_path / "adapter_config.json").exists():
+            from peft import PeftModel
+            
+            logger.info("Detected PEFT adapter. Loading base model first...")
+            with open(model_path / "adapter_config.json") as f:
+                base_model_name = json.load(f)["base_model_name_or_path"]
+                
+            tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=True)
+            base_model = AutoModelForCausalLM.from_pretrained(
+                base_model_name,
+                torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+                device_map="auto" if device == "cuda" else None,
+                trust_remote_code=True,
+            )
+            logger.info("Applying LoRA adapter from %s", args.model)
+            model = PeftModel.from_pretrained(base_model, args.model)
+        else:
+            tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
+            model = AutoModelForCausalLM.from_pretrained(
+                args.model,
+                torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+                device_map="auto" if device == "cuda" else None,
+                trust_remote_code=True,
+            )
+        model.eval()
 
-            predictions.append(prediction)
-            references.append(reference)
+        samples = load_test_samples(Path(args.test_data))
+        if args.max_samples:
+            samples = samples[:args.max_samples]
+        logger.info("Evaluating on %d samples…", len(samples))
 
-            if (i + 1) % 50 == 0:
-                logger.info("Progress: %d/%d", i + 1, len(samples))
-        except Exception as exc:
-            logger.warning("Sample %d failed: %s", i, exc)
-            errors += 1
+        for i, sample in enumerate(samples):
+            try:
+                prompt     = sample["prompt"]
+                reference  = sample["completion"].replace("```", "").strip()
+                prediction = generate_fix(model, tokenizer, prompt, device, args.temperature)
 
-    logger.info("Generation complete. %d errors out of %d samples.",
-                errors, len(samples))
+                predictions.append(prediction)
+                references.append(reference)
+
+                if (i + 1) % 10 == 0 or (i + 1) == len(samples):
+                    logger.info("Progress: %d/%d", i + 1, len(samples))
+            except Exception as exc:
+                logger.warning("Sample %d failed: %s", i, exc)
+                errors += 1
+
+        logger.info("Generation complete. %d errors out of %d samples.", errors, len(samples))
+        
+        # Save cache immediately after generation finishes
+        write_json(preds_cache_path, {
+            "predictions": predictions,
+            "references": references,
+            "errors": errors,
+        })
+        logger.info("Cached predictions saved to %s", preds_cache_path)
+
 
     # Compute CodeBLEU
     result = calc_codebleu(
