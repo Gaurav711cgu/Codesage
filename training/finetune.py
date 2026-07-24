@@ -34,10 +34,19 @@ from pathlib import Path
 warnings.filterwarnings("ignore")
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-# Clear Unsloth's cache before any import — prevents FP8BackendType crash
-for _cache in ["/root/.cache/unsloth", os.path.expanduser("~/.cache/unsloth")]:
+# Clear Unsloth's cache before any import — prevents FP8BackendType & compiled cache bugs
+for _cache in [
+    "/root/.cache/unsloth",
+    os.path.expanduser("~/.cache/unsloth"),
+    "unsloth_compiled_cache",
+    "/kaggle/working/Codesage/unsloth_compiled_cache",
+]:
     if os.path.exists(_cache):
-        shutil.rmtree(_cache)
+        try:
+            shutil.rmtree(_cache, ignore_errors=True)
+        except Exception:
+            pass
+
 
 import transformers
 transformers.logging.set_verbosity_error()
