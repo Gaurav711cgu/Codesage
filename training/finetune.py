@@ -187,28 +187,66 @@ def train() -> None:
         random_state=RANDOM_SEED,
     )
 
-    training_args = TrainingArguments(
-        output_dir=str(CHECKPOINT_DIR),
-        per_device_train_batch_size=BATCH_SIZE,
-        gradient_accumulation_steps=GRAD_ACCUM_STEPS,   # effective batch = 8
-        warmup_ratio=0.1,
-        num_train_epochs=3,
-        learning_rate=2e-4,
-        lr_scheduler_type="cosine",
-        optim="adamw_8bit",        # 8-bit optimizer saves ~2GB VRAM
-        weight_decay=0.01,
-        fp16=True,                 # T4 uses fp16
-        bf16=False,                # T4 does NOT support bfloat16
-        logging_steps=25,
-        eval_strategy="epoch",     # evaluate after every epoch
-        save_strategy="epoch",     # CRITICAL: save after every epoch
-        load_best_model_at_end=True,
-        metric_for_best_model="eval_loss",
-        greater_is_better=False,
-        seed=RANDOM_SEED,
-        report_to="none",          # no W&B / wandb in Colab unless configured
-        dataloader_num_workers=2,
-    )
+    try:
+        from trl import SFTConfig
+        training_args = SFTConfig(
+            output_dir=str(CHECKPOINT_DIR),
+            per_device_train_batch_size=BATCH_SIZE,
+            gradient_accumulation_steps=GRAD_ACCUM_STEPS,   # effective batch = 8
+            warmup_ratio=0.1,
+            num_train_epochs=3,
+            learning_rate=2e-4,
+            lr_scheduler_type="cosine",
+            optim="adamw_8bit",        # 8-bit optimizer saves ~2GB VRAM
+            weight_decay=0.01,
+            fp16=True,                 # T4 uses fp16
+            bf16=False,                # T4 does NOT support bfloat16
+            logging_steps=25,
+            eval_strategy="epoch",     # evaluate after every epoch
+            save_strategy="epoch",     # CRITICAL: save after every epoch
+            load_best_model_at_end=True,
+            metric_for_best_model="eval_loss",
+            greater_is_better=False,
+            seed=RANDOM_SEED,
+            report_to="none",          # no W&B / wandb in Colab unless configured
+            dataloader_num_workers=2,
+            dataset_text_field="text",
+            max_seq_length=MAX_SEQ_LENGTH,
+            packing=False,
+        )
+    except Exception:
+        training_args = TrainingArguments(
+            output_dir=str(CHECKPOINT_DIR),
+            per_device_train_batch_size=BATCH_SIZE,
+            gradient_accumulation_steps=GRAD_ACCUM_STEPS,   # effective batch = 8
+            warmup_ratio=0.1,
+            num_train_epochs=3,
+            learning_rate=2e-4,
+            lr_scheduler_type="cosine",
+            optim="adamw_8bit",        # 8-bit optimizer saves ~2GB VRAM
+            weight_decay=0.01,
+            fp16=True,                 # T4 uses fp16
+            bf16=False,                # T4 does NOT support bfloat16
+            logging_steps=25,
+            eval_strategy="epoch",     # evaluate after every epoch
+            save_strategy="epoch",     # CRITICAL: save after every epoch
+            load_best_model_at_end=True,
+            metric_for_best_model="eval_loss",
+            greater_is_better=False,
+            seed=RANDOM_SEED,
+            report_to="none",          # no W&B / wandb in Colab unless configured
+            dataloader_num_workers=2,
+        )
+        if hasattr(training_args, "push_to_hub_token"):
+            try:
+                delattr(training_args, "push_to_hub_token")
+            except Exception:
+                pass
+        if hasattr(training_args, "__dict__") and "push_to_hub_token" in training_args.__dict__:
+            try:
+                del training_args.__dict__["push_to_hub_token"]
+            except Exception:
+                pass
 
     trainer = SFTTrainer(
         model=model,
@@ -220,6 +258,7 @@ def train() -> None:
         args=training_args,
         packing=False,
     )
+
 
     # Fix Unsloth AttributeError: 'int' object has no attribute 'mean' on transformers >= 4.46
     _orig_training_step = trainer.training_step
