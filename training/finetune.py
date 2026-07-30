@@ -2,7 +2,7 @@
 QLoRA fine-tuning of Qwen2.5-Coder-1.5B-Instruct on CommitPack bug-fix data.
 T4-optimized: seq_len=1024, batch=1, grad_acc=8, fp16, save per epoch.
 
-Usage in Colab (follow COLAB_GUIDE.md):
+Usage in Kaggle / Colab:
     python training/finetune.py           # train
     python training/finetune.py --export  # export to GGUF after training
 
@@ -21,6 +21,8 @@ Changes from original (reasons inline):
   - DATA_DIR: relative CWD → __file__-relative (works regardless of where you run from)
   - Drive backup: added after each save (survives session death)
   - Resume: auto-detect latest epoch checkpoint
+  - packing: disabled (avoids Unsloth padding_free/max_length conflict)
+  - SFTTrainer args: only pass model, tokenizer, datasets, args (no duplicates)
 """
 
 import argparse
@@ -28,18 +30,21 @@ import json
 import logging
 import os
 import shutil
+import sys
 import warnings
 from pathlib import Path
 
 warnings.filterwarnings("ignore")
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-# Clear Unsloth's cache before any import — prevents FP8BackendType & compiled cache bugs
+# ── Clear Unsloth's compiled cache BEFORE any import ─────────────────────────
+# Stale cache causes FP8BackendType AttributeError and other compiled-cache bugs.
 for _cache in [
     "/root/.cache/unsloth",
     os.path.expanduser("~/.cache/unsloth"),
     "unsloth_compiled_cache",
     "/kaggle/working/Codesage/unsloth_compiled_cache",
+    "/kaggle/working/unsloth_compiled_cache",
 ]:
     if os.path.exists(_cache):
         try:
@@ -47,7 +52,34 @@ for _cache in [
         except Exception:
             pass
 
+# ── Monkey-patch trl BEFORE importing SFTTrainer ─────────────────────────────
+# Different trl versions have different SFTConfig signatures.  We patch early so
+# that Unsloth's internal call to SFTConfig(**dict_args) never blows up.
+try:
+    import trl as _trl
+    if hasattr(_trl, "SFTConfig"):
+        _orig_sftconfig_init = _trl.SFTConfig.__init__
 
+        def _safe_sftconfig_init(self, *args, **kwargs):
+            """Strip any kwargs unknown to this trl version before delegating."""
+            import inspect
+            try:
+                valid = set(inspect.signature(_orig_sftconfig_init).parameters.keys())
+                # Remove unknown kwargs silently
+                for k in list(kwargs):
+                    if k not in valid and k != "self":
+                        kwargs.pop(k)
+            except Exception:
+                # If introspection fails just drop the known bad ones
+                for bad in ("push_to_hub_token",):
+                    kwargs.pop(bad, None)
+            return _orig_sftconfig_init(self, *args, **kwargs)
+
+        _trl.SFTConfig.__init__ = _safe_sftconfig_init
+except ImportError:
+    pass
+
+# ── Now safe to import transformers ──────────────────────────────────────────
 import transformers
 transformers.logging.set_verbosity_error()
 
@@ -59,7 +91,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ── Paths (relative to this file, not CWD) ────────────────────────────────────
+# ── Paths (relative to this file, not CWD) ───────────────────────────────────
 _TRAINING_DIR  = Path(__file__).parent
 DATA_DIR       = _TRAINING_DIR / "data"
 RESULTS_DIR    = _TRAINING_DIR / "results"
@@ -67,13 +99,13 @@ if Path("/kaggle/working").exists():
     CHECKPOINT_DIR = Path("/kaggle/working/checkpoints")
 else:
     CHECKPOINT_DIR = Path("/content/checkpoints")
-DRIVE_CKPT_DIR = Path("/content/drive/MyDrive/codesagez/checkpoints")  # Drive backup if mounted
+DRIVE_CKPT_DIR = Path("/content/drive/MyDrive/codesagez/checkpoints")
 
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# ── Hyperparameters ───────────────────────────────────────────────────────────
+# ── Hyperparameters ──────────────────────────────────────────────────────────
 # T4-safe values. Do NOT increase MAX_SEQ_LENGTH or BATCH_SIZE without
 # checking torch.cuda.memory_summary() after the first training step.
 MAX_SEQ_LENGTH   = 1024   # 2048 OOMs on T4 (15GB). 1024 uses ~7GB safely.
@@ -83,9 +115,10 @@ RANDOM_SEED      = 42
 BASE_MODEL       = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
 
 
-# ── Dataset loader ────────────────────────────────────────────────────────────
+# ── Dataset loader ───────────────────────────────────────────────────────────
 
 def load_jsonl(path: Path):
+    """Load a JSONL file into a HuggingFace Dataset."""
     import datasets as hf_datasets
     rows = []
     with path.open() as f:
@@ -95,7 +128,7 @@ def load_jsonl(path: Path):
     return hf_datasets.Dataset.from_list(rows)
 
 
-# ── Resume detection ──────────────────────────────────────────────────────────
+# ── Resume detection ─────────────────────────────────────────────────────────
 
 def find_latest_checkpoint(ckpt_dir: Path) -> Path | None:
     """
@@ -112,7 +145,7 @@ def find_latest_checkpoint(ckpt_dir: Path) -> Path | None:
     return candidates[-1] if candidates else None
 
 
-# ── Drive backup helper ───────────────────────────────────────────────────────
+# ── Drive backup helper ──────────────────────────────────────────────────────
 
 def backup_to_drive(src: Path, dst: Path) -> None:
     """Copy src directory to dst on Google Drive. Silently skip if Drive not mounted."""
@@ -124,13 +157,33 @@ def backup_to_drive(src: Path, dst: Path) -> None:
     logger.info("Backed up %s → %s", src, dst)
 
 
-# ── Training ──────────────────────────────────────────────────────────────────
+# ── Detect trl version capabilities ─────────────────────────────────────────
+
+def _trl_has_sftconfig() -> bool:
+    """Return True if the installed trl has SFTConfig (trl >= 0.10)."""
+    try:
+        from trl import SFTConfig  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def _sftconfig_accepts(param: str) -> bool:
+    """Return True if SFTConfig.__init__ accepts the given parameter name."""
+    try:
+        import inspect
+        from trl import SFTConfig
+        sig = inspect.signature(SFTConfig.__init__)
+        return param in sig.parameters
+    except Exception:
+        return False
+
+
+# ── Training ─────────────────────────────────────────────────────────────────
 
 def train() -> None:
     import torch
     from unsloth import FastLanguageModel
-    from trl import SFTTrainer
-    from transformers import TrainingArguments
 
     # Verify GPU
     if not torch.cuda.is_available():
@@ -187,99 +240,90 @@ def train() -> None:
         random_state=RANDOM_SEED,
     )
 
-    try:
-        from trl import SFTConfig
-        training_args = SFTConfig(
-            output_dir=str(CHECKPOINT_DIR),
-            per_device_train_batch_size=BATCH_SIZE,
-            gradient_accumulation_steps=GRAD_ACCUM_STEPS,   # effective batch = 8
-            warmup_ratio=0.1,
-            num_train_epochs=3,
-            learning_rate=2e-4,
-            lr_scheduler_type="cosine",
-            optim="adamw_8bit",        # 8-bit optimizer saves ~2GB VRAM
-            weight_decay=0.01,
-            fp16=True,                 # T4 uses fp16
-            bf16=False,                # T4 does NOT support bfloat16
-            logging_steps=25,
-            eval_strategy="epoch",     # evaluate after every epoch
-            save_strategy="epoch",     # CRITICAL: save after every epoch
-            load_best_model_at_end=True,
-            metric_for_best_model="eval_loss",
-            greater_is_better=False,
-            seed=RANDOM_SEED,
-            report_to="none",          # no W&B / wandb in Colab unless configured
-            dataloader_num_workers=2,
-            dataset_text_field="text",
-            max_seq_length=MAX_SEQ_LENGTH,
-            packing=True,
-        )
-    except Exception:
-        training_args = TrainingArguments(
-            output_dir=str(CHECKPOINT_DIR),
-            per_device_train_batch_size=BATCH_SIZE,
-            gradient_accumulation_steps=GRAD_ACCUM_STEPS,   # effective batch = 8
-            warmup_ratio=0.1,
-            num_train_epochs=3,
-            learning_rate=2e-4,
-            lr_scheduler_type="cosine",
-            optim="adamw_8bit",        # 8-bit optimizer saves ~2GB VRAM
-            weight_decay=0.01,
-            fp16=True,                 # T4 uses fp16
-            bf16=False,                # T4 does NOT support bfloat16
-            logging_steps=25,
-            eval_strategy="epoch",     # evaluate after every epoch
-            save_strategy="epoch",     # CRITICAL: save after every epoch
-            load_best_model_at_end=True,
-            metric_for_best_model="eval_loss",
-            greater_is_better=False,
-            seed=RANDOM_SEED,
-            report_to="none",          # no W&B / wandb in Colab unless configured
-            dataloader_num_workers=2,
-        )
-        if hasattr(training_args, "push_to_hub_token"):
-            try:
-                delattr(training_args, "push_to_hub_token")
-            except Exception:
-                pass
-        if hasattr(training_args, "__dict__") and "push_to_hub_token" in training_args.__dict__:
-            try:
-                del training_args.__dict__["push_to_hub_token"]
-            except Exception:
-                pass
-
-    # Monkey-patch trl.SFTConfig to ignore legacy push_to_hub_token from Unsloth's internal args dict
-    import trl
-    if hasattr(trl, "SFTConfig"):
-        _orig_sftconfig_init = trl.SFTConfig.__init__
-        def _safe_sftconfig_init(self, *args, **kwargs):
-            kwargs.pop("push_to_hub_token", None)
-            return _orig_sftconfig_init(self, *args, **kwargs)
-        trl.SFTConfig.__init__ = _safe_sftconfig_init
-
-    trainer = SFTTrainer(
-        model=model,
-        tokenizer=tokenizer,
-        train_dataset=train_dataset,
-        eval_dataset=val_dataset,
-        dataset_text_field="text",
-        max_seq_length=MAX_SEQ_LENGTH,
-        dataset_num_proc=2,
-        packing=True,
-        args=training_args,
+    # ── Build training arguments (version-aware) ──────────────────────────────
+    # Core args shared between SFTConfig and TrainingArguments
+    _common_args = dict(
+        output_dir=str(CHECKPOINT_DIR),
+        per_device_train_batch_size=BATCH_SIZE,
+        gradient_accumulation_steps=GRAD_ACCUM_STEPS,
+        warmup_ratio=0.1,
+        num_train_epochs=3,
+        learning_rate=2e-4,
+        lr_scheduler_type="cosine",
+        optim="adamw_8bit",        # 8-bit optimizer saves ~2GB VRAM
+        weight_decay=0.01,
+        fp16=True,                 # T4 uses fp16
+        bf16=False,                # T4 does NOT support bfloat16
+        logging_steps=25,
+        eval_strategy="epoch",     # evaluate after every epoch
+        save_strategy="epoch",     # CRITICAL: save after every epoch
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
+        seed=RANDOM_SEED,
+        report_to="none",          # no W&B / wandb unless configured
+        dataloader_num_workers=2,
     )
 
+    if _trl_has_sftconfig():
+        from trl import SFTConfig, SFTTrainer
+        # SFTConfig-specific fields — only add if accepted (version safe)
+        sft_extras: dict = {}
+        if _sftconfig_accepts("dataset_text_field"):
+            sft_extras["dataset_text_field"] = "text"
+        if _sftconfig_accepts("max_seq_length"):
+            sft_extras["max_seq_length"] = MAX_SEQ_LENGTH
+        if _sftconfig_accepts("dataset_num_proc"):
+            sft_extras["dataset_num_proc"] = 2
+        # packing=True causes Unsloth to enable padding_free which then
+        # conflicts with max_seq_length validation — keep packing=False.
+        # With packing=False we avoid the ValueError entirely.
+        if _sftconfig_accepts("packing"):
+            sft_extras["packing"] = False
 
+        training_args = SFTConfig(**_common_args, **sft_extras)
+        logger.info("Using SFTConfig (trl >= 0.10)")
 
-    # Fix Unsloth AttributeError: 'int' object has no attribute 'mean' on transformers >= 4.46
+        # SFTTrainer with SFTConfig: do NOT pass dataset_text_field /
+        # max_seq_length / packing again — they live in SFTConfig already.
+        trainer = SFTTrainer(
+            model=model,
+            tokenizer=tokenizer,
+            train_dataset=train_dataset,
+            eval_dataset=val_dataset,
+            args=training_args,
+        )
+    else:
+        # Old trl (< 0.10): SFTTrainer takes everything directly
+        from trl import SFTTrainer
+        from transformers import TrainingArguments
+        training_args = TrainingArguments(**_common_args)
+        logger.info("Using TrainingArguments (trl < 0.10 — no SFTConfig)")
+
+        trainer = SFTTrainer(
+            model=model,
+            tokenizer=tokenizer,
+            train_dataset=train_dataset,
+            eval_dataset=val_dataset,
+            dataset_text_field="text",
+            max_seq_length=MAX_SEQ_LENGTH,
+            dataset_num_proc=2,
+            packing=False,
+            args=training_args,
+        )
+
+    # ── Fix Unsloth AttributeError on transformers >= 4.46 ───────────────────
+    # 'int' object has no attribute 'mean' — triggered when num_items_in_batch
+    # is passed as a plain int rather than a tensor.
     _orig_training_step = trainer.training_step
+
     def _safe_training_step(model, inputs, num_items_in_batch=None):
+        """Guard num_items_in_batch before delegating to the real training step."""
         if isinstance(num_items_in_batch, int):
             num_items_in_batch = None
         return _orig_training_step(model, inputs, num_items_in_batch)
+
     trainer.training_step = _safe_training_step
-
-
 
     # Print memory before training
     torch.cuda.reset_peak_memory_stats()
@@ -341,7 +385,7 @@ def train() -> None:
         logger.info("Training log backed up to Drive")
 
 
-# ── Export ─────────────────────────────────────────────────────────────────────
+# ── Export ────────────────────────────────────────────────────────────────────
 
 def export_model() -> None:
     """
@@ -405,7 +449,7 @@ def export_model() -> None:
     )
 
 
-# ── Entry point ────────────────────────────────────────────────────────────────
+# ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fine-tune Qwen2.5-Coder-1.5B on CommitPack")

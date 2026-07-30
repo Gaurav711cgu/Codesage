@@ -1,5 +1,5 @@
 """
-Retrieval service — naive and graph-augmented modes.
+Retrieval service — naive and graph-augmented modes with verification and tracing.
 
 Naive:
   Embed query → ChromaDB top-5 → return as-is.
@@ -20,7 +20,9 @@ from dataclasses import dataclass, field
 
 from app.models.schemas import RetrievedChunk
 from app.services import chromadb_client, graph as graph_svc
-from app.services.gemini import embed_query
+from app.services.embedder import _get_provider, embed_query
+from app.services.retrieval_tracer import RetrievalTrace, tracer
+from app.services.retrieval_verifier import verifier
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +35,7 @@ _NEIGHBOUR_GRAPH_SCORE = 0.5
 TOP_SEEDS      = 5
 TOP_FINAL      = 8
 GRAPH_TOP_FINAL = 8
+
 
 @dataclass
 class _RankedChunk:
@@ -84,7 +87,7 @@ def _parse_chroma_results(
 
 
 def _symbol_candidates(repo_id: str, query_text: str) -> list[_RankedChunk]:
-    """Find functions named explicitly in the query, without scanning source."""
+    """Find functions named explicitly in the query."""
     query_names = {
         token
         for token in re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\b", query_text)
@@ -127,8 +130,8 @@ def _symbol_candidates(repo_id: str, query_text: str) -> list[_RankedChunk]:
     return candidates
 
 
-def _retrieve_seeds(repo_id: str, query_text: str, n_results: int) -> list[_RankedChunk]:
-    """Merge exact-symbol hits with vector search, preserving stable rank."""
+def _retrieve_seeds(repo_id: str, query_text: str, n_results: int) -> tuple[list[_RankedChunk], bool]:
+    """Merge exact-symbol hits with vector search. Returns (seeds, exact_symbol_hit_flag)."""
     query_vec = embed_query(query_text)
     result = chromadb_client.query_collection(
         repo_id, "_functions", query_embedding=query_vec, n_results=n_results
@@ -139,12 +142,10 @@ def _retrieve_seeds(repo_id: str, query_text: str, n_results: int) -> list[_Rank
     )
     exact_hits = sorted(_symbol_candidates(repo_id, query_text), key=lambda chunk: chunk.id)
 
-    # A named symbol is higher-confidence than hash-vector similarity. Avoid
-    # padding it with unrelated tied vector hits that dilute graph expansion.
     if exact_hits:
-        return exact_hits[:n_results]
+        return exact_hits[:n_results], True
 
-    return vector_hits[:n_results]
+    return vector_hits[:n_results], False
 
 
 def retrieve_naive(
@@ -152,12 +153,9 @@ def retrieve_naive(
     query_text: str,
     n_results: int = TOP_SEEDS,
 ) -> tuple[list[RetrievedChunk], int]:
-    """
-    Naive vector retrieval from the _functions collection.
-    Returns (chunks, latency_ms).
-    """
+    """Naive vector retrieval from the _functions collection. Returns (chunks, latency_ms)."""
     t0 = time.perf_counter()
-    ranked = _retrieve_seeds(repo_id, query_text, n_results)
+    ranked, exact_hit = _retrieve_seeds(repo_id, query_text, n_results)
 
     chunks = [
         RetrievedChunk(
@@ -171,6 +169,21 @@ def retrieve_naive(
         for r in ranked
     ]
     latency = int((time.perf_counter() - t0) * 1000)
+
+    tracer.record(
+        RetrievalTrace(
+            query=query_text,
+            repo_id=repo_id,
+            mode="naive",
+            seed_count=len(chunks),
+            neighbour_count=0,
+            final_count=len(chunks),
+            latency_ms=latency,
+            embedding_provider=_get_provider(),
+            top_scores=[c.score for c in chunks],
+            exact_symbol_hit=exact_hit,
+        )
+    )
     return chunks, latency
 
 
@@ -179,35 +192,46 @@ def retrieve_graph_augmented(
     query_text: str,
     graph_data_json: str | None = None,
 ) -> tuple[list[RetrievedChunk], int]:
-    """
-    Graph-augmented retrieval.
-    graph_data_json is only needed on first call after a server restart;
-    subsequent calls use the module-level cache.
-    Returns (chunks, latency_ms).
-    """
+    """Graph-augmented retrieval. Returns (chunks, latency_ms)."""
     t0 = time.perf_counter()
 
     # Step 1 — vector seeds
-    seeds = _retrieve_seeds(repo_id, query_text, TOP_SEEDS)
+    seeds, exact_hit = _retrieve_seeds(repo_id, query_text, TOP_SEEDS)
 
     if not seeds:
-        return [], int((time.perf_counter() - t0) * 1000)
+        latency = int((time.perf_counter() - t0) * 1000)
+        tracer.record(
+            RetrievalTrace(
+                query=query_text,
+                repo_id=repo_id,
+                mode="graph",
+                seed_count=0,
+                neighbour_count=0,
+                final_count=0,
+                latency_ms=latency,
+                embedding_provider=_get_provider(),
+                exact_symbol_hit=exact_hit,
+            )
+        )
+        return [], latency
 
     seed_ids = [s.id for s in seeds]
 
-    # Score seeds
     for s in seeds:
         s.final_score = _W_VECTOR * s.vector_sim + _W_GRAPH * _SEED_GRAPH_SCORE
 
     # Step 2 — graph expansion
+    graph_nodes, graph_edges = 0, 0
     try:
         G = graph_svc.get_graph(repo_id, graph_data_json)
+        graph_nodes = G.number_of_nodes()
+        graph_edges = G.number_of_edges()
         neighbour_ids = sorted(graph_svc.expand_one_hop(G, seed_ids))
     except Exception as exc:
         logger.warning("Graph expansion failed, falling back to naive: %s", exc)
         return retrieve_naive(repo_id, query_text, TOP_FINAL)
 
-    # Step 3 — fetch neighbour documents by ID (no vector search needed)
+    # Step 3 — fetch neighbour documents by ID
     neighbour_chunks: list[_RankedChunk] = []
     if neighbour_ids:
         get_result = chromadb_client.get_documents_by_ids(
@@ -230,8 +254,6 @@ def retrieve_graph_augmented(
                 )
             )
 
-    # Graph neighbours have equal structural scores; use IDs to make the
-    # resulting top-k context and benchmark runs reproducible.
     neighbour_chunks.sort(key=lambda chunk: chunk.id)
 
     # Step 4 — merge, deduplicate, sort, top-8
@@ -257,6 +279,23 @@ def retrieve_graph_augmented(
         for r in top
     ]
     latency = int((time.perf_counter() - t0) * 1000)
+
+    tracer.record(
+        RetrievalTrace(
+            query=query_text,
+            repo_id=repo_id,
+            mode="graph",
+            seed_count=len(seeds),
+            neighbour_count=len(neighbour_chunks),
+            final_count=len(chunks),
+            latency_ms=latency,
+            embedding_provider=_get_provider(),
+            graph_nodes=graph_nodes,
+            graph_edges=graph_edges,
+            top_scores=[c.score for c in chunks],
+            exact_symbol_hit=exact_hit,
+        )
+    )
     return chunks, latency
 
 
@@ -267,9 +306,19 @@ def retrieve(
     graph_data_json: str | None = None,
 ) -> tuple[list[RetrievedChunk], int]:
     """
-    High-level retrieval entry point used by the query API route.
-    Embeds the query, dispatches to the correct strategy.
+    High-level retrieval entry point with verification and fallback.
     """
     if mode == "graph":
-        return retrieve_graph_augmented(repo_id, query, graph_data_json)
-    return retrieve_naive(repo_id, query)
+        chunks, latency = retrieve_graph_augmented(repo_id, query, graph_data_json)
+    else:
+        chunks, latency = retrieve_naive(repo_id, query)
+
+    # Quality Verification Loop
+    verification = verifier.verify(chunks, mode)
+    if verification.action == "fallback_naive" and mode == "graph":
+        logger.info("Verification action 'fallback_naive': %s", verification.reason)
+        return retrieve_naive(repo_id, query)
+    elif verification.action == "empty":
+        return [], latency
+
+    return chunks, latency

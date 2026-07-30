@@ -21,20 +21,20 @@ const NAV = [
   { href: "/architecture", label: "Architecture" },
 ];
 
-import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Inter, Space_Grotesk, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space-grotesk" });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono" });
+const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", style: ['normal', 'italic'] });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased text-foreground relative overflow-x-hidden`} style={{ background: 'var(--cs-bg)' }}>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} ${playfair.variable} font-sans antialiased text-[#F0F4FF] relative overflow-x-hidden`} style={{ background: 'var(--cs-bg)' }}>
         <div className="cs-noise" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-          <a href="#main-content" className="skip-link">Skip to content</a>
           <Nav />
           <main id="main-content" role="main" className="flex-1 flex flex-col pt-16">
             {children}

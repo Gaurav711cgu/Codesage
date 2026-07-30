@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "codesagez": {
+      "command": "python",
+      "args": ["-m", "uvicorn", "app.mcp_server:mcp_app", "--port", "8002"],
+      "env": {
+        "EMBEDDING_PROVIDER": "local"
+      }
+    }
+  }
+}

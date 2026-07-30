@@ -74,6 +74,29 @@ def serialise_graph(G: nx.DiGraph) -> dict:
 
 # ─── Graph construction (called by ingestion) ─────────────────────────────────
 
+def build_cross_language_edges(code_units: list[dict]) -> list[tuple[str, str]]:
+    """
+    Infer cross-language call edges (e.g., TypeScript frontend components calling
+    Python FastAPI backend endpoints or matching function symbols).
+    """
+    py_names = {
+        u["name"]: u["id"]
+        for u in code_units
+        if u.get("file", "").endswith(".py")
+    }
+    ts_units = [
+        u for u in code_units
+        if any(u.get("file", "").endswith(ext) for ext in (".ts", ".tsx", ".js", ".jsx"))
+    ]
+    edges = []
+    for ts_unit in ts_units:
+        for call in ts_unit.get("calls", []):
+            clean_call = call.split(".")[-1]
+            if clean_call in py_names and py_names[clean_call] != ts_unit["id"]:
+                edges.append((ts_unit["id"], py_names[clean_call]))
+    return edges
+
+
 def build_graph(code_units: list[dict]) -> nx.DiGraph:
     """
     Build a directed call graph from a list of CodeUnit dicts.
@@ -109,6 +132,11 @@ def build_graph(code_units: list[dict]) -> nx.DiGraph:
             callee_id = name_to_id.get(callee_name)
             if callee_id and callee_id != caller_id:
                 G.add_edge(caller_id, callee_id)
+
+    # Third pass: infer cross-language edges (JS/TS -> Python API/symbol match)
+    for caller_id, callee_id in build_cross_language_edges(code_units):
+        if not G.has_edge(caller_id, callee_id):
+            G.add_edge(caller_id, callee_id)
 
     logger.debug(
         "Built call graph: %d nodes, %d edges", G.number_of_nodes(), G.number_of_edges()

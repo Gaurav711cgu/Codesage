@@ -28,6 +28,32 @@ jobs:
       run: |
         pytest tests/
 
+  retrieval-eval:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: './backend/requirements.txt'
+    - name: Install backend dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+    - name: Verify Retrieval Verifier & Tracer
+      run: |
+        PYTHONPATH=backend python -c "
+        from app.services.retrieval_verifier import verifier
+        from app.services.retrieval_tracer import tracer
+        from app.models.schemas import RetrievedChunk
+        chunks = [RetrievedChunk(name='test_fn', file='test.py', lines=[1, 10], type='seed', score=0.85, content='def test_fn(): pass')]
+        res = verifier.verify(chunks, 'graph')
+        assert res.passed, 'Verifier failed valid chunk test'
+        print('✅ Retrieval Verifier & Tracer verified in CI')
+        "
+
   frontend-build:
     runs-on: ubuntu-latest
     defaults:

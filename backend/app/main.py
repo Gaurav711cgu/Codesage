@@ -74,10 +74,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.mcp_server import mcp_app
+
 # Routers
 app.include_router(repo.router, prefix="/api/v1")
 app.include_router(code.router, prefix="/api/v1")
 app.include_router(benchmarks.router, prefix="/api/v1")
+app.mount("/mcp", mcp_app)
+
 
 
 @app.get("/health", tags=["health"])

@@ -72,41 +72,5 @@ def call_llm(prompt: str) -> str:
 
 # ─── Embeddings ─────────────────────────────────────────────────────────────
 
-import hashlib
-import math
-import re
+from app.services.embedder import embed_query, embed_texts, local_hash_embed  # noqa: F401
 
-def local_hash_embed(text: str, dimension: int = 384) -> list[float]:
-    """
-    Generate a stable, normalized bag-of-words hash vector for a text.
-    Runs locally in microseconds, zero dependencies, zero rate limits.
-    """
-    words = re.findall(r'[a-zA-Z_0-9]+', text.lower())
-    vector = [0.0] * dimension
-    if not words:
-        return [0.0] * dimension
-    for word in words:
-        h = int(hashlib.md5(word.encode('utf-8')).hexdigest(), 16)
-        index = h % dimension
-        vector[index] += 1.0
-    norm = math.sqrt(sum(x * x for x in vector))
-    if norm > 0.0:
-        vector = [x / norm for x in vector]
-    return vector
-
-
-def embed_texts(
-    texts: list[str],
-    task_type: str = "retrieval_document",
-    max_retries: int = 5,
-) -> list[list[float]]:
-    """
-    Embed a list of texts using the local hash embedding function.
-    """
-    logger.info("Using local hashing embedding function to embed %d texts", len(texts))
-    return [local_hash_embed(t) for t in texts]
-
-
-def embed_query(query: str) -> list[float]:
-    """Embed a single query string using local hash embedding."""
-    return local_hash_embed(query)
