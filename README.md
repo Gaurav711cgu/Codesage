@@ -82,30 +82,30 @@
 
 ```mermaid
 graph TD
-    User([Client / Agentic System]) -->|HTTP / SSE| Frontend[Next.js 14 Web Interface]
-    User -->|JSON-RPC / HTTP| MCPServer[MCP Server: /mcp/tools]
+    User["Client / Agentic System"] -->|"HTTP / SSE"| Frontend["Next.js 14 Web Interface"]
+    User -->|"JSON-RPC / HTTP"| MCPServer["MCP Server: /mcp/tools"]
     
-    Frontend -->|REST API| Backend[FastAPI Core Engine]
-    MCPServer -->|Direct Tool Call| Backend
+    Frontend -->|"REST API"| Backend["FastAPI Core Engine"]
+    MCPServer -->|"Direct Tool Call"| Backend
     
     subgraph Ingestion & Structural Analysis Pipeline
-        Backend -->|AST Parsing| TreeSitter[Tree-sitter Parser]
-        TreeSitter -->|Dependency Graph| CallGraph[NetworkX DiGraph Engine]
-        Backend -->|Multi-Provider Embedder| Embedder[Unified Embedder: Voyage / OpenAI / Gemini / Hash]
+        Backend -->|"AST Parsing"| TreeSitter["Tree-sitter Parser"]
+        TreeSitter -->|"Dependency Graph"| CallGraph["NetworkX DiGraph Engine"]
+        Backend -->|"Multi-Provider Embedder"| Embedder["Unified Embedder: Voyage / OpenAI / Gemini / Hash"]
     end
     
     subgraph Data & Storage Layer
-        Embedder -->|Dense Vectors| ChromaDB[(ChromaDB HNSW Vector Store)]
-        CallGraph -->|Graph Nodes & Edges| Postgres[(PostgreSQL Relational DB)]
+        Embedder -->|"Dense Vectors"| ChromaDB["ChromaDB HNSW Vector Store"]
+        CallGraph -->|"Graph Nodes & Edges"| Postgres["PostgreSQL Relational DB"]
     end
     
     subgraph Context Augmentation & Verification Loop
-        Backend -->|Graph RAG Engine| RAGScorer[Hybrid Graph RAG Scorer]
-        ChromaDB -->|Top-K Vector Seeds| RAGScorer
-        Postgres -->|1-Hop Topological Neighborhood| RAGScorer
-        RAGScorer -->|Quality Gate| Verifier[RetrievalVerifier Score Floor]
-        Verifier -->|Telemetry Trace| Tracer[RetrievalTracer Logger]
-        Verifier -->|Augmented Context| GeminiAPI[Google Gemini 2.0 Flash / Fine-Tuned Model]
+        Backend -->|"Graph RAG Engine"| RAGScorer["Hybrid Graph RAG Scorer"]
+        ChromaDB -->|"Top-K Vector Seeds"| RAGScorer
+        Postgres -->|"1-Hop Topological Neighborhood"| RAGScorer
+        RAGScorer -->|"Quality Gate"| Verifier["RetrievalVerifier Score Floor"]
+        Verifier -->|"Telemetry Trace"| Tracer["RetrievalTracer Logger"]
+        Verifier -->|"Augmented Context"| GeminiAPI["Google Gemini 2.0 Flash / Fine-Tuned Model"]
     end
 ```
 
