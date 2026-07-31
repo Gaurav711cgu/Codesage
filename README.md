@@ -54,6 +54,40 @@
 
 ---
 
+## Interface Showcase & Application Previews
+
+<div align="center">
+
+### Repository Graph Intelligence & RAG Playground
+<img src="docs/images/screenshot_01.png" alt="CodeSageZ Interface Showcase 1" width="100%" />
+
+<br/><br/>
+
+### Interactive Search & Vector Graph Neighborhood Inspection
+<p align="center">
+  <img src="docs/images/screenshot_02.png" alt="CodeSageZ Interface Showcase 2" width="49%" />
+  <img src="docs/images/screenshot_03.png" alt="CodeSageZ Interface Showcase 3" width="49%" />
+</p>
+
+<p align="center">
+  <img src="docs/images/screenshot_04.png" alt="CodeSageZ Interface Showcase 4" width="49%" />
+  <img src="docs/images/screenshot_05.png" alt="CodeSageZ Interface Showcase 5" width="49%" />
+</p>
+
+<p align="center">
+  <img src="docs/images/screenshot_06.png" alt="CodeSageZ Interface Showcase 6" width="49%" />
+  <img src="docs/images/screenshot_07.png" alt="CodeSageZ Interface Showcase 7" width="49%" />
+</p>
+
+<p align="center">
+  <img src="docs/images/screenshot_08.png" alt="CodeSageZ Interface Showcase 8" width="49%" />
+  <img src="docs/images/screenshot_09.png" alt="CodeSageZ Interface Showcase 9" width="49%" />
+</p>
+
+</div>
+
+---
+
 ## Tech Stack & Ecosystem
 
 <div align="center">
