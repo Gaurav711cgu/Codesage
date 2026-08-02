@@ -8,7 +8,7 @@
 
 <br/>
 
-[![CI/CD Pipeline](https://img.shields.io/badge/CI%2FCD-Passing-22c55e?style=flat-square&logo=githubactions&logoColor=white)](#)
+[![CI](https://github.com/Gaurav711cgu/Codesage/actions/workflows/ci.yml/badge.svg)](https://github.com/Gaurav711cgu/Codesage/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)](#)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white)](#)
 [![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=nextdotjs&logoColor=white)](#)
@@ -27,11 +27,12 @@
 
 ## Executive Summary
 
-> **CodeSageZ is an enterprise-grade code intelligence engine** engineered to solve context blind spots in traditional vector-only RAG systems. Standard vector search retrieves code chunks solely by semantic keyword similarity, frequently omitting structural dependencies such as caller functions, helper utilities, or class definitions located across different files. CodeSageZ constructs an in-memory structural dependency graph using Tree-sitter AST parsing, retrieves semantic seed vectors, and performs 1-hop graph topology expansion to inject verified direct callers and callees into the model's prompt window.
+> **CodeSageZ is a production-grade code intelligence engine** engineered to solve context blind spots in traditional vector-only RAG systems. Standard vector search retrieves code chunks solely by semantic keyword similarity, frequently omitting structural dependencies such as caller functions, helper utilities, or class definitions across different files. CodeSageZ constructs an in-memory structural dependency graph using Tree-sitter AST parsing (Python, TypeScript, JavaScript, TSX), retrieves semantic seed vectors, and performs configurable 1-hop or 2-hop graph topology expansion to inject verified direct callers, callees, and transitive dependencies into the model's prompt window.
 
 | Differentiator | Technical Implementation Detail |
 | :--- | :--- |
-| **Topological Context Recovery** | 1-hop graph neighborhood expansion over directed call graphs $G=(V,E)$ constructed via Tree-sitter AST parsing |
+| **Topological Context Recovery** | Configurable 1-hop and 2-hop graph neighborhood expansion over directed call graphs $G=(V,E)$ constructed via Tree-sitter AST parsing — catches transitive call chains (A→B→C) missed by 1-hop only |
+| **Multi-Language AST Parsing** | Native Tree-sitter parsers for Python, TypeScript, JavaScript, and TSX — same Recall@8 benchmark applied cross-language |
 | **Hybrid Ranking Engine** | Composite scoring algorithm ($\text{Score} = 0.6 \cdot \text{Sim}_{\text{vec}} + 0.4 \cdot \text{GraphProximity}$) prioritizing structural callers over textually similar false positives |
 | **Domain-Adapted QLoRA Model** | Fine-tuned `Qwen2.5-Coder-1.5B` adapter achieving **70.02 CodeBLEU (+9.38 delta)** on CommitPack bug-fix datasets |
 | **Agentic MCP Integration** | Native Model Context Protocol (MCP) server (`/mcp/tools/retrieve_code_context`) enabling Claude Code and Cursor integration |

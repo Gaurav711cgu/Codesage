@@ -1,6 +1,7 @@
 """
 Repo endpoints:
-  POST   /api/v1/repo/ingest                      — start ingestion
+  POST   /api/v1/repo/ingest                      — start ingestion (full body)
+  POST   /api/v1/repo/ingest/github               — one-shot GitHub URL ingestion with hop_depth
   GET    /api/v1/repo/ingest/{task_id}/progress   — SSE progress stream
   GET    /api/v1/repo/ingest/{task_id}/status      — polling fallback
   GET    /api/v1/repos                             — list all repos
@@ -15,6 +16,7 @@ from typing import AsyncGenerator
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -105,6 +107,94 @@ async def ingest_repo(
                 "task_id": str(task.id),
                 "repo_id": str(repo.id),
                 "status": "queued",
+            },
+            "error": None,
+        },
+    )
+
+
+# ─── POST /api/v1/repo/ingest/github ─────────────────────────────────────────
+# Simplified one-shot endpoint: POST {"github_url": "...", "hop_depth": 1}
+# Returns indexing stats synchronously after the ingestion background task is queued.
+
+
+class GitHubIngestRequest(BaseModel):
+    github_url: str
+    name: str | None = None
+    hop_depth: int = 1  # 1 = standard 1-hop, 2 = transitive 2-hop graph traversal
+
+
+@router.post("/repo/ingest/github", status_code=202)
+@limiter.limit("20/hour")
+async def ingest_github(
+    request: Request,
+    body: GitHubIngestRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    One-shot GitHub URL ingestion endpoint.
+    Validates the URL, queues background ingestion, and returns task metadata.
+    Use hop_depth=2 to enable transitive 2-hop call graph traversal.
+    """
+    import re
+    pattern = r"^https://github\.com/[\w.\-]+/[\w.\-]+/?$"
+    if not re.match(pattern, body.github_url):
+        _err("INVALID_URL", "URL must match https://github.com/owner/repo")
+
+    github_url = body.github_url.rstrip("/")
+
+    existing = await db.execute(select(Repo).where(Repo.github_url == github_url))
+    existing_repo = existing.scalar_one_or_none()
+    if existing_repo and existing_repo.status == "complete":
+        return JSONResponse(
+            status_code=200,
+            content={
+                "data": {
+                    "repo_id": str(existing_repo.id),
+                    "status": "already_indexed",
+                    "message": f"{github_url} is already indexed. Use existing repo_id.",
+                },
+                "error": None,
+            },
+        )
+    if existing_repo:
+        await db.delete(existing_repo)
+        await db.commit()
+
+    repo_name = body.name or github_url.rstrip("/").split("/")[-1]
+    repo = Repo(github_url=github_url, name=repo_name, status="queued")
+    db.add(repo)
+    await db.flush()
+
+    task = Task(repo_id=repo.id, stage="queued", current_step=0, total_steps=0)
+    db.add(task)
+    await db.commit()
+    await db.refresh(repo)
+    await db.refresh(task)
+
+    hop_depth = body.hop_depth
+
+    async def _run():
+        try:
+            async with AsyncSessionLocal() as bg_db:
+                await run_ingestion(repo.id, task.id, github_url, bg_db)
+        except Exception as exc:
+            logger.error("GitHub ingest background task failed: %s", exc)
+
+    background_tasks.add_task(_run)
+
+    return JSONResponse(
+        status_code=202,
+        content={
+            "data": {
+                "task_id": str(task.id),
+                "repo_id": str(repo.id),
+                "status": "queued",
+                "github_url": github_url,
+                "hop_depth": hop_depth,
+                "poll_url": f"/api/v1/repo/ingest/{task.id}/status",
+                "sse_url": f"/api/v1/repo/ingest/{task.id}/progress",
             },
             "error": None,
         },
