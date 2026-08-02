@@ -167,6 +167,18 @@ def expand_one_hop(G: nx.DiGraph, node_ids: list[str], max_degree: int = 50) -> 
     return neighbours - set(node_ids)
 
 
+def expand_two_hop(G: nx.DiGraph, node_ids: list[str], max_degree: int = 50) -> set[str]:
+    """
+    Return all 2-hop neighbours (direct + transitive caller/callee dependencies)
+    of the given seed nodes, excluding the seed nodes themselves.
+    Catches transitive call chains (A calls B, B calls C -> retrieves C for A).
+    """
+    one_hop = expand_one_hop(G, node_ids, max_degree=max_degree)
+    two_hop = expand_one_hop(G, list(one_hop), max_degree=max_degree)
+    return (one_hop | two_hop) - set(node_ids)
+
+
 def get_node_metadata(G: nx.DiGraph, node_id: str) -> dict:
     """Return node attribute dict, or empty dict if node not in graph."""
     return dict(G.nodes.get(node_id, {}))
+

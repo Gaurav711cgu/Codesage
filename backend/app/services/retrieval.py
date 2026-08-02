@@ -191,8 +191,9 @@ def retrieve_graph_augmented(
     repo_id: str,
     query_text: str,
     graph_data_json: str | None = None,
+    hop_depth: int = 1,
 ) -> tuple[list[RetrievedChunk], int]:
-    """Graph-augmented retrieval. Returns (chunks, latency_ms)."""
+    """Graph-augmented retrieval. Supports hop_depth=1 or hop_depth=2. Returns (chunks, latency_ms)."""
     t0 = time.perf_counter()
 
     # Step 1 — vector seeds
@@ -220,13 +221,16 @@ def retrieve_graph_augmented(
     for s in seeds:
         s.final_score = _W_VECTOR * s.vector_sim + _W_GRAPH * _SEED_GRAPH_SCORE
 
-    # Step 2 — graph expansion
+    # Step 2 — graph expansion (1-hop or 2-hop)
     graph_nodes, graph_edges = 0, 0
     try:
         G = graph_svc.get_graph(repo_id, graph_data_json)
         graph_nodes = G.number_of_nodes()
         graph_edges = G.number_of_edges()
-        neighbour_ids = sorted(graph_svc.expand_one_hop(G, seed_ids))
+        if hop_depth >= 2:
+            neighbour_ids = sorted(graph_svc.expand_two_hop(G, seed_ids))
+        else:
+            neighbour_ids = sorted(graph_svc.expand_one_hop(G, seed_ids))
     except Exception as exc:
         logger.warning("Graph expansion failed, falling back to naive: %s", exc)
         return retrieve_naive(repo_id, query_text, TOP_FINAL)
@@ -304,12 +308,14 @@ def retrieve(
     query: str,
     mode: str = "graph",
     graph_data_json: str | None = None,
+    hop_depth: int = 1,
 ) -> tuple[list[RetrievedChunk], int]:
     """
     High-level retrieval entry point with verification and fallback.
     """
-    if mode == "graph":
-        chunks, latency = retrieve_graph_augmented(repo_id, query, graph_data_json)
+    if mode in ("graph", "2hop"):
+        depth = 2 if mode == "2hop" else hop_depth
+        chunks, latency = retrieve_graph_augmented(repo_id, query, graph_data_json, hop_depth=depth)
     else:
         chunks, latency = retrieve_naive(repo_id, query)
 
