@@ -1,9 +1,13 @@
+import enum
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Text, DateTime, Integer, ForeignKey, func, JSON
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-import enum
-from sqlalchemy import Enum as SQLEnum
+
+from sqlalchemy import Enum as SQLEnum, JSON, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.core.database import Base
+
 
 class RepoStatus(str, enum.Enum):
     queued = "queued"
@@ -15,15 +19,14 @@ class RepoStatus(str, enum.Enum):
     complete = "complete"
     failed = "failed"
 
+
 class TaskStatus(str, enum.Enum):
     running = "running"
     complete = "complete"
     failed = "failed"
 
-JSONVariant = JSON().with_variant(JSONB, "postgresql")
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.database import Base
+JSONVariant = JSON().with_variant(JSONB, "postgresql")
 
 
 class Repo(Base):

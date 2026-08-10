@@ -1,0 +1,14 @@
+# CodeSageZ CODEOWNERS
+# Requires approval from repository maintainers for changes to critical paths.
+
+* @Gaurav711cgu
+
+# Backend core, security, and services
+/backend/app/core/ @Gaurav711cgu
+/backend/app/services/ @Gaurav711cgu
+/backend/app/api/ @Gaurav711cgu
+
+# CI/CD and Docker
+/.github/workflows/ @Gaurav711cgu
+/backend/Dockerfile @Gaurav711cgu
+/docker-compose.yml @Gaurav711cgu

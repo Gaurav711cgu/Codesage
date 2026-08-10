@@ -3,6 +3,7 @@ Single point of contact for all Google AI calls.
 No other module imports google.genai directly.
 """
 import logging
+import threading
 from typing import Generator
 
 from google import genai
@@ -13,6 +14,7 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 _client: genai.Client | None = None
+_client_lock = threading.Lock()
 
 
 def _generation_unavailable() -> str:
@@ -20,12 +22,14 @@ def _generation_unavailable() -> str:
 
 
 def _get_client() -> genai.Client:
-    """Create the Gemini client only when an LLM call actually needs it."""
+    """Create the Gemini client only when an LLM call actually needs it (thread-safe)."""
     global _client
     if not settings.gemini_api_key:
         raise RuntimeError("GEMINI_API_KEY is not configured")
     if _client is None:
-        _client = genai.Client(api_key=settings.gemini_api_key)
+        with _client_lock:
+            if _client is None:
+                _client = genai.Client(api_key=settings.gemini_api_key)
     return _client
 
 
@@ -72,5 +76,5 @@ def call_llm(prompt: str) -> str:
 
 # ─── Embeddings ─────────────────────────────────────────────────────────────
 
-from app.services.embedder import embed_query, embed_texts, local_hash_embed  # noqa: F401
+from app.services.embedder import embed_query, embed_texts, local_hash_embed  # noqa: E402, F401
 

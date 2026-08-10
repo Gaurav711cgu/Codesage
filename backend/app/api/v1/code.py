@@ -4,12 +4,13 @@ Code endpoints:
   POST /api/v1/code/debug    — bug explanation + fix (local model or Gemini)
   POST /api/v1/code/tests    — generate pytest / unittest test suite
 """
+import asyncio
 import json
 import logging
 import re
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 
 from app.models.schemas import (
     ApiResponse,
@@ -90,7 +91,7 @@ Code to review:
 {body.code}
 ```"""
 
-    raw = call_llm(prompt)
+    raw = await asyncio.to_thread(call_llm, prompt)
     try:
         parsed = _extract_json(raw)
         issues = [CodeIssue(**i) for i in parsed.get("issues", [])]
@@ -161,14 +162,14 @@ Return only the JSON object."""
 
     # Get fix from local model or Gemini
     if body.use_local_model:
-        fix_text, _ = ollama_svc.generate_with_local_model(fix_prompt)
+        fix_text, _ = await asyncio.to_thread(ollama_svc.generate_with_local_model, fix_prompt)
     else:
-        fix_text = call_llm(fix_prompt)
+        fix_text = await asyncio.to_thread(call_llm, fix_prompt)
         
     model_used = settings.ollama_model if body.use_local_model else "gemini-2.0-flash"
 
     # Always use Gemini for the structured explanation
-    explanation_raw = call_llm(explanation_prompt)
+    explanation_raw = await asyncio.to_thread(call_llm, explanation_prompt)
     try:
         parsed = _extract_json(explanation_raw)
     except Exception:
@@ -253,7 +254,7 @@ Code to test:
 {body.code}
 ```"""
 
-    raw = call_llm(prompt)
+    raw = await asyncio.to_thread(call_llm, prompt)
     try:
         parsed = _extract_json(raw)
         cases = [TestCase(**c) for c in parsed.get("cases", [])]

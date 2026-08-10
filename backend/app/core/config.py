@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     environment: str = "development"
     frontend_url: str = "http://localhost:3000"
 
+    # Auth
+    api_key: str = ""  # Set CODESAGEZ_API_KEY in env; empty = open mode (dev only)
+
     # Gemini & GitHub
     gemini_api_key: str = ""
     github_token: str = ""
@@ -59,6 +62,8 @@ class Settings(BaseSettings):
             missing.append("DATABASE_URL (PostgreSQL)")
         if not self.chromadb_url:
             missing.append("CHROMADB_URL (persistent Chroma server)")
+        if not self.api_key:
+            missing.append("CODESAGEZ_API_KEY (API authentication key)")
         if missing:
             raise RuntimeError("Production configuration requires " + " and ".join(missing))
 

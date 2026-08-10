@@ -11,6 +11,7 @@ Repo endpoints:
 import asyncio
 import json
 import logging
+import re
 import uuid
 from typing import AsyncGenerator
 
@@ -25,7 +26,6 @@ from app.models.repo import Repo, Task
 from app.models.schemas import (
     ApiResponse,
     IngestRequest,
-    IngestResponse,
     QueryRequest,
     RepoSummary,
     RepoStats,
@@ -42,9 +42,10 @@ router = APIRouter(tags=["repos"])
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 
-def _sse_event(event: str, data: dict | str) -> str:
+def _sse_event(event: str, data: dict | str, event_id: int | str | None = None) -> str:
     payload = data if isinstance(data, str) else json.dumps(data)
-    return f"event: {event}\ndata: {payload}\n\n"
+    id_line = f"id: {event_id}\n" if event_id is not None else ""
+    return f"{id_line}event: {event}\ndata: {payload}\n\n"
 
 
 def _err(code: str, message: str, status: int = 400) -> HTTPException:
@@ -137,7 +138,6 @@ async def ingest_github(
     Validates the URL, queues background ingestion, and returns task metadata.
     Use hop_depth=2 to enable transitive 2-hop call graph traversal.
     """
-    import re
     pattern = r"^https://github\.com/[\w.\-]+/[\w.\-]+/?$"
     if not re.match(pattern, body.github_url):
         _err("INVALID_URL", "URL must match https://github.com/owner/repo")
@@ -247,12 +247,12 @@ async def ingest_progress(
                         yield _sse_event("complete", {
                             "repo_id": str(repo.id),
                             "stats": repo.stats or {},
-                        })
+                        }, event_id=task.current_step)
                     else:
                         yield _sse_event("error", {
                             "code": repo.error_code if repo else "UNKNOWN",
                             "message": repo.error_message if repo else "Ingestion failed",
-                        })
+                        }, event_id=task.current_step)
                     return
                 else:
                     yield _sse_event("progress", {
@@ -260,7 +260,7 @@ async def ingest_progress(
                         "current": task.current_step,
                         "total": task.total_steps,
                         "message": f"Stage: {task.stage}",
-                    })
+                    }, event_id=task.current_step)
             else:
                 timeout_ticks += 1
 
@@ -342,13 +342,16 @@ async def delete_repo(
         _err("INGESTION_IN_PROGRESS",
              "Cannot delete repo while ingestion is running", 409)
 
-    # Delete ChromaDB collections
-    chromadb_client.delete_repo_collections(str(repo_id))
+    # Delete ChromaDB collections (offload synchronous call to thread pool)
+    try:
+        await asyncio.to_thread(chromadb_client.delete_repo_collections, str(repo_id))
+    except Exception as exc:
+        logger.warning("Failed to delete ChromaDB collections for repo %s: %s", repo_id, exc)
 
     # Evict graph from cache
     graph_svc.invalidate_graph(str(repo_id))
 
-    # Cascade-delete via FK (tasks + messages set null handled by DB)
+    # Cascade-delete via FK
     await db.delete(repo)
     await db.commit()
 

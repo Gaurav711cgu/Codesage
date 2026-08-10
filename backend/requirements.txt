@@ -38,6 +38,9 @@ gitpython==3.1.43
 # ── HTTP client (for Ollama + GitHub API checks) ──────────────────────────────
 httpx==0.28.1
 
+# ── Resilience & Retries ──────────────────────────────────────────────────────
+tenacity==9.0.0
+
 # ── Tests ─────────────────────────────────────────────────────────────────────
 pytest==8.3.4
 pytest-asyncio==0.24.0

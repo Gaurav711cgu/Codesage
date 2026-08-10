@@ -60,8 +60,8 @@ async def get_benchmarks():
     )
 
     fine_tuning = {
-        "model": "Qwen2.5-Coder-1.5B-Instruct",
-        "training_samples": 8000,
+        "model": train_log.get("model", "Qwen2.5-Coder-1.5B-Instruct") if train_log else None,
+        "training_samples": train_log.get("training_samples", 8000) if train_log else None,
         "epochs": train_log.get("epochs_completed") if train_log else None,
         "primary_metric": {
             "name": "CodeBLEU (held-out CommitPack test set, n=1000)",

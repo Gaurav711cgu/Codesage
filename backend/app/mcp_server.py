@@ -58,10 +58,23 @@ async def retrieve_code_context(req: RetrieveRequest) -> RetrieveResponse:
     Retrieves relevant code chunks for a given query using graph-augmented RAG.
     Graph expansion surfaces callee/caller context that pure vector search misses.
     """
-    chunks, latency = retrieve(req.repo_id, req.query, req.mode)
+    import asyncio
+    chunks, latency = await asyncio.to_thread(retrieve, req.repo_id, req.query, req.mode)
     chunk_dicts = [c.model_dump() for c in chunks]
 
-    recall_est = 0.533 if req.mode == "graph" else 0.0
+    # Load empirical recall estimate from evaluation results if available
+    recall_est = None
+    try:
+        from pathlib import Path
+        import json
+        bench_path = Path(__file__).resolve().parents[2] / "benchmarks" / "results" / "graph_edge_eval_results.json"
+        if bench_path.exists():
+            data = json.loads(bench_path.read_text())
+            metric_key = "graph_recall_at_8" if req.mode == "graph" else "naive_recall_at_8"
+            if metric_key in data:
+                recall_est = data[metric_key] / 100.0 if data[metric_key] > 1.0 else data[metric_key]
+    except Exception:
+        pass
 
     return RetrieveResponse(
         chunks=chunk_dicts,

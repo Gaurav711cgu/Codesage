@@ -54,36 +54,35 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
         return []
 
     if provider == "voyage":
-        try:
-            import voyageai
-            client = voyageai.Client(api_key=os.getenv("VOYAGE_API_KEY"))
-            result = client.embed(texts, model="voyage-code-3", input_type="document")
-            return result.embeddings
-        except Exception as exc:
-            logger.warning("Voyage embedding failed (%s), falling back to local hash: %s", exc, provider)
+        import voyageai
+        api_key = os.getenv("VOYAGE_API_KEY")
+        if not api_key:
+            raise RuntimeError("VOYAGE_API_KEY is not configured")
+        client = voyageai.Client(api_key=api_key)
+        result = client.embed(texts, model="voyage-code-3", input_type="document")
+        return result.embeddings
 
     elif provider == "openai":
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            response = client.embeddings.create(input=texts, model="text-embedding-3-small")
-            return [item.embedding for item in response.data]
-        except Exception as exc:
-            logger.warning("OpenAI embedding failed (%s), falling back to local hash: %s", exc, provider)
+        from openai import OpenAI
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY is not configured")
+        client = OpenAI(api_key=api_key)
+        response = client.embeddings.create(input=texts, model="text-embedding-3-small")
+        return [item.embedding for item in response.data]
 
     elif provider == "gemini":
-        try:
-            from google import genai
-            if settings.gemini_api_key:
-                client = genai.Client(api_key=settings.gemini_api_key)
-                response = client.models.embed_content(
-                    model="text-embedding-004",
-                    contents=texts,
-                )
-                if hasattr(response, "embeddings") and response.embeddings:
-                    return [e.values for e in response.embeddings]
-        except Exception as exc:
-            logger.warning("Gemini embedding failed (%s), falling back to local hash: %s", exc, provider)
+        from google import genai
+        if not settings.gemini_api_key:
+            raise RuntimeError("GEMINI_API_KEY is not configured")
+        client = genai.Client(api_key=settings.gemini_api_key)
+        response = client.models.embed_content(
+            model="gemini-embedding-001",
+            contents=texts,
+        )
+        if hasattr(response, "embeddings") and response.embeddings:
+            return [e.values for e in response.embeddings]
+        raise RuntimeError("Gemini embed_content returned no embeddings")
 
     logger.debug("Using local hash embeddings for %d texts", len(texts))
     return [local_hash_embed(t) for t in texts]
@@ -94,37 +93,36 @@ def embed_query(query: str) -> list[float]:
     provider = _get_provider()
 
     if provider == "voyage":
-        try:
-            import voyageai
-            client = voyageai.Client(api_key=os.getenv("VOYAGE_API_KEY"))
-            result = client.embed([query], model="voyage-code-3", input_type="query")
-            return result.embeddings[0]
-        except Exception as exc:
-            logger.warning("Voyage query embedding failed (%s), falling back to local hash", exc)
+        import voyageai
+        api_key = os.getenv("VOYAGE_API_KEY")
+        if not api_key:
+            raise RuntimeError("VOYAGE_API_KEY is not configured")
+        client = voyageai.Client(api_key=api_key)
+        result = client.embed([query], model="voyage-code-3", input_type="query")
+        return result.embeddings[0]
 
     elif provider == "openai":
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            response = client.embeddings.create(input=[query], model="text-embedding-3-small")
-            return response.data[0].embedding
-        except Exception as exc:
-            logger.warning("OpenAI query embedding failed (%s), falling back to local hash", exc)
+        from openai import OpenAI
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY is not configured")
+        client = OpenAI(api_key=api_key)
+        response = client.embeddings.create(input=[query], model="text-embedding-3-small")
+        return response.data[0].embedding
 
     elif provider == "gemini":
-        try:
-            from google import genai
-            if settings.gemini_api_key:
-                client = genai.Client(api_key=settings.gemini_api_key)
-                response = client.models.embed_content(
-                    model="text-embedding-004",
-                    contents=query,
-                )
-                if hasattr(response, "embedding") and response.embedding:
-                    return response.embedding.values
-                if hasattr(response, "embeddings") and response.embeddings:
-                    return response.embeddings[0].values
-        except Exception as exc:
-            logger.warning("Gemini query embedding failed (%s), falling back to local hash", exc)
+        from google import genai
+        if not settings.gemini_api_key:
+            raise RuntimeError("GEMINI_API_KEY is not configured")
+        client = genai.Client(api_key=settings.gemini_api_key)
+        response = client.models.embed_content(
+            model="gemini-embedding-001",
+            contents=query,
+        )
+        if hasattr(response, "embeddings") and response.embeddings:
+            return response.embeddings[0].values
+        if hasattr(response, "embedding") and response.embedding:
+            return response.embedding.values
+        raise RuntimeError("Gemini embed_content returned no embedding for query")
 
     return local_hash_embed(query)

@@ -12,21 +12,19 @@ Every stage transition is written to the tasks table so the frontend
 can reconnect after an SSE drop and recover last-known state.
 """
 import asyncio
-import hashlib
 import json
 import logging
 import os
-import re
 import shutil
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import AsyncGenerator, Callable, Awaitable
+from typing import Callable, Awaitable
 
 import httpx
 import pathspec
 from git import Repo as GitRepo
-from sqlalchemy import select, update
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from tree_sitter import Language, Parser
 import tree_sitter_python as tspython
@@ -412,6 +410,10 @@ async def run_ingestion(
                 rel_path = str(fpath.relative_to(clone_dir))
                 
                 # Check extension
+                if fname.endswith((".go", ".rs", ".java", ".cpp", ".c", ".cs", ".rb")):
+                    logger.debug("Skipping %s — extension not supported by Tree-sitter AST parser", rel_path)
+                    continue
+
                 if not fname.endswith((".py", ".js", ".ts", ".jsx", ".tsx")):
                     continue
                     

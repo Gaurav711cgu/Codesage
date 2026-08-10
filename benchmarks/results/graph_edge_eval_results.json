@@ -1,5 +1,5 @@
 {
-  "eval_date": "2026-07-18",
+  "eval_date": "2026-08-08",
   "metric": "direct_callee_recall_at_8",
   "description": "For each real parsed caller-to-callee edge, retrieve context from a question naming the caller and check whether the actual direct callee appears in the top 8 chunks.",
   "repos": [
@@ -23,1080 +23,1080 @@
       "source": "_populate_api_route_state",
       "target": "lenient_issubclass",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 118,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 1404,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 807
     },
     {
       "repo": "fastapi",
       "source": "get_all_paths",
       "target": "iter_all_lang_paths",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 827,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 817
     },
     {
       "repo": "fastapi",
       "source": "get_websocket_app",
       "target": "solve_dependencies",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 810,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 830
     },
     {
       "repo": "fastapi",
       "source": "APIRouter.__init__",
       "target": "_wrap_gen_lifespan_context",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 802,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 824
     },
     {
       "repo": "fastapi",
       "source": "get_openapi_security_definitions",
       "target": "jsonable_encoder",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 822,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 852
     },
     {
       "repo": "fastapi",
       "source": "_build_dependant_with_parameterless_dependencies",
       "target": "_should_embed_body_fields",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 654,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 652
     },
     {
       "repo": "fastapi",
       "source": "get_current_active_user",
       "target": "HTTPException",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 781,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 776
     },
     {
       "repo": "fastapi",
       "source": "_populate_api_route_state",
       "target": "get_body_field",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 863,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 673
     },
     {
       "repo": "fastapi",
       "source": "analyze_param",
       "target": "copy_field_info",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 804,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 788
     },
     {
       "repo": "fastapi",
       "source": "get_individual_sponsors",
       "target": "get_graphql_sponsor_edges",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 815,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 906
     },
     {
       "repo": "fastapi",
       "source": "get_definitions",
       "target": "_has_computed_fields",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 712,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 811
     },
     {
       "repo": "fastapi",
       "source": "fake_save_user",
       "target": "UserInDB",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 724,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 825
     },
     {
       "repo": "fastapi",
       "source": "check_translation",
       "target": "extract_code_includes",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 923,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 922
     },
     {
       "repo": "fastapi",
       "source": "_FrontendRouteGroup.add_frontend_route",
       "target": "_FrontendRoute",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 799,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 821
     },
     {
       "repo": "fastapi",
       "source": "analyze_param",
       "target": "field_annotation_is_scalar_sequence",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 740,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 831
     },
     {
       "repo": "fastapi",
       "source": "app",
       "target": "Message",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 789,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 866
     },
     {
       "repo": "fastapi",
       "source": "http_exception_handler",
       "target": "Response",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 818,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 708
     },
     {
       "repo": "fastapi",
       "source": "HTTPBearer403.make_not_authenticated_error",
       "target": "HTTPException",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 817,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 792
     },
     {
       "repo": "fastapi",
       "source": "_FrontendRouteGroup._match",
       "target": "_frontend_path_specificity",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 828,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 821
     },
     {
       "repo": "fastapi",
       "source": "get_flat_models_from_field",
       "target": "lenient_issubclass",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 827,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 828
     },
     {
       "repo": "fastapi",
       "source": "GzipRoute.custom_route_handler",
       "target": "GzipRequest",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 801,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 800
     },
     {
       "repo": "fastapi",
       "source": "app",
       "target": "serialize_response",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 847,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 761
     },
     {
       "repo": "fastapi",
       "source": "get_request_handler",
       "target": "Response",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 616,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 784
     },
     {
       "repo": "fastapi",
       "source": "verify_token",
       "target": "HTTPException",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 889,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 767
     },
     {
       "repo": "fastapi",
       "source": "_FrontendRouteGroup._match",
       "target": "_join_frontend_paths",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 604,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 756
     },
     {
       "repo": "fastapi",
       "source": "check_translation",
       "target": "replace_code_includes_with_placeholders",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 787,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 815
     },
     {
       "repo": "fastapi",
       "source": "analyze_param",
       "target": "lenient_issubclass",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 762,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 812
     },
     {
       "repo": "fastapi",
       "source": "authenticate_user",
       "target": "get_user",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 823,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 821
     },
     {
       "repo": "fastapi",
       "source": "get_openapi_operation_request_body",
       "target": "jsonable_encoder",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 773,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 674
     },
     {
       "repo": "fastapi",
       "source": "iter_all_en_paths",
       "target": "Path",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 755,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 714
     },
     {
       "repo": "fastapi",
       "source": "_get_openapi_operation_parameters",
       "target": "get_schema_from_model_field",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 724,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 811
     },
     {
       "repo": "fastapi",
       "source": "get_token_header",
       "target": "HTTPException",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 799,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 587
     },
     {
       "repo": "fastapi",
       "source": "OAuth2AuthorizationCodeBearer.__call__",
       "target": "get_authorization_scheme_param",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 833,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 835
     },
     {
       "repo": "fastapi",
       "source": "analyze_param",
       "target": "ensure_multipart_is_installed",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 764,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 781
     },
     {
       "repo": "fastapi",
       "source": "APIRoute.__init__",
       "target": "_populate_api_route_state",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 808,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 713
     },
     {
       "repo": "fastapi",
       "source": "stage_zensical_docs",
       "target": "get_zensical_theme_language",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 824,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 778
     },
     {
       "repo": "fastapi",
       "source": "is_bytes_or_nonable_bytes_annotation",
       "target": "lenient_issubclass",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 780,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 770
     },
     {
       "repo": "fastapi",
       "source": "app",
       "target": "_extract_endpoint_context",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 778,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 838
     },
     {
       "repo": "fastapi",
       "source": "get_openapi_path",
       "target": "get_openapi_security_definitions",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 809,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 805
     },
     {
       "repo": "fastapi",
       "source": "jsonable_encoder",
       "target": "is_pydantic_v1_model_instance",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 837,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 719
     },
     {
       "repo": "httpx",
       "source": "AsyncClient.delete",
       "target": "request",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 24,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 705,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 822
     },
     {
       "repo": "httpx",
       "source": "Headers.copy",
       "target": "Headers",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 766,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 727
     },
     {
       "repo": "httpx",
       "source": "GZipDecoder.decode",
       "target": "DecodingError",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 820,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 856
     },
     {
       "repo": "httpx",
       "source": "QueryParams.get_list",
       "target": "get",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 793,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 859
     },
     {
       "repo": "httpx",
       "source": "encode_text",
       "target": "ByteStream",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 827,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 813
     },
     {
       "repo": "httpx",
       "source": "QueryParams.remove",
       "target": "QueryParams",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 769,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 1086
     },
     {
       "repo": "httpx",
       "source": "DigestAuth._resolve_qop",
       "target": "ProtocolError",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 812,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 810
     },
     {
       "repo": "httpx",
       "source": "Response.iter_raw",
       "target": "StreamClosed",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 780,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 811
     },
     {
       "repo": "httpx",
       "source": "AsyncClient._init_transport",
       "target": "AsyncHTTPTransport",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 829,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 754
     },
     {
       "repo": "httpx",
       "source": "ASGITransport.handle_async_request",
       "target": "create_event",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 1119,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 776
     },
     {
       "repo": "httpx",
       "source": "DeflateDecoder.decode",
       "target": "DecodingError",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 795,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 772
     },
     {
       "repo": "httpx",
       "source": "AsyncHTTPTransport.handle_async_request",
       "target": "Response",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 732,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 804
     },
     {
       "repo": "httpx",
       "source": "DigestAuth._parse_challenge",
       "target": "ProtocolError",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 752,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 845
     },
     {
       "repo": "httpx",
       "source": "AsyncHTTPTransport.handle_async_request",
       "target": "URL",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 824,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 724
     },
     {
       "repo": "httpx",
       "source": "Client._send_handling_redirects",
       "target": "TooManyRedirects",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 755,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 764
     },
     {
       "repo": "httpx",
       "source": "trace",
       "target": "print_request_headers",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 789,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 770
     },
     {
       "repo": "httpx",
       "source": "get_environment_proxies",
       "target": "is_ipv6_hostname",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 767,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 720
     },
     {
       "repo": "httpx",
       "source": "BaseClient._merge_cookies",
       "target": "Cookies",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 806,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 877
     },
     {
       "repo": "httpx",
       "source": "Request.__init__",
       "target": "Headers",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 830,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 844
     },
     {
       "repo": "httpx",
       "source": "BaseClient._redirect_url",
       "target": "RemoteProtocolError",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 812,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 587
     },
     {
       "repo": "httpx",
       "source": "normalize_port",
       "target": "InvalidURL",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 579,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 786
     },
     {
       "repo": "httpx",
       "source": "Client._init_transport",
       "target": "HTTPTransport",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 828,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 829
     },
     {
       "repo": "httpx",
       "source": "Client._init_proxy_transport",
       "target": "HTTPTransport",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 814,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 810
     },
     {
       "repo": "httpx",
       "source": "ZStandardDecoder.flush",
       "target": "DecodingError",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 819,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 761
     },
     {
       "repo": "httpx",
       "source": "Headers.__init__",
       "target": "_normalize_header_value",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 886,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 1221
     },
     {
       "repo": "httpx",
       "source": "urlparse",
       "target": "get",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 819,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 640
     },
     {
       "repo": "httpx",
       "source": "AsyncHTTPTransport.__init__",
       "target": "Proxy",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 828,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 828
     },
     {
       "repo": "httpx",
       "source": "BaseClient._redirect_headers",
       "target": "Headers",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 714,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 858
     },
     {
       "repo": "httpx",
       "source": "Response._get_content_decoder",
       "target": "MultiDecoder",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 713,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 711
     },
     {
       "repo": "httpx",
       "source": "Client.post",
       "target": "request",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 758,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 658
     },
     {
       "repo": "httpx",
       "source": "urlparse",
       "target": "ParseResult",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 771,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 836
     },
     {
       "repo": "httpx",
       "source": "WSGITransport.handle_request",
       "target": "Response",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 610,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 881
     },
     {
       "repo": "httpx",
       "source": "trace",
       "target": "format_certificate",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 792,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 686
     },
     {
       "repo": "httpx",
       "source": "AsyncClient._init_proxy_transport",
       "target": "AsyncHTTPTransport",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 649,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 786
     },
     {
       "repo": "httpx",
       "source": "Response.aiter_bytes",
       "target": "ByteChunker",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 778,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 813
     },
     {
       "repo": "httpx",
       "source": "post",
       "target": "request",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 793,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 778
     },
     {
       "repo": "httpx",
       "source": "FileField.render_data",
       "target": "to_bytes",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 776,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 777
     },
     {
       "repo": "httpx",
       "source": "Client.patch",
       "target": "request",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 789,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 767
     },
     {
       "repo": "httpx",
       "source": "Client.options",
       "target": "request",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 632,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 618
     },
     {
       "repo": "httpx",
       "source": "BaseClient._merge_queryparams",
       "target": "QueryParams",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 771,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 843
     },
     {
       "repo": "celery",
       "source": "test_crontab_parser.test_parse_composite",
       "target": "crontab_parser",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 65,
+      "naive_latency_ms": 770,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 705
     },
     {
       "repo": "celery",
       "source": "Celery.__init__",
       "target": "Signal",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 802,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 811
     },
     {
       "repo": "celery",
       "source": "test_App.test_task_with_pydantic_with_non_strict_validation",
       "target": "Model",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 822,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 579
     },
     {
       "repo": "celery",
       "source": "test_saferepr.test_recursion",
       "target": "saferepr",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 1468,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 768
     },
     {
       "repo": "celery",
       "source": "test_WorkController.test_process_task_raise_WorkerTerminate",
       "target": "WorkerTerminate",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 773,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 580
     },
     {
       "repo": "celery",
       "source": "test_regen.test_lookahead_consume",
       "target": "regen",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 780,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 786
     },
     {
       "repo": "celery",
       "source": "test_default_strategy_proto2.test_when_events_disabled",
       "target": "C",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 766,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 849
     },
     {
       "repo": "celery",
       "source": "CursesMonitor.alert",
       "target": "callback",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 610,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 840
     },
     {
       "repo": "celery",
       "source": "_reprtask",
       "target": "appstr",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 825,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 602
     },
     {
       "repo": "celery",
       "source": "test_Task.test_ready",
       "target": "Task",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 771,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 742
     },
     {
       "repo": "celery",
       "source": "test_group.test_group_child_with_callback_replaced",
       "target": "get_redis_connection",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 896,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 1187
     },
     {
       "repo": "celery",
       "source": "test_move_by_taskmap",
       "target": "move_by_taskmap",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 753,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 819
     },
     {
       "repo": "celery",
       "source": "test_solo_TaskPool.test_info",
       "target": "TaskPool",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 825,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 833
     },
     {
       "repo": "celery",
       "source": "test_EventDispatcher.test_send_buffer_group",
       "target": "MockProducer",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 759,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 828
     },
     {
       "repo": "celery",
       "source": "test_get_exchange_default_type",
       "target": "get_exchange",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 917,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 818
     },
     {
       "repo": "celery",
       "source": "TaskPool.on_start",
       "target": "Pool",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 777,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 719
     },
     {
       "repo": "celery",
       "source": "test_ControlPanel.test_pool_grow",
       "target": "MockPool",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 823,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 782
     },
     {
       "repo": "celery",
       "source": "test_State.test_task_logical_clock_ordering",
       "target": "State",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 779,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 785
     },
     {
       "repo": "celery",
       "source": "test_saferepr.test_numbers_dict",
       "target": "saferepr",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 832,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 734
     },
     {
       "repo": "celery",
       "source": "test_trace.test_deduplicate_successful_tasks__root_id_fallback",
       "target": "CacheBackend",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 743,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 785
     },
     {
       "repo": "celery",
       "source": "test_MapRoute.test_route_for_task",
       "target": "expand",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 750,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 927
     },
     {
       "repo": "celery",
       "source": "test_asynloop.test_hub_timer_cleared_on_connection_error",
       "target": "asynloop",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 704,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 873
     },
     {
       "repo": "celery",
       "source": "test_RedisBackend_chords_simple.test_on_chord_part_return__ChordError__unordered",
       "target": "raise_on_second_call",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 830,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 592
     },
     {
       "repo": "celery",
       "source": "test_parse_iso8601_deprecation_warning",
       "target": "parse_iso8601",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 776,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 763
     },
     {
       "repo": "celery",
       "source": "memdump",
       "target": "_memdump",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 620,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 818
     },
     {
       "repo": "celery",
       "source": "CLIContext.pretty_dict_ok_error",
       "target": "indent",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 851,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 737
     },
     {
       "repo": "celery",
       "source": "test_stackprotection.test_stackprotection",
       "target": "reset_worker_optimizations",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 3,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 773,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 795
     },
     {
       "repo": "celery",
       "source": "test_synloop.test_no_heartbeat_support",
       "target": "synloop",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 625,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 630
     },
     {
       "repo": "celery",
       "source": "test_schedule.test_maybe_make_aware",
       "target": "maybe_make_aware",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 762,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 1164
     },
     {
       "repo": "celery",
       "source": "Beat.set_process_title",
       "target": "set_process_title",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 820,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 780
     },
     {
       "repo": "celery",
       "source": "test_trace.test_deduplicate_successful_tasks__backend_dedup_memory_error_propagates",
       "target": "trace",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 594,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 761
     },
     {
       "repo": "celery",
       "source": "Request.execute_using_pool",
       "target": "TaskRevokedError",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 845,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 768
     },
     {
       "repo": "celery",
       "source": "extras_require",
       "target": "extras",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 770,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 790
     },
     {
       "repo": "celery",
       "source": "get_optional_arg",
       "target": "is_none_type",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 773,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 782
     },
     {
       "repo": "celery",
       "source": "test_Tasks.test_qos_global_worker_detect_quorum_queues_true_no_quorum_queues",
       "target": "Tasks",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 828,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 768
     },
     {
       "repo": "celery",
       "source": "test_asynloop.test_poll_err_writable",
       "target": "asynloop",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 861,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 788
     },
     {
       "repo": "celery",
       "source": "test_Gossip.setup_election",
       "target": "Event",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 781,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 743
     },
     {
       "repo": "celery",
       "source": "Audit.feed",
       "target": "task_ready",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 621,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 729
     },
     {
       "repo": "celery",
       "source": "DatabaseBackend.__init__",
       "target": "ImproperlyConfigured",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
+      "naive_latency_ms": 807,
       "graph_hit_at_8": 0,
-      "graph_latency_ms": 3
+      "graph_latency_ms": 840
     },
     {
       "repo": "celery",
       "source": "test_trace.test_when_chord_part",
       "target": "trace",
       "naive_hit_at_8": 0,
-      "naive_latency_ms": 2,
-      "graph_hit_at_8": 1,
-      "graph_latency_ms": 3
+      "naive_latency_ms": 809,
+      "graph_hit_at_8": 0,
+      "graph_latency_ms": 827
     }
   ]
 }
