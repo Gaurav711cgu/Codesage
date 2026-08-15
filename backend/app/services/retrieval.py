@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 
 from app.models.schemas import RetrievedChunk
 from app.services import chromadb_client, graph as graph_svc
+from app.services.cache import query_cache
 from app.services.embedder import _get_provider, embed_query
 from app.services.retrieval_tracer import RetrievalTrace, tracer
 from app.services.retrieval_verifier import verifier
@@ -303,6 +304,7 @@ def retrieve_graph_augmented(
     return chunks, latency
 
 
+
 def retrieve(
     repo_id: str,
     query: str,
@@ -311,20 +313,31 @@ def retrieve(
     hop_depth: int = 1,
 ) -> tuple[list[RetrievedChunk], int]:
     """
-    High-level retrieval entry point with verification and fallback.
+    High-level retrieval entry point with verification, fallback, and jittered caching.
     """
+    # 1. Check query cache (jittered TTL)
+    cached = query_cache.get(repo_id, query, mode)
+    if cached is not None:
+        chunks, cached_latency = cached
+        return chunks, 0  # 0ms cache hit latency
+
+    # 2. Execute retrieval pipeline
     if mode in ("graph", "2hop"):
         depth = 2 if mode == "2hop" else hop_depth
         chunks, latency = retrieve_graph_augmented(repo_id, query, graph_data_json, hop_depth=depth)
     else:
         chunks, latency = retrieve_naive(repo_id, query)
 
-    # Quality Verification Loop
+    # 3. Quality Verification Loop
     verification = verifier.verify(chunks, mode)
     if verification.action == "fallback_naive" and mode == "graph":
         logger.info("Verification action 'fallback_naive': %s", verification.reason)
-        return retrieve_naive(repo_id, query)
+        fallback_chunks, fallback_lat = retrieve_naive(repo_id, query)
+        query_cache.set(repo_id, query, mode, fallback_chunks, fallback_lat)
+        return fallback_chunks, fallback_lat
     elif verification.action == "empty":
         return [], latency
 
+    # 4. Cache verified result with random TTL jitter
+    query_cache.set(repo_id, query, mode, chunks, latency)
     return chunks, latency

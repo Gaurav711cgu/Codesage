@@ -21,6 +21,8 @@ from app.core.config import settings
 from app.api.v1 import repo, code, benchmarks
 from app.services import chromadb_client
 from app.core.database import AsyncSessionLocal, engine, Base
+from app.core.idempotency import IdempotencyMiddleware
+from app.core.metrics import MetricsMiddleware, metrics_router
 
 os.makedirs("/tmp/codesagez", exist_ok=True)
 
@@ -69,7 +71,9 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    logger.info("CodeSageZ shutting down cleanly.")
+    logger.info("CodeSageZ shutting down cleanly — draining in-flight requests and flushing DB engine...")
+    await engine.dispose()
+    logger.info("Database connections disposed cleanly.")
 
 
 # ─── App ──────────────────────────────────────────────────────────────────────
@@ -87,7 +91,9 @@ app = FastAPI(
 )
 
 # Middleware order matters — outermost runs first
+app.add_middleware(MetricsMiddleware)
 app.add_middleware(RequestIDMiddleware)
+app.add_middleware(IdempotencyMiddleware)
 app.add_middleware(APIKeyMiddleware)
 
 # CORS — explicit, not wildcard
@@ -96,7 +102,7 @@ app.add_middleware(
     allow_origins=[settings.frontend_url, "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "X-API-Key", "X-Request-ID"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key", "X-Request-ID", "Idempotency-Key"],
 )
 
 # Rate limiter
@@ -109,6 +115,7 @@ from app.mcp_server import mcp_app  # noqa: E402 — must be after app creation
 app.include_router(repo.router, prefix="/api/v1")
 app.include_router(code.router, prefix="/api/v1")
 app.include_router(benchmarks.router, prefix="/api/v1")
+app.include_router(metrics_router)
 app.mount("/mcp", mcp_app)
 
 # OpenTelemetry distributed tracing
