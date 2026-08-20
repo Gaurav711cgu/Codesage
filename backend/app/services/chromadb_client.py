@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 
+from app.core.circuit_breaker import chroma_breaker
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -115,6 +116,7 @@ def query_collection(
     """
     Query a collection by embedding vector or text.
     Returns raw ChromaDB result dict with 'ids', 'documents', 'metadatas', 'distances'.
+    Wrapped in chroma_breaker circuit breaker for resilience.
     """
     collection = get_or_create_collection(repo_id, suffix)
     kwargs: dict[str, Any] = {
@@ -128,7 +130,7 @@ def query_collection(
         
     if where:
         kwargs["where"] = where
-    return collection.query(**kwargs)
+    return chroma_breaker.call_sync(collection.query, **kwargs)
 
 
 def get_documents_by_ids(

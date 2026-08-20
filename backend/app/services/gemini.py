@@ -9,6 +9,7 @@ from typing import Generator
 from google import genai
 from google.genai import types
 
+from app.core.circuit_breaker import gemini_breaker
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -35,41 +36,49 @@ def _get_client() -> genai.Client:
 
 # ─── Text generation ──────────────────────────────────────────────────────────
 
-def stream_llm(prompt: str) -> Generator[str, None, None]:
-    """Stream tokens from Gemini Flash, with local fallback if API fails."""
-    try:
-        response = _get_client().models.generate_content_stream(
-            model="gemini-2.0-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.2,
-                top_p=0.95,
-                max_output_tokens=2048,
-                system_instruction=(
-                    "You are a precise software engineering assistant specialising in "
-                    "code analysis and debugging. Reference specific function names, "
-                    "file paths, and line numbers when available. Be concise and accurate."
-                ),
+def _do_stream(prompt: str) -> list[str]:
+    response = _get_client().models.generate_content_stream(
+        model="gemini-2.0-flash",
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            temperature=0.2,
+            top_p=0.95,
+            max_output_tokens=2048,
+            system_instruction=(
+                "You are a precise software engineering assistant specialising in "
+                "code analysis and debugging. Reference specific function names, "
+                "file paths, and line numbers when available. Be concise and accurate."
             ),
-        )
-        for chunk in response:
-            if chunk.text:
-                yield chunk.text
+        ),
+    )
+    return [chunk.text for chunk in response if chunk.text]
+
+
+def stream_llm(prompt: str) -> Generator[str, None, None]:
+    """Stream tokens from Gemini Flash wrapped in circuit breaker."""
+    try:
+        chunks = gemini_breaker.call_sync(_do_stream, prompt)
+        for chunk in chunks:
+            yield chunk
     except Exception as exc:
-        logger.warning("Gemini generation failed: %s", exc)
+        logger.warning("Gemini streaming generation failed via circuit breaker: %s", exc)
         yield _generation_unavailable()
 
 
+def _do_generate(prompt: str) -> str:
+    response = _get_client().models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt,
+    )
+    return response.text or ""
+
+
 def call_llm(prompt: str) -> str:
-    """Single-shot Gemini call, with local fallback if API fails."""
+    """Single-shot Gemini call wrapped in circuit breaker."""
     try:
-        response = _get_client().models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-        )
-        return response.text
+        return gemini_breaker.call_sync(_do_generate, prompt)
     except Exception as exc:
-        logger.warning("Gemini generation failed: %s", exc)
+        logger.warning("Gemini generation failed via circuit breaker: %s", exc)
         return _generation_unavailable()
 
 

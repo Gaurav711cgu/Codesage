@@ -15,6 +15,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import shutil
 import uuid
 from dataclasses import dataclass, field
@@ -197,12 +198,50 @@ def _extract_imports(tree_root, src_bytes: bytes) -> list[str]:
     return imports
 
 
+def _parse_fallback_languages(file_path: Path, repo_id: str, file_rel: str, src_text: str) -> list[CodeUnit]:
+    ext = file_path.suffix.lower()
+    units: list[CodeUnit] = []
+    lines = src_text.splitlines()
+
+    if ext == ".go":
+        pattern = re.compile(r"func\s+(?:\([^)]+\)\s+)?([A-Za-z0-9_]+)\s*\(")
+    elif ext in (".java", ".c", ".cpp"):
+        pattern = re.compile(r"(?:public|private|protected|static|\s)+\s+[\w<>]+\s+([A-Za-z0-9_]+)\s*\([^)]*\)\s*\{")
+    elif ext == ".rs":
+        pattern = re.compile(r"fn\s+([A-Za-z0-9_]+)\s*\(")
+    else:
+        return []
+
+    for i, line in enumerate(lines, 1):
+        match = pattern.search(line)
+        if match:
+            fn_name = match.group(1)
+            unit_id = f"{repo_id}::{file_rel}::{fn_name}::{i}"
+            units.append(
+                CodeUnit(
+                    id=unit_id,
+                    repo_id=repo_id,
+                    name=fn_name,
+                    file=file_rel,
+                    type="function",
+                    start_line=i,
+                    end_line=min(i + 20, len(lines)),
+                    source=line,
+                    docstring="",
+                    calls=[],
+                    imports=[],
+                )
+            )
+    return units
+
+
 def parse_file(
     file_path: Path, repo_id: str, file_rel: str
 ) -> list[CodeUnit]:
     """Parse a single file and return a list of CodeUnit objects."""
     try:
         src_bytes = file_path.read_bytes()
+        src_text = src_bytes.decode("utf-8", errors="replace")
     except Exception as exc:
         logger.warning("Could not read %s: %s", file_path, exc)
         return []
@@ -217,7 +256,7 @@ def parse_file(
     elif ext in (".tsx", ".jsx"):
         parser = _tsx_parser
     else:
-        return []
+        return _parse_fallback_languages(file_path, repo_id, file_rel, src_text)
 
     try:
         tree = parser.parse(src_bytes)

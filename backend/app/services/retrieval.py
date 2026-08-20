@@ -19,6 +19,7 @@ import time
 from dataclasses import dataclass, field
 
 from app.models.schemas import RetrievedChunk
+from app.core.singleflight import single_flight
 from app.services import chromadb_client, graph as graph_svc
 from app.services.cache import query_cache
 from app.services.embedder import _get_provider, embed_query
@@ -304,17 +305,13 @@ def retrieve_graph_augmented(
     return chunks, latency
 
 
-
-def retrieve(
+def _raw_retrieve(
     repo_id: str,
     query: str,
     mode: str = "graph",
     graph_data_json: str | None = None,
     hop_depth: int = 1,
 ) -> tuple[list[RetrievedChunk], int]:
-    """
-    High-level retrieval entry point with verification, fallback, and jittered caching.
-    """
     # 1. Check query cache (jittered TTL)
     cached = query_cache.get(repo_id, query, mode)
     if cached is not None:
@@ -341,3 +338,34 @@ def retrieve(
     # 4. Cache verified result with random TTL jitter
     query_cache.set(repo_id, query, mode, chunks, latency)
     return chunks, latency
+
+
+def retrieve(
+    repo_id: str,
+    query: str,
+    mode: str = "graph",
+    graph_data_json: str | None = None,
+    hop_depth: int = 1,
+) -> tuple[list[RetrievedChunk], int]:
+    """High-level synchronous entry point."""
+    return _raw_retrieve(repo_id, query, mode, graph_data_json, hop_depth)
+
+
+async def async_retrieve(
+    repo_id: str,
+    query: str,
+    mode: str = "graph",
+    graph_data_json: str | None = None,
+    hop_depth: int = 1,
+) -> tuple[list[RetrievedChunk], int]:
+    """
+    High-level async retrieval entry point with SingleFlight request coalescing.
+    Suppresses redundant concurrent RAG search executions for identical queries.
+    """
+    import asyncio
+    sf_key = f"{repo_id}:{mode}:{query.strip().lower()}"
+
+    async def _async_exec():
+        return await asyncio.to_thread(_raw_retrieve, repo_id, query, mode, graph_data_json, hop_depth)
+
+    return await single_flight.do(sf_key, _async_exec)
