@@ -33,8 +33,12 @@ def _get_provider() -> EmbeddingProvider:
 
 def local_hash_embed(text: str, dimension: int = 384) -> list[float]:
     """
-    Generate a stable, normalized bag-of-words hash vector for a text.
-    Runs locally in microseconds, zero external dependencies.
+    Generate a normalized Lexical Bag-of-Words Feature Hash vector (the Hashing Trick).
+    
+    NOTE: This is a fast, zero-dependency lexical token-matching baseline (similar to
+    MinHash/FeatureHasher), NOT a learned semantic transformer model. For true semantic
+    similarity across synonyms (e.g. 'async function' vs 'speedy coroutine'), configure
+    EMBEDDING_PROVIDER="gemini" (3072-dim) or "voyage" (1024-dim).
     """
     words = re.findall(r'[a-zA-Z_0-9]+', text.lower())
     vector = [0.0] * dimension

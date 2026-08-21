@@ -46,3 +46,4 @@ Thumbs.db
 backend/app.db
 backend/.chroma/
 .chroma/
+*.log
