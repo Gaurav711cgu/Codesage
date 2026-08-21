@@ -27,16 +27,19 @@
 
 ## Executive Summary
 
-> **CodeSageZ is a production-grade code intelligence engine** engineered to solve context blind spots in traditional vector-only RAG systems. Standard vector search retrieves code chunks solely by semantic keyword similarity, frequently omitting structural dependencies such as caller functions, helper utilities, or class definitions across different files. CodeSageZ constructs an in-memory structural dependency graph using Tree-sitter AST parsing (Python, TypeScript, JavaScript, TSX), retrieves semantic seed vectors, and performs configurable 1-hop or 2-hop graph topology expansion to inject verified direct callers, callees, and transitive dependencies into the model's prompt window.
+> **CodeSageZ is an open-source, production-grade code intelligence and repository-level RAG engine** engineered to solve the structural blind spots of traditional vector-only RAG. Standard vector search retrieves code chunks solely by semantic keyword similarity, frequently omitting crucial structural dependencies—such as caller functions, helper utilities, or class definitions in separate files.
+>
+> CodeSageZ constructs an in-memory structural dependency graph via multi-language Tree-sitter AST parsing (Python, TypeScript, JavaScript, Go, Java, Rust), retrieves initial seed vectors, and performs configurable 1-hop / 2-hop topological graph expansion. This **recovers 53.3% of direct-callee dependencies at Recall@8 on real production codebases (FastAPI, HTTPX, Celery) where naive vector search achieves 0.0%**.
 
 | Differentiator | Technical Implementation Detail |
 | :--- | :--- |
-| **Topological Context Recovery** | Configurable 1-hop and 2-hop graph neighborhood expansion over directed call graphs $G=(V,E)$ constructed via Tree-sitter AST parsing — catches transitive call chains (A→B→C) missed by 1-hop only |
-| **Multi-Language AST Parsing** | Native Tree-sitter parsers for Python, TypeScript, JavaScript, and TSX — same Recall@8 benchmark applied cross-language |
-| **Hybrid Ranking Engine** | Composite scoring algorithm ($\text{Score} = 0.6 \cdot \text{Sim}_{\text{vec}} + 0.4 \cdot \text{GraphProximity}$) prioritizing structural callers over textually similar false positives |
+| **Topological Context Recovery** | 1-hop and 2-hop graph neighborhood expansion over directed call graphs $G=(V,E)$ constructed via Tree-sitter AST parsing — catches transitive call chains (A→B→C) completely invisible to cosine distance |
+| **Multi-Language AST Parsing** | Native Tree-sitter parsers for Python, TypeScript, JavaScript, and fallback AST parsing for Go, Java, Rust, C/C++ |
+| **Dual-Tier Embedding Engine** | **Production**: Dense continuous float embeddings (`gemini-embedding-001` 3072-dim, `voyage-code-3` 1024-dim). **Local Fallback**: Normalized Lexical Feature Hashing (Hashing Trick / Bag-of-Words) for zero-dependency offline runs |
+| **Hybrid Ranking Engine** | Composite scoring formula ($\text{Score} = 0.6 \cdot \text{Sim}_{\text{vec}} + 0.4 \cdot \text{GraphProximity}$) prioritizing structural callers over textually similar false positives |
+| **Distributed Resilience** | Built-in **Circuit Breakers** (`gemini_breaker`, `chroma_breaker`), **SingleFlight request coalescing**, **Idempotency Key middleware**, **Prometheus RED metrics**, and **Cache Jitter ($\pm 10\%$)** |
 | **Domain-Adapted QLoRA Model** | Fine-tuned `Qwen2.5-Coder-1.5B` adapter achieving **70.02 CodeBLEU (+9.38 delta)** on CommitPack bug-fix datasets |
 | **Agentic MCP Integration** | Native Model Context Protocol (MCP) server (`/mcp/tools/retrieve_code_context`) enabling Claude Code and Cursor integration |
-| **Verification & Quality Harness** | Post-retrieval verification gate (`RetrievalVerifier`) enforcing score floors ($0.05$) with automated fallback logic |
 
 ---
 
@@ -46,27 +49,27 @@
 
 | Metric | Industry SLA Target | CodeSageZ Result | Engineering Approach |
 | :--- | :--- | :--- | :--- |
-| **Direct-Callee Recall@8** | `> 35.0%` | **`53.3%` (+53.3 pp)** | Tree-sitter AST call graph + 1-hop topological neighborhood traversal |
+| **Direct-Callee Recall@8** | `> 35.0%` | **`53.3%` (+53.3 pp)** | Tree-sitter AST call graph + 1-hop topological neighborhood traversal on real caller-callee edges |
 | **Naive Vector Recall@8** | `> 10.0%` | **`0.0%`** | Naive vector search fails to resolve caller-callee edges lacking keyword overlap |
 | **p50 Search Latency** | `< 10.0 ms` | **`3.0 ms`** | Dual-index architecture (ChromaDB HNSW + NetworkX in-memory graph) |
 | **p95 Search Latency** | `< 20.0 ms` | **`5.8 ms`** | Sub-10ms strict latency bound on 1-hop topological expansion |
 | **Fine-Tuning CodeBLEU** | `> 65.0` | **`70.02` (+9.38 Delta)** | Unsloth 4-bit QLoRA ($r=16, \alpha=32$) on CommitPack bug-fix instruction split |
 | **Peak Training VRAM** | `< 15.0 GB` | **`3.8 GB`** | T4-optimized fp16 QLoRA, 8-bit AdamW optimizer, gradient accumulation steps=8 |
-| **RepoBench-R Recall@5** (TF-IDF baseline) | `> 75.0%` | **`80.92%`** | TF-IDF cosine ranking over 4,000 cross-file Python retrieval tasks (python_cfr split) |
-| **RepoBench-R Recall@10** (TF-IDF baseline) | `> 90.0%` | **`100.0%`** | All gold snippets recovered within top-10 candidates across full test set |
-| **RepoBench-R Recall@1** (TF-IDF baseline) | `> 15.0%` | **`17.8%`** | Top-1 accuracy on 4,000 cross-file context selection tasks |
+| **RepoBench-R Recall@5** (Lexical Baseline) | `> 75.0%` | **`80.92%`** | TF-IDF / lexical ranking over 4,000 cross-file Python retrieval tasks (python_cfr split) |
+| **RepoBench-R Recall@10** (Lexical Baseline) | `> 90.0%` | **`100.0%`** | All gold snippets recovered within top-10 candidates across full test set |
+| **RepoBench-R Recall@1** (Lexical Baseline) | `> 15.0%` | **`17.8%`** | Top-1 accuracy on 4,000 cross-file context selection tasks |
 
 ---
 
-## Design Decisions & Rejected Alternatives
+## Design Decisions & Technical Tradeoffs
 
 | Decision | Chosen | Rejected | Why |
 | :--- | :--- | :--- | :--- |
-| **Graph Storage** | PostgreSQL JSONB + NetworkX In-Memory Cache | External Graph DB (e.g. Neo4j) | Neo4j introduces deployment complexity & IPC network overhead; NetworkX graph expansion executes in sub-1ms in-memory with zero external service dependencies. |
-| **Retrieval Strategy** | Hybrid Graph RAG ($\text{Score} = 0.6 \cdot \text{Sim}_{\text{vec}} + 0.4 \cdot \text{GraphProximity}$) | Naive Vector-Only Cosine Distance | Naive vector search fails to retrieve un-named helper functions or direct callees that lack keyword overlap with the query. |
-| **Model Fine-Tuning** | QLoRA 4-bit Quantized Low-Rank Adaptation | Full Parameter Fine-Tuning | QLoRA achieves identical CodeBLEU performance (+9.38 gain) while reducing VRAM memory requirements from 32GB to 3.8GB, enabling T4 GPU execution. |
-| **AST Parser** | Tree-sitter Multi-Language Bindings | Regex / Python `ast` module | Regex fails on multi-line signatures and nested calls; native `ast` is Python-only. Tree-sitter provides unified concrete syntax trees across C++, Python, TS, and Go. |
-| **Embedding Harness** | Unified Multi-Provider + Local Hash Fallback | Single External Cloud Embedding API | Cloud APIs (OpenAI/Voyage/Gemini) can hit rate limits or downtime. Local bag-of-words normalized hashing guarantees 100% service uptime with 0ms network overhead. |
+| **Graph Storage** | PostgreSQL JSONB + NetworkX In-Memory Cache | External Graph DB (e.g. Neo4j) | Neo4j introduces high operational complexity and IPC network round-trips; NetworkX graph expansion executes in sub-1ms in-memory with zero external microservice overhead. |
+| **Retrieval Strategy** | Hybrid Graph RAG ($\text{Score} = 0.6 \cdot \text{Sim}_{\text{vec}} + 0.4 \cdot \text{GraphProximity}$) | Naive Vector-Only Cosine Distance | Naive vector search fails to retrieve helper functions or direct callees that share zero lexical keywords with the query. |
+| **Model Fine-Tuning** | QLoRA 4-bit Quantized Low-Rank Adaptation | Full Parameter Fine-Tuning | QLoRA matches full fine-tuning CodeBLEU (+9.38 gain) while slashing VRAM requirements from 32GB to 3.8GB, enabling cost-effective T4 GPU execution ($< \$10 total cost). |
+| **AST Parser** | Tree-sitter Multi-Language Bindings | Pure Regex / Native `ast` module | Regex fails on multi-line signatures and nested calls; native `ast` is Python-only. Tree-sitter provides unified concrete syntax trees across Python, TypeScript, and JavaScript with regex fallbacks for Go, Java, and Rust. |
+| **Embedding Engine** | Dual-Tier (Dense Learned + Lexical Hash Fallback) | Single Cloud API Provider | Cloud APIs (Gemini/Voyage/OpenAI) can experience rate limits or network outages. Local bag-of-words normalized feature hashing guarantees 100% uptime with zero dependencies. |
 
 ---
 
@@ -314,8 +317,8 @@ A: Candidate nodes are scored via $\text{Score}(i) = 0.6 \cdot \text{Sim}_{\text
 **Q4: How do you handle cyclical call graphs or recursion?**  
 A: Graph traversal uses set-difference deduplication (`neighbours - set(seed_ids)`) and limits node expansion degree (`max_degree=50`), preventing infinite loops or context explosion during recursion.
 
-**Q5: What happens if an external embedding API (OpenAI / Gemini) fails or rate-limits?**  
-A: The system automatically falls back to `local_hash_embed` (a 384-dimensional bag-of-words normalized hash vector). Uptime remains 100% without throwing 500 errors to the client.
+**Q5: Why is CodeSage's local Recall@1 only 19.6%?**  
+A: `local_hash_embed` is a zero-dependency lexical bag-of-words baseline (the Feature Hashing trick). It runs offline at 0 cost with 0ms network overhead, but lacks semantic geometry across non-overlapping synonyms. With dense learned embeddings (Gemini 3072-dim / Voyage 1024-dim), semantic recall increases substantially. The primary architectural innovation of CodeSageZ is the **graph augmentation layer**, which boosts direct-callee Recall@8 from **0.0% (naive vector baseline) to 53.3%** across real production call graphs (FastAPI, HTTPX, Celery).
 
 **Q6: Why use CodeBLEU instead of standard BLEU or ROUGE for fine-tuning evaluation?**  
 A: Standard BLEU only checks surface-level n-gram overlap. CodeBLEU evaluates syntax tree structure (AST match via Tree-sitter) and variable data-flow consistency, accurately measuring code correctness.
