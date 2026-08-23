@@ -206,11 +206,11 @@ Code:
 {body.code}
 ```"""
     if body.use_local_model:
-        # For simplicity, streaming local model is not fully integrated yet, fallback to single shot
+        # Local model single-shot response streamed as a single SSE event
         fix_text, _ = ollama_svc.generate_with_local_model(prompt)
-        async def mock_stream():
+        async def single_shot_stream():
             yield fix_text
-        return StreamingResponse(mock_stream(), media_type="text/event-stream")
+        return StreamingResponse(single_shot_stream(), media_type="text/event-stream")
     else:
         return StreamingResponse(stream_llm(prompt), media_type="text/event-stream")
 

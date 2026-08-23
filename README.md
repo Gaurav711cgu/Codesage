@@ -56,7 +56,7 @@
 | **Fine-Tuning CodeBLEU** | `> 65.0` | **`70.02` (+9.38 Delta)** | Unsloth 4-bit QLoRA ($r=16, \alpha=32$) on CommitPack bug-fix instruction split |
 | **Peak Training VRAM** | `< 15.0 GB` | **`3.8 GB`** | T4-optimized fp16 QLoRA, 8-bit AdamW optimizer, gradient accumulation steps=8 |
 | **RepoBench-R Recall@5** (Lexical Baseline) | `> 75.0%` | **`80.92%`** | TF-IDF / lexical ranking over 4,000 cross-file Python retrieval tasks (python_cfr split) |
-| **RepoBench-R Recall@10** (Lexical Baseline) | `> 90.0%` | **`100.0%`** | All gold snippets recovered within top-10 candidates across full test set |
+| **RepoBench-R Recall@10** (Lexical Baseline) | `> 90.0%` | **`100.0%`** | All gold snippets recovered within top-10 candidates (candidate pool size $N \le 10$ per query in test_easy split) |
 | **RepoBench-R Recall@1** (Lexical Baseline) | `> 15.0%` | **`17.8%`** | Top-1 accuracy on 4,000 cross-file context selection tasks |
 
 ---

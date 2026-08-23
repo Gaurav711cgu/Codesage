@@ -88,7 +88,7 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
             return [e.values for e in response.embeddings]
         raise RuntimeError("Gemini embed_content returned no embeddings")
 
-    logger.debug("Using local hash embeddings for %d texts", len(texts))
+    logger.warning("No external embedding provider configured (EMBEDDING_PROVIDER not set, no GEMINI_API_KEY). Falling back to lexical feature hashing embeddings. Semantic synonym matching will be degraded.")
     return [local_hash_embed(t) for t in texts]
 
 
@@ -129,4 +129,5 @@ def embed_query(query: str) -> list[float]:
             return response.embedding.values
         raise RuntimeError("Gemini embed_content returned no embedding for query")
 
+    logger.warning("No external embedding provider configured; falling back to lexical feature hashing for query embedding.")
     return local_hash_embed(query)
