@@ -137,6 +137,7 @@ async function apiFetch<T>(
   try {
     const res = await fetch(`${BASE}${path}`, {
       headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(10000), // 10 second default timeout
       ...init,
     });
     const json = await res.json();

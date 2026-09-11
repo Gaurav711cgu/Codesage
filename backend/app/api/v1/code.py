@@ -60,36 +60,12 @@ def _extract_json(text: str) -> dict:
 # ─── POST /api/v1/code/review ────────────────────────────────────────────────
 
 
+from app.prompts.code_prompts import CODE_REVIEW_PROMPT_V1
+
 @router.post("/code/review", response_model=ApiResponse)
 @limiter.limit("20/minute")
 async def review_code(request: Request, body: CodeReviewRequest):
-    prompt = f"""Perform a code review of the following {body.language} code.
-
-Return your analysis as a single JSON object with this exact structure:
-{{
-  "overall_score": <integer 0-100>,
-  "issues": [
-    {{
-      "severity": "<critical|high|medium|low|info>",
-      "line": <integer or null>,
-      "description": "<concise description of the issue>",
-      "suggestion": "<specific actionable suggestion>"
-    }}
-  ],
-  "strengths": ["<strength 1>", "<strength 2>"],
-  "summary": "<2-3 sentence overall summary>"
-}}
-
-Rules:
-- overall_score reflects overall quality (100 = perfect, 0 = unrunnable)
-- List at most 10 issues, sorted by severity descending
-- List at most 5 strengths
-- Return only the JSON object, no markdown fences, no other text
-
-Code to review:
-```{body.language}
-{body.code}
-```"""
+    prompt = CODE_REVIEW_PROMPT_V1.format(language=body.language, code=body.code)
 
     raw = await asyncio.to_thread(call_llm, prompt)
     try:
@@ -130,35 +106,20 @@ Code to review:
 # ─── POST /api/v1/code/debug ─────────────────────────────────────────────────
 
 
+from app.prompts.code_prompts import CODE_DEBUG_PROMPT_V1, CODE_DEBUG_FIX_PROMPT_V1
+
 @router.post("/code/debug", response_model=ApiResponse)
 @limiter.limit("20/minute")
 async def debug_code(request: Request, body: DebugRequest):
     if len(body.code) > 10000:
         _err("CODE_TOO_LONG", "Code exceeds 10,000 character limit")
 
-    fix_prompt = (
-        f"### Task: Fix the bug described by the error message.\n\n"
-        f"### Error:\n{body.error}\n\n"
-        f"### Buggy {body.language} code:\n```{body.language}\n{body.code}\n```\n\n"
-        f"### Fixed code:\n```{body.language}\n"
+    fix_prompt = CODE_DEBUG_FIX_PROMPT_V1.format(
+        language=body.language, code=body.code, error=body.error
     )
-
-    explanation_prompt = f"""Analyze this {body.language} bug and return a JSON object:
-{{
-  "probable_cause": "<1-2 sentence root cause explanation>",
-  "root_location": "<file:line or function name if determinable, else null>",
-  "execution_path": ["<step 1>", "<step 2>", "..."],
-  "confidence": "<high|medium|low>"
-}}
-
-Error: {body.error}
-
-Code:
-```{body.language}
-{body.code}
-```
-
-Return only the JSON object."""
+    explanation_prompt = CODE_DEBUG_PROMPT_V1.format(
+        language=body.language, code=body.code, error=body.error
+    )
 
     # Get fix from local model or Gemini
     if body.use_local_model:
@@ -218,41 +179,19 @@ Code:
 # ─── POST /api/v1/code/tests ─────────────────────────────────────────────────
 
 
+from app.prompts.code_prompts import TEST_GEN_PROMPT_V1
+
 @router.post("/code/tests", response_model=ApiResponse)
 @limiter.limit("20/minute")
 async def generate_tests(request: Request, body: TestGenRequest):
     if len(body.code) > 10000:
         _err("CODE_TOO_LONG", "Code exceeds 10,000 character limit")
 
-    framework_note = (
-        "Use pytest with plain assert statements."
-        if body.framework == "pytest"
-        else "Use unittest.TestCase with self.assert* methods."
+    prompt = TEST_GEN_PROMPT_V1.format(
+        language=body.language,
+        framework=body.framework,
+        code=body.code,
     )
-
-    prompt = f"""Generate a thorough test suite for the following {body.language} code.
-
-Framework: {body.framework}. {framework_note}
-
-Rules:
-- Do NOT invent imports that are not in the original code or standard library
-- Cover: happy path, edge cases, and error/exception cases
-- Each test function name must start with test_
-- Return a JSON object with this exact structure:
-{{
-  "test_code": "<complete test file as a string>",
-  "test_count": <integer>,
-  "cases": [
-    {{"type": "<happy_path|edge_case|error_case>", "name": "<test_function_name>"}}
-  ]
-}}
-
-Return only the JSON object, no markdown fences.
-
-Code to test:
-```{body.language}
-{body.code}
-```"""
 
     raw = await asyncio.to_thread(call_llm, prompt)
     try:

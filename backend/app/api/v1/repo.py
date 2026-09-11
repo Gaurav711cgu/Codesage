@@ -380,9 +380,8 @@ async def query_repo(
         import time
 
         try:
-            # Retrieval (blocking I/O, run in thread pool)
-            chunks, retrieval_latency = await asyncio.to_thread(
-                retrieval_svc.retrieve,
+            # Retrieval with SingleFlight coalescing & jittered cache
+            chunks, retrieval_latency = await retrieval_svc.async_retrieve(
                 str(body.repo_id),
                 body.query,
                 body.retrieval_mode,
@@ -395,14 +394,24 @@ async def query_repo(
             })
 
             # Build prompt from retrieved context
+            # Token budgeting: Gemini 2.0 Flash supports 1M tokens, but we cap to 100k for speed
+            # Rough approximation: 4 chars ≈ 1 token. 100k tokens ≈ 400,000 chars.
             context_lines: list[str] = []
-            remaining_context = 12_000
+            remaining_chars = 400_000
             for c in chunks:
-                if remaining_context <= 0:
+                if remaining_chars <= 0:
                     break
                 tag = "[SEED]" if c.type == "seed" else "[NEIGHBOR]"
-                source = c.content[: min(3_000, remaining_context)]
-                remaining_context -= len(source)
+                
+                # Truncate at nearest newline to preserve AST/syntax boundaries
+                source = c.content
+                if len(source) > remaining_chars:
+                    truncate_idx = source.rfind('\n', 0, remaining_chars)
+                    if truncate_idx == -1:
+                        truncate_idx = remaining_chars
+                    source = source[:truncate_idx] + "\n...[TRUNCATED]"
+                
+                remaining_chars -= len(source)
                 context_lines.append(
                     f"{tag} {c.name}  ({c.file}  L{c.lines[0]}–{c.lines[1]})\n{source}"
                 )

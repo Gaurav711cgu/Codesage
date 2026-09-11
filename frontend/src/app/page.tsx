@@ -317,6 +317,7 @@ export default function Home() {
                     {TECH_LOGOS.map((tech) => (
                       <div key={tech.name} className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl transition-colors hover:bg-white/5" 
                         style={{ width: tech.isWide ? '120px' : '80px', background: 'var(--cs-surface)', border: '1px solid var(--cs-border)' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={tech.src} alt={tech.name} className={`object-contain ${tech.invert ? 'invert opacity-90' : ''} ${tech.isWide ? 'w-16 h-8' : 'w-8 h-8'}`} />
                         <span className="text-[10px] font-medium text-center" style={{ color: 'var(--cs-text2)' }}>{tech.name}</span>
                       </div>

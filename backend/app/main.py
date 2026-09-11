@@ -152,8 +152,9 @@ async def health_check():
     if status == "degraded":
         logger.warning("Health check degraded: %s", checks)
 
+    status_code = 200 if status == "ok" else 503
     return JSONResponse(
-        status_code=200,
+        status_code=status_code,
         content={"status": status, "version": settings.version, "checks": checks},
     )
 

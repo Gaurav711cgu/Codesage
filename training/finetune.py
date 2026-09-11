@@ -16,10 +16,11 @@ Changes from original (reasons inline):
   - dtype: None → torch.float16  (T4 doesn't support bfloat16 reliably)
   - bf16: auto → False           (explicit — T4 returns False anyway)
   - fp16: auto → True            (explicit — required on T4)
-  - save_strategy: "no" → "epoch" (CRITICAL: prevents losing everything on crash)
+  - save_strategy: "epoch" (CRITICAL: prevents losing everything on crash)
   - load_best_model_at_end: added (saves best checkpoint by eval_loss)
-  - DATA_DIR: relative CWD → __file__-relative (works regardless of where you run from)
-  - Drive backup: added after each save (survives session death)
+  - report_to: "wandb" added for ML Ops tracking (FAANG standard)
+  - DATA_DIR: relative CWD → __file__-relative
+  - Drive backup: added after each save
   - Resume: auto-detect latest epoch checkpoint
   - packing: disabled (avoids Unsloth padding_free/max_length conflict)
   - SFTTrainer args: only pass model, tokenizer, datasets, args (no duplicates)
@@ -261,7 +262,7 @@ def train() -> None:
         metric_for_best_model="eval_loss",
         greater_is_better=False,
         seed=RANDOM_SEED,
-        report_to="none",          # no W&B / wandb unless configured
+        report_to="wandb",
         dataloader_num_workers=2,
     )
 

@@ -3,6 +3,7 @@ Prometheus RED Metrics Exporter (Rate, Errors, Duration).
 
 Exposes production metrics at GET /metrics for Prometheus scraping & Grafana dashboards.
 """
+import re
 import time
 from typing import Callable, Dict
 from fastapi import APIRouter, Request
@@ -10,6 +11,14 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response as StarletteResponse
 
 metrics_router = APIRouter(tags=["metrics"])
+
+
+def _normalize_path(path: str) -> str:
+    """Replace UUIDs and numeric IDs with placeholders to prevent cardinality explosion."""
+    path = re.sub(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", "{id}", path)
+    path = re.sub(r"/\d+", "/{id}", path)
+    return path
+
 
 # Pure Python Prometheus Metrics Registry
 class MetricsRegistry:
@@ -20,7 +29,7 @@ class MetricsRegistry:
         self.latencies: list[float] = []
 
     def inc_request(self, method: str, path: str, status: int) -> None:
-        key = f'{method}:{path}:{status}'
+        key = f'{method}:{_normalize_path(path)}:{status}'
         self.request_counts[key] = self.request_counts.get(key, 0) + 1
 
     def observe_latency(self, duration_sec: float) -> None:

@@ -9,6 +9,7 @@ States:
 import asyncio
 import enum
 import logging
+import threading
 import time
 from typing import Any, Callable, Coroutine
 
@@ -45,6 +46,7 @@ class CircuitBreaker:
         self._failure_count = 0
         self._last_state_change = time.time()
         self._lock = asyncio.Lock()
+        self._sync_lock = threading.Lock()
 
     @property
     def state(self) -> CircuitState:
@@ -94,18 +96,21 @@ class CircuitBreaker:
             raise exc
 
     def call_sync(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
-        current_state = self.state
-        if current_state == CircuitState.OPEN:
-            raise CircuitBreakerOpenError(
-                f"CircuitBreaker[{self.name}] is OPEN. Requests blocked for recovery window."
-            )
+        with self._sync_lock:
+            current_state = self.state
+            if current_state == CircuitState.OPEN:
+                raise CircuitBreakerOpenError(
+                    f"CircuitBreaker[{self.name}] is OPEN. Requests blocked for recovery window."
+                )
 
         try:
             result = func(*args, **kwargs)
-            self._on_success()
+            with self._sync_lock:
+                self._on_success()
             return result
         except Exception as exc:
-            self._on_failure()
+            with self._sync_lock:
+                self._on_failure()
             raise exc
 
 

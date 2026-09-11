@@ -38,7 +38,7 @@ def get_graph(repo_id: str, graph_data: Optional[dict | str] = None) -> nx.DiGra
     if isinstance(graph_data, str):
         graph_data = json.loads(graph_data)
 
-    G = nx.node_link_graph(graph_data)
+    G = nx.node_link_graph(graph_data, edges="links")
     _graph_cache[repo_id] = G
     logger.info(
         "Loaded graph for repo %s from JSON: %d nodes, %d edges",
@@ -69,7 +69,7 @@ def invalidate_graph(repo_id: str) -> None:
 
 def serialise_graph(G: nx.DiGraph) -> dict:
     """Serialise a DiGraph to a dict for PostgreSQL JSONB storage."""
-    return nx.node_link_data(G)
+    return nx.node_link_data(G, edges="links")
 
 
 # ─── Graph construction (called by ingestion) ─────────────────────────────────

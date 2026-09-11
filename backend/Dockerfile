@@ -26,6 +26,9 @@ RUN addgroup --system --gid 1001 codesagegroup && \
 
 USER codesage
 
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD python -c "import httpx; r=httpx.get('http://localhost:8000/health', timeout=5); exit(0 if r.status_code==200 else 1)"
+
 # A single worker is safe with the local development store. Set WEB_CONCURRENCY
 # only when CHROMADB_URL points at a shared persistent Chroma deployment.
 CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860} --workers ${WEB_CONCURRENCY:-1}

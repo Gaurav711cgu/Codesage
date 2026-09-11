@@ -17,13 +17,38 @@ IDEMPOTENCY_HEADER = "idempotency-key"
 DEFAULT_EXPIRATION_SECONDS = 86400  # 24 hours
 
 
+import json
+try:
+    import redis
+    _redis_available = True
+except ImportError:
+    _redis_available = False
+
+from app.core.config import settings
+
 class IdempotencyStore:
     def __init__(self, expiration_seconds: int = DEFAULT_EXPIRATION_SECONDS) -> None:
         self.expiration_seconds = expiration_seconds
-        # Key -> (status_code, body_bytes, headers_dict, expires_at)
         self._store: Dict[str, Tuple[int, bytes, Dict[str, str], float]] = {}
+        self._redis_client = None
+        if _redis_available and getattr(settings, "redis_url", None):
+            try:
+                self._redis_client = redis.Redis.from_url(settings.redis_url, decode_responses=False)
+                logger.info("IdempotencyStore initialized with Redis backend at %s", settings.redis_url)
+            except Exception as exc:
+                logger.warning("Could not connect to Redis at %s, using in-memory idempotency: %s", settings.redis_url, exc)
 
     def get(self, key: str) -> Tuple[int, bytes, Dict[str, str]] | None:
+        if self._redis_client:
+            try:
+                val = self._redis_client.get(f"idemp:{key}")
+                if val:
+                    data = json.loads(val.decode("utf-8"))
+                    return data["status_code"], data["body"].encode("utf-8"), data["headers"]
+            except Exception as exc:
+                logger.debug("Redis idempotency read error: %s", exc)
+
+        # Fallback to local memory
         entry = self._store.get(key)
         if entry is None:
             return None
@@ -34,6 +59,17 @@ class IdempotencyStore:
         return status_code, body, headers
 
     def set(self, key: str, status_code: int, body: bytes, headers: Dict[str, str]) -> None:
+        if self._redis_client:
+            try:
+                payload = json.dumps({
+                    "status_code": status_code,
+                    "body": body.decode("utf-8"),
+                    "headers": headers
+                })
+                self._redis_client.setex(f"idemp:{key}", self.expiration_seconds, payload)
+            except Exception as exc:
+                logger.debug("Redis idempotency write error: %s", exc)
+
         expires_at = time.time() + self.expiration_seconds
         self._store[key] = (status_code, body, headers, expires_at)
 

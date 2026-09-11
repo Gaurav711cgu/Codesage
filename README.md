@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=30&duration=3000&pause=500&color=6366F1&center=true&vCenter=true&width=900&lines=CodeSage;Graph-RAG+Code+Intelligence;53.3%25+Recall+vs+0%25+Naive+Vector+Search" alt="CodeSage" />
+
 # CodeSageZ
 
 **Graph-Augmented Code Intelligence & Repository-Level RAG Engine**

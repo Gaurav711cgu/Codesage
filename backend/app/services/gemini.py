@@ -36,6 +36,15 @@ def _get_client() -> genai.Client:
 
 # ─── Text generation ──────────────────────────────────────────────────────────
 
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from google.api_core import exceptions as google_exc
+
+@retry(
+    wait=wait_exponential(multiplier=0.5, min=0.5, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type((google_exc.ResourceExhausted, google_exc.ServiceUnavailable)),
+    reraise=True,
+)
 def _do_stream(prompt: str) -> list[str]:
     response = _get_client().models.generate_content_stream(
         model="gemini-2.0-flash",

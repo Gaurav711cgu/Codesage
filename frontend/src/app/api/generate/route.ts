@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         code: prompt,
-        error_message: "Optimize and review code structure",
+        error: "Optimize and review code structure",
         language: "python",
       }),
       signal: AbortSignal.timeout(4000),
