@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, Loader2, Send, AlertCircle, Github, Database, BrainCircuit } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { api } from "@/lib/api";
@@ -246,9 +247,14 @@ export default function ReposPage() {
               </div>
             )}
             
+            <AnimatePresence>
             {repos.map((repo) => (
-              <div
+              <motion.div
                 key={repo.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                layout
                 className={cn(
                   "border p-3.5 space-y-3 transition-colors rounded-sm cursor-pointer",
                   activeRepo?.id === repo.id
@@ -306,8 +312,9 @@ export default function ReposPage() {
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
-              </div>
+              </motion.div>
             ))}
+            </AnimatePresence>
           </div>
         </div>
 
