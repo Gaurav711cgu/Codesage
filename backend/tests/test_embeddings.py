@@ -30,7 +30,24 @@ def test_embed_query_local_mode(monkeypatch):
     assert isinstance(vec, list)
 
 
-def test_embed_query_gemini_mode():
+def test_embed_query_gemini_mode(monkeypatch):
+    monkeypatch.setenv("EMBEDDING_PROVIDER", "gemini")
+    monkeypatch.setattr("app.core.config.settings.gemini_api_key", "dummy_key")
+    
+    # Mock the genai Client
+    class MockEmbed:
+        values = [0.1] * 3072
+    class MockResponse:
+        embeddings = [MockEmbed()]
+    class MockModels:
+        def embed_content(self, model, contents):
+            return MockResponse()
+    class MockClient:
+        def __init__(self, api_key):
+            self.models = MockModels()
+            
+    monkeypatch.setattr("google.genai.Client", MockClient)
+    
     vec = embed_query("def process_payment(): pass")
     assert isinstance(vec, list)
     assert len(vec) == 3072
