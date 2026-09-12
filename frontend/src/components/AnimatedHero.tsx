@@ -49,7 +49,7 @@ export default function AnimatedHero() {
       </h1>
       
       <p className="hero-subtitle opacity-0 max-w-2xl text-xl text-gray-400 mb-10 font-light">
-        The FAANG-grade AI developer platform. Intelligent semantic search, distributed caching, and zero-trust security built in.
+        The ultimate AI developer platform. Intelligent semantic search, distributed caching, and zero-trust security built in.
       </p>
 
       <div className="flex gap-4">

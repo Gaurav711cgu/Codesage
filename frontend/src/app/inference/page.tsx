@@ -1,8 +1,8 @@
 import React from 'react';
 import { INFERENCE_COMPONENTS } from '@/constants/content';
 import RevealSection from '@/components/RevealSection';
-import Nav from '@/components/Nav';
-import Footer from '@/components/Footer';
+
+
 import { Server, Cpu, Database, Zap, Activity } from 'lucide-react';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -23,7 +23,7 @@ const colorMap: Record<string, string> = {
 export default function InferencePage() {
   return (
     <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center p-4 sm:p-8">
-      <Nav />
+      
       
       <main className="flex-1 w-full max-w-5xl mt-24 mb-16 space-y-12">
         <RevealSection className="space-y-6 text-center">
@@ -66,7 +66,7 @@ export default function InferencePage() {
         </div>
       </main>
       
-      <Footer />
+      
     </div>
   );
 }

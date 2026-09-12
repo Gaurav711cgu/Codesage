@@ -1,8 +1,8 @@
 import React from 'react';
 import { COMPANY_CARDS } from '@/constants/content';
 import RevealSection from '@/components/RevealSection';
-import Nav from '@/components/Nav';
-import Footer from '@/components/Footer';
+
+
 import { Briefcase, Building, MessageSquare } from 'lucide-react';
 
 const colorMap: Record<string, string> = {
@@ -14,7 +14,7 @@ const colorMap: Record<string, string> = {
 export default function StoriesPage() {
   return (
     <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center p-4 sm:p-8">
-      <Nav />
+      
       
       <main className="flex-1 w-full max-w-4xl mt-24 mb-16 space-y-12">
         <RevealSection className="space-y-6 text-center">
@@ -73,7 +73,7 @@ export default function StoriesPage() {
         </div>
       </main>
       
-      <Footer />
+      
     </div>
   );
 }

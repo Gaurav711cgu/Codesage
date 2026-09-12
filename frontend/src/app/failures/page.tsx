@@ -1,8 +1,8 @@
 import React from 'react';
 import { FAILURE_MODES } from '@/constants/content';
 import RevealSection from '@/components/RevealSection';
-import Nav from '@/components/Nav';
-import Footer from '@/components/Footer';
+
+
 import { AlertTriangle, Info, ShieldAlert } from 'lucide-react';
 
 const severityMap: Record<string, { color: string, icon: React.ReactNode }> = {
@@ -14,7 +14,7 @@ const severityMap: Record<string, { color: string, icon: React.ReactNode }> = {
 export default function FailuresPage() {
   return (
     <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center p-4 sm:p-8">
-      <Nav />
+      
       
       <main className="flex-1 w-full max-w-4xl mt-24 mb-16 space-y-12">
         <RevealSection className="space-y-6">
@@ -74,7 +74,7 @@ export default function FailuresPage() {
         </div>
       </main>
       
-      <Footer />
+      
     </div>
   );
 }
