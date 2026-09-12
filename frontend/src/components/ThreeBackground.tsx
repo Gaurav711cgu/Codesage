@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Points, PointMaterial } from '@react-three/drei';
 // @ts-ignore
@@ -40,9 +40,11 @@ function ParticleField(props: any) {
 export default function ThreeBackground() {
   return (
     <div className="absolute inset-0 z-0 pointer-events-none" style={{ background: 'linear-gradient(to bottom, #09090b, #000)' }}>
-      <Canvas camera={{ position: [0, 0, 1] }}>
-        <ParticleField />
-      </Canvas>
+      <Suspense fallback={<div className="absolute inset-0 bg-[#09090b]" />}>
+        <Canvas camera={{ position: [0, 0, 1] }}>
+          <ParticleField />
+        </Canvas>
+      </Suspense>
     </div>
   );
 }
