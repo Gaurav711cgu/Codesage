@@ -39,7 +39,7 @@ export default function AnimatedHero() {
   const titleText = "CodeSage.";
   
   return (
-    <div ref={containerRef} className="relative z-10 flex flex-col items-center justify-center min-h-[70vh] text-center px-4 pointer-events-auto">
+    <div ref={containerRef} className="relative z-10 flex flex-col items-center justify-center min-h-[50vh] pb-16 text-center px-4 pointer-events-auto w-full">
       <h1 className="hero-title text-6xl md:text-8xl font-extrabold tracking-tighter text-white mb-6">
         {titleText.split('').map((char, i) => (
           <span key={i} className="char inline-block opacity-0 translate-y-12 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">

@@ -1,344 +1,146 @@
-<div align="center">
-
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=30&duration=3000&pause=500&color=6366F1&center=true&vCenter=true&width=900&lines=CodeSage;Graph-RAG+Code+Intelligence;53.3%25+Recall+vs+0%25+Naive+Vector+Search" alt="CodeSage" />
-
 # CodeSageZ
 
-**Graph-Augmented Code Intelligence & Repository-Level RAG Engine**
-<br/>
-*Production-Grade Codebase Comprehension Engine Pairing Deterministic AST Topological Graphs with QLoRA Fine-Tuned Language Models*
+The ultimate AI developer platform for architectural intelligence. CodeSageZ parses massive codebases into semantic AST knowledge graphs, enabling deep structural question-answering with Zero-Trust local execution and sub-50ms distributed caching.
 
-<br/>
+## Key Features
 
-[![CI](https://github.com/Gaurav711cgu/Codesage/actions/workflows/ci.yml/badge.svg)](https://github.com/Gaurav711cgu/Codesage/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)](#)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white)](#)
-[![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=nextdotjs&logoColor=white)](#)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)](#)
-[![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector_DB-FF4D4D?style=flat-square&logo=database&logoColor=white)](#)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.1-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)](#)
-[![License](https://img.shields.io/badge/License-MIT-6366F1?style=flat-square)](#)
-
-<br/>
-
-[Live Demo](#) &nbsp;·&nbsp; [API Documentation](#api-documentation) &nbsp;·&nbsp; [System Architecture](#system-architecture) &nbsp;·&nbsp; [Run Tests](#testing--verification)
-
-</div>
+- **Semantic Code Graph**: Uses `tree-sitter` and `NetworkX` to parse code into abstract syntax trees and track class/function relationships.
+- **Zero-Trust Architecture**: Supports completely local LLM inference via Ollama to prevent IP leakage.
+- **Hybrid RAG**: Combines dense vector search (ChromaDB) for semantic matches with graph traversal (NetworkX) for structural logic.
+- **Sub-50ms Caching**: Redis-backed distributed cache for AST parses, embeddings, and query results.
+- **Production-Ready**: Idempotent APIs, circuit breakers, and comprehensive rate limiting built-in.
 
 ---
 
-## Executive Summary
+## Tech Stack
 
-> **CodeSageZ is an open-source, production-grade code intelligence and repository-level RAG engine** engineered to solve the structural blind spots of traditional vector-only RAG. Standard vector search retrieves code chunks solely by semantic keyword similarity, frequently omitting crucial structural dependencies—such as caller functions, helper utilities, or class definitions in separate files.
->
-> CodeSageZ constructs an in-memory structural dependency graph via multi-language Tree-sitter AST parsing (Python, TypeScript, JavaScript, Go, Java, Rust), retrieves initial seed vectors, and performs configurable 1-hop / 2-hop topological graph expansion. This **recovers 53.3% of direct-callee dependencies at Recall@8 on real production codebases (FastAPI, HTTPX, Celery) where naive vector search achieves 0.0%**.
-
-| Differentiator | Technical Implementation Detail |
-| :--- | :--- |
-| **Topological Context Recovery** | 1-hop and 2-hop graph neighborhood expansion over directed call graphs $G=(V,E)$ constructed via Tree-sitter AST parsing — catches transitive call chains (A→B→C) completely invisible to cosine distance |
-| **Multi-Language AST Parsing** | Native Tree-sitter parsers for Python, TypeScript, JavaScript, and fallback AST parsing for Go, Java, Rust, C/C++ |
-| **Dual-Tier Embedding Engine** | **Production**: Dense continuous float embeddings (`gemini-embedding-001` 3072-dim, `voyage-code-3` 1024-dim). **Local Fallback**: Normalized Lexical Feature Hashing (Hashing Trick / Bag-of-Words) for zero-dependency offline runs |
-| **Hybrid Ranking Engine** | Composite scoring formula ($\text{Score} = 0.6 \cdot \text{Sim}_{\text{vec}} + 0.4 \cdot \text{GraphProximity}$) prioritizing structural callers over textually similar false positives |
-| **Distributed Resilience** | Built-in **Circuit Breakers** (`gemini_breaker`, `chroma_breaker`), **SingleFlight request coalescing**, **Idempotency Key middleware**, **Prometheus RED metrics**, and **Cache Jitter ($\pm 10\%$)** |
-| **Domain-Adapted QLoRA Model** | Fine-tuned `Qwen2.5-Coder-1.5B` adapter achieving **70.02 CodeBLEU (+9.38 delta)** on CommitPack bug-fix datasets |
-| **Agentic MCP Integration** | Native Model Context Protocol (MCP) server (`/mcp/tools/retrieve_code_context`) enabling Claude Code and Cursor integration |
+- **Backend**: FastAPI (Python 3.11+), Pydantic V2
+- **Frontend**: Next.js 14, React Three Fiber, GSAP, TailwindCSS v3
+- **Databases**: 
+  - Relational: SQLite (or PostgreSQL via SQLAlchemy)
+  - Vector: ChromaDB
+  - Graph: NetworkX (in-memory) / Redis (caching)
+- **AI / LLMs**: Google Gemini API (default), Ollama (local)
+- **AST Parsing**: Tree-sitter
 
 ---
 
-## Production System Benchmarks
+## Prerequisites
 
-> Empirical benchmarks measured across 120 real caller-to-callee edges extracted from production codebases (FastAPI, HTTPX, Celery), 50 held-out CommitPack bug-fix evaluation samples, and **4,000 queries from RepoBench-R python_cfr** (cross-file retrieval, test_easy split).
-
-| Metric | Industry SLA Target | CodeSageZ Result | Engineering Approach |
-| :--- | :--- | :--- | :--- |
-| **Direct-Callee Recall@8** | `> 35.0%` | **`53.3%` (+53.3 pp)** | Tree-sitter AST call graph + 1-hop topological neighborhood traversal on real caller-callee edges |
-| **Naive Vector Recall@8** | `> 10.0%` | **`0.0%`** | Naive vector search fails to resolve caller-callee edges lacking keyword overlap |
-| **p50 Search Latency** | `< 10.0 ms` | **`3.0 ms`** | Dual-index architecture (ChromaDB HNSW + NetworkX in-memory graph) |
-| **p95 Search Latency** | `< 20.0 ms` | **`5.8 ms`** | Sub-10ms strict latency bound on 1-hop topological expansion |
-| **Fine-Tuning CodeBLEU** | `> 65.0` | **`70.02` (+9.38 Delta)** | Unsloth 4-bit QLoRA ($r=16, \alpha=32$) on CommitPack bug-fix instruction split |
-| **Peak Training VRAM** | `< 15.0 GB` | **`3.8 GB`** | T4-optimized fp16 QLoRA, 8-bit AdamW optimizer, gradient accumulation steps=8 |
-| **RepoBench-R Recall@5** (Lexical Baseline) | `> 75.0%` | **`80.92%`** | TF-IDF / lexical ranking over 4,000 cross-file Python retrieval tasks (python_cfr split) |
-| **RepoBench-R Recall@10** (Lexical Baseline) | `> 90.0%` | **`100.0%`** | All gold snippets recovered within top-10 candidates (candidate pool size $N \le 10$ per query in test_easy split) |
-| **RepoBench-R Recall@1** (Lexical Baseline) | `> 15.0%` | **`17.8%`** | Top-1 accuracy on 4,000 cross-file context selection tasks |
+- Python 3.11+
+- Node.js 20+
+- Docker (for ChromaDB / Redis / local deployments)
+- `make` (optional, for convenience)
 
 ---
 
-## Design Decisions & Technical Tradeoffs
+## Getting Started
 
-| Decision | Chosen | Rejected | Why |
-| :--- | :--- | :--- | :--- |
-| **Graph Storage** | PostgreSQL JSONB + NetworkX In-Memory Cache | External Graph DB (e.g. Neo4j) | Neo4j introduces high operational complexity and IPC network round-trips; NetworkX graph expansion executes in sub-1ms in-memory with zero external microservice overhead. |
-| **Retrieval Strategy** | Hybrid Graph RAG ($\text{Score} = 0.6 \cdot \text{Sim}_{\text{vec}} + 0.4 \cdot \text{GraphProximity}$) | Naive Vector-Only Cosine Distance | Naive vector search fails to retrieve helper functions or direct callees that share zero lexical keywords with the query. |
-| **Model Fine-Tuning** | QLoRA 4-bit Quantized Low-Rank Adaptation | Full Parameter Fine-Tuning | QLoRA matches full fine-tuning CodeBLEU (+9.38 gain) while slashing VRAM requirements from 32GB to 3.8GB, enabling cost-effective T4 GPU execution ($< \$10 total cost). |
-| **AST Parser** | Tree-sitter Multi-Language Bindings | Pure Regex / Native `ast` module | Regex fails on multi-line signatures and nested calls; native `ast` is Python-only. Tree-sitter provides unified concrete syntax trees across Python, TypeScript, and JavaScript with regex fallbacks for Go, Java, and Rust. |
-| **Embedding Engine** | Dual-Tier (Dense Learned + Lexical Hash Fallback) | Single Cloud API Provider | Cloud APIs (Gemini/Voyage/OpenAI) can experience rate limits or network outages. Local bag-of-words normalized feature hashing guarantees 100% uptime with zero dependencies. |
-
----
-
-## Performance Under Load
-
-| Concurrent Users | p50 Latency | p95 Latency | Throughput | Test Tool |
-| :---: | :---: | :---: | :---: | :---: |
-| 50 | 3.0 ms | 5.8 ms | 2,847 req/s | k6 / Locust |
-| 200 | 5.2 ms | 9.4 ms | 2,610 req/s | k6 / Locust |
-| 500 | 8.1 ms | 14.2 ms | 2,420 req/s | k6 / Locust |
-
----
-
-## Tech Stack & Ecosystem
-
-<div align="center">
-
-### Core Runtime & Backend Services
-<img src="https://skillicons.dev/icons?i=python,fastapi,postgres,docker,git" />
-
-### Vector Engine, ML & Parsing
-<img src="https://skillicons.dev/icons?i=pytorch,huggingface" />
-&nbsp;
-<img src="https://img.shields.io/badge/ChromaDB-Vector_Database-FF4D4D?style=flat-square&logo=database&logoColor=white" />
-<img src="https://img.shields.io/badge/Tree--sitter-AST_Parser-4A90E2?style=flat-square&logoColor=white" />
-<img src="https://img.shields.io/badge/NetworkX-Call_Graph-3776AB?style=flat-square&logoColor=white" />
-<img src="https://img.shields.io/badge/Unsloth-4bit_QLoRA-8B5CF6?style=flat-square&logoColor=white" />
-
-### Frontend & Agent Interfaces
-<img src="https://skillicons.dev/icons?i=nextjs,react,tailwind,ts" />
-&nbsp;
-<img src="https://img.shields.io/badge/MCP-Model_Context_Protocol-6366F1?style=flat-square&logoColor=white" />
-
-</div>
-
----
-
-## System Architecture
-
-```mermaid
-graph TD
-    User["Client / Agentic System"] -->|"HTTP / SSE"| Frontend["Next.js 14 Web Interface"]
-    User -->|"JSON-RPC / HTTP"| MCPServer["MCP Server: /mcp/tools"]
-    
-    Frontend -->|"REST API"| Backend["FastAPI Core Engine"]
-    MCPServer -->|"Direct Tool Call"| Backend
-    
-    subgraph Ingestion & Structural Analysis Pipeline
-        Backend -->|"AST Parsing"| TreeSitter["Tree-sitter Parser"]
-        TreeSitter -->|"Dependency Graph"| CallGraph["NetworkX DiGraph Engine"]
-        Backend -->|"Multi-Provider Embedder"| Embedder["Unified Embedder: Voyage / OpenAI / Gemini / Hash"]
-    end
-    
-    subgraph Data & Storage Layer
-        Embedder -->|"Dense Vectors"| ChromaDB["ChromaDB HNSW Vector Store"]
-        CallGraph -->|"Graph Nodes & Edges"| Postgres["PostgreSQL Relational DB"]
-    end
-    
-    subgraph Context Augmentation & Verification Loop
-        Backend -->|"Graph RAG Engine"| RAGScorer["Hybrid Graph RAG Scorer"]
-        ChromaDB -->|"Top-K Vector Seeds"| RAGScorer
-        Postgres -->|"1-Hop Topological Neighborhood"| RAGScorer
-        RAGScorer -->|"Quality Gate"| Verifier["RetrievalVerifier Score Floor"]
-        Verifier -->|"Telemetry Trace"| Tracer["RetrievalTracer Logger"]
-        Verifier -->|"Augmented Context"| GeminiAPI["Google Gemini 2.0 Flash / Fine-Tuned Model"]
-    end
-```
-
----
-
-## Database Architecture & Advanced Concepts
-
-### 1. Dual-Store Relational & Vector Persistence
-CodeSageZ uses a decoupled storage architecture to maintain relational state alongside high-dimensional vector representations:
-- **PostgreSQL 16:** Stores repository metadata, ingestion tracking states, and full serialized NetworkX graph topology (`graph_data` JSONB column).
-- **ChromaDB HNSW Index:** Manages dense embedding collections partitioned per repository (`_functions`, `_classes`, `_files`) using Cosine space distance (`metadata={"hnsw:space": "cosine"}`).
-
-### 2. AST Call Graph Construction & Hybrid Scoring
-During repository ingestion, **Tree-sitter** constructs an Abstract Syntax Tree for every source file, extracting function definitions, method calls, and imports into a directed graph $G = (V, E)$. 
-
-At query time, vector retrieval yields seed nodes $S \subset V$. The candidate set is expanded to its 1-hop topological neighborhood:
-
-$$N(S) = \{ v \in V \mid \exists u \in S \text{ s.t. } (u,v) \in E \lor (v,u) \in E \}$$
-
-Each node $i \in S \cup N(S)$ is assigned a composite score:
-
-$$\text{Score}(i) = \alpha \cdot \text{Sim}_{\text{vec}}(q, i) + \beta \cdot \text{Proximity}(i, S)$$
-
-Where $\alpha = 0.6$ (Vector weight), $\beta = 0.4$ (Graph proximity weight), $\text{Proximity}(i, S) = 1.0$ if $i \in S$, and $0.5$ if $i \in N(S)$.
-
----
-
-## Deep Feature Breakdown
-
-### 1. Unified Multi-Provider Embedding Harness (`embedder.py`)
-- Supports `voyage-code-3` (1024-dim, code-optimized), `text-embedding-3-small` (1536-dim), `text-embedding-004` (768-dim), and a zero-dependency local bag-of-words normalized hash fallback (`384-dim`).
-- Configurable dynamically via `EMBEDDING_PROVIDER` environment variable with graceful API error handling.
-
-### 2. Post-Retrieval Verification & Telemetry Harness (`retrieval_verifier.py`, `retrieval_tracer.py`)
-- **Quality Gate:** `RetrievalVerifier` inspects top-ranked candidate chunks against a minimum score floor ($0.05$). If graph expansion yields low-confidence context, it automatically triggers a fallback to naive vector search or clean empty states.
-- **Observability:** `RetrievalTracer` records per-query telemetry including query hashes, exact symbol hit ratios, 1-hop graph expansion yields, embedding provider IDs, and p50/p95 latency distributions.
-
-### 3. Model Context Protocol (MCP) Server (`mcp_server.py`)
-- Exposes CodeSageZ GraphRAG as a production MCP tool (`retrieve_code_context`) mounted at `/mcp/tools/retrieve_code_context`.
-- Includes root `mcp.json` manifest enabling direct usage inside **Claude Code**, **Cursor**, and autonomous coding agents.
-
-### 4. QLoRA Fine-Tuned Bug-Fix Model (`finetune.py`)
-- Fine-tuned `Qwen2.5-Coder-1.5B-Instruct` on CommitPack Python bug-fix instruction pairs using Unsloth 4-bit QLoRA.
-- Achieved **70.02 CodeBLEU** (+9.38 delta over 60.64 baseline) with a `0.7399` training loss on a 3.8GB peak VRAM footprint (Kaggle T4 GPU).
-
----
-
-## Defense-In-Depth Security Architecture
-
-| Security Layer | Scope | Defensive Countermeasure Implemented |
-| :--- | :--- | :--- |
-| **Edge / Network** | Rate Limiting | Per-IP token bucket rate limiting via SlowAPI (100 req/min general, 10 req/min heavy operations) |
-| **API Protection** | Key Exposure Prevention | Server-side Gemini API key isolation via Next.js proxy route (`/api/generate`), preventing client key exposure |
-| **Data Transport** | Transport Security | Strict CORS origin verification (`settings.frontend_url`), TLS enforcement in production |
-| **Application Layer** | Input Validation | Pydantic v2 runtime schema validation enforcing strict path and body data typing |
-| **Browser Protection** | OWASP Headers | Security headers enabled (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `CSP`) |
-
----
-
-## API Documentation
-
-### Repository & Ingestion Management
-
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/v1/health` | Service health & database connectivity check | **Public** (Unauthenticated) |
-| `POST` | `/api/v1/repo/ingest` | Trigger repository cloning, AST parsing, graph building & vectorization | **Public** (Unauthenticated) |
-| `GET` | `/api/v1/repo/ingest/{task_id}/status` | Poll asynchronous ingestion task progress | **Public** (Unauthenticated) |
-| `GET` | `/api/v1/repos` | List all ingested repositories & graph node metadata | **Public** (Unauthenticated) |
-| `POST` | `/api/v1/query` | Execute Graph-Augmented RAG search and context generation | **Public** (Unauthenticated) |
-| `GET` | `/api/v1/benchmarks` | Retrieve committed empirical benchmark results | **Public** (Unauthenticated) |
-| `POST` | `/mcp/tools/retrieve_code_context` | MCP tool endpoint for agentic context retrieval | **Public** (MCP Client) |
-
-<details>
-<summary><b>POST /api/v1/query — Request & Response Payload Example</b></summary>
-
-**Request Payload:**
-```json
-{
-  "repo_id": "fastapi",
-  "query": "Which function is directly called by `get_swagger_ui_html`?",
-  "mode": "graph",
-  "stream": false
-}
-```
-
-**Response `200 OK`:**
-```json
-{
-  "data": {
-    "query": "Which function is directly called by `get_swagger_ui_html`?",
-    "retrieval_mode": "graph",
-    "chunks": [
-      {
-        "name": "get_swagger_ui_html",
-        "file": "fastapi/openapi/docs.py",
-        "lines": [12, 45],
-        "type": "seed",
-        "score": 0.85,
-        "content": "def get_swagger_ui_html(...): ..."
-      },
-      {
-        "name": "jsonable_encoder",
-        "file": "fastapi/encoders.py",
-        "lines": [80, 110],
-        "type": "neighbor",
-        "score": 0.20,
-        "content": "def jsonable_encoder(...): ..."
-      }
-    ],
-    "latency_ms": 3,
-    "response": "The function `get_swagger_ui_html` calls `jsonable_encoder` to serialize HTML configuration parameters."
-  },
-  "error": null
-}
-```
-</details>
-
----
-
-## Testing & Verification
-
-Execute automated unit, integration, and security verification suites:
+### 1. Clone the Repository
 
 ```bash
-# 1. Run backend unit and integration tests
-cd backend
-python3 -m pytest tests/ -v
-
-# 2. Verify Retrieval Verifier & Tracer harness
-PYTHONPATH=backend python3 -c "
-from app.services.retrieval_verifier import verifier
-from app.models.schemas import RetrievedChunk
-chunks = [RetrievedChunk(name='test_fn', file='test.py', lines=[1, 10], type='seed', score=0.85, content='def test_fn(): pass')]
-res = verifier.verify(chunks, 'graph')
-assert res.passed, 'Verifier failed valid chunk test'
-print('Retrieval Verifier & Harness Test Passed!')
-"
-
-# 3. Verify Frontend build
-cd ../frontend
-npm run build
-```
-
----
-
-## Zero-Downtime Deployment Guide
-
-Deploy CodeSageZ using multi-container Docker Compose:
-
-```bash
-# 1. Clone & Configure Environment
-git clone https://github.com/Gaurav711cgu/Codesage.git
+git clone https://github.com/your-username/Codesage.git
 cd Codesage
+```
+
+### 2. Backend Setup
+
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+**Environment Variables:**
+Copy the example environment file:
+```bash
 cp .env.example .env
+```
+Ensure you add your `GEMINI_API_KEY` to the `.env` file.
 
-# Edit .env with your Gemini API key:
-# GEMINI_API_KEY=your_actual_gemini_api_key_here
+**Start the Backend Services:**
+We provide a `docker-compose.yml` to easily spin up ChromaDB and the backend.
+```bash
+docker-compose up -d
+```
+Alternatively, for pure local development (if ChromaDB is running separately):
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
 
-# 2. Build and Launch Containers
-docker compose up --build -d
+### 3. Frontend Setup
 
-# 3. Verify Container Health
-curl http://localhost:8000/health
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser to view the 3D dashboard.
+
+---
+
+## Architecture
+
+### Directory Structure
+
+```
+├── backend/
+│   ├── app/
+│   │   ├── api/          # FastAPI Routers
+│   │   ├── core/         # Config, Database, Auth, Rate Limiter
+│   │   ├── models/       # SQLAlchemy models and Pydantic schemas
+│   │   └── services/     # Core Business Logic (Ingestion, Retrieval, LLM, Graph)
+│   ├── tests/            # Pytest suite
+│   ├── Dockerfile
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── app/          # Next.js App Router pages
+│   │   ├── components/   # React components (ThreeBackground, BentoFeatures)
+│   │   └── lib/          # Utilities
+│   └── package.json
+└── docker-compose.yml
+```
+
+### Data Flow (Ingestion to Query)
+
+1. **Ingestion**: A repository is provided to `POST /api/v1/repos`. The `IngestionService` clones it to `/tmp`.
+2. **Parsing**: `Tree-sitter` extracts classes, methods, and docstrings.
+3. **Graph Construction**: Nodes and edges are inserted into `NetworkX`.
+4. **Embedding**: Snippets are chunked, embedded via Gemini (or local models), and stored in `ChromaDB`.
+5. **Retrieval**: When a query hits `POST /api/v1/code/query`, the `RetrievalService` queries ChromaDB for semantic matches.
+6. **Graph Traversal**: The system uses NetworkX to fetch structural dependencies (caller/callee) of the semantic matches.
+7. **Synthesis**: The expanded context is fed to the LLM for a highly accurate architectural answer.
+
+---
+
+## Testing
+
+```bash
+cd backend
+source venv/bin/activate
+pytest tests/ -v
 ```
 
 ---
 
-## 10 Questions This Project Answers (Interview Q&A)
+## Deployment
 
-**Q1: Why use Tree-sitter AST call graphs instead of Neo4j or a graph database?**  
-A: External graph databases add network serialization latency and operational overhead. NetworkX loads the parsed repository graph into RAM in microseconds, allowing sub-1ms 1-hop and 2-hop topological traversals without IPC roundtrips.
+### Docker (Recommended)
 
-**Q2: Why does Naive Vector RAG score 0.0% on direct-callee recall?**  
-A: Caller functions frequently invoke helper methods or utility functions whose function names or code implementations share zero semantic keyword overlap with the caller or query string. Dense vector embeddings fail to group them, whereas AST call graph edges guarantee structural recovery.
+The easiest way to deploy is using the provided Docker configuration.
 
-**Q3: How does the hybrid scoring algorithm work?**  
-A: Candidate nodes are scored via $\text{Score}(i) = 0.6 \cdot \text{Sim}_{\text{vec}}(q, i) + 0.4 \cdot \text{Proximity}(i, S)$, where vector hits get $\text{Proximity}=1.0$ and topological neighbors get $\text{Proximity}=0.5$. This guarantees that direct callees are prioritized for context inclusion even when keyword similarity is low.
+```bash
+docker-compose build
+docker-compose up -d
+```
 
-**Q4: How do you handle cyclical call graphs or recursion?**  
-A: Graph traversal uses set-difference deduplication (`neighbours - set(seed_ids)`) and limits node expansion degree (`max_degree=50`), preventing infinite loops or context explosion during recursion.
+### Vercel (Frontend)
 
-**Q5: Why is CodeSage's local Recall@1 only 19.6%?**  
-A: `local_hash_embed` is a zero-dependency lexical bag-of-words baseline (the Feature Hashing trick). It runs offline at 0 cost with 0ms network overhead, but lacks semantic geometry across non-overlapping synonyms. With dense learned embeddings (Gemini 3072-dim / Voyage 1024-dim), semantic recall increases substantially. The primary architectural innovation of CodeSageZ is the **graph augmentation layer**, which boosts direct-callee Recall@8 from **0.0% (naive vector baseline) to 53.3%** across real production call graphs (FastAPI, HTTPX, Celery).
+The Next.js frontend is optimized for Vercel deployment:
+1. Connect your repository to Vercel.
+2. Set the `NEXT_PUBLIC_API_URL` environment variable to your production backend URL.
+3. Deploy!
 
-**Q6: Why use CodeBLEU instead of standard BLEU or ROUGE for fine-tuning evaluation?**  
-A: Standard BLEU only checks surface-level n-gram overlap. CodeBLEU evaluates syntax tree structure (AST match via Tree-sitter) and variable data-flow consistency, accurately measuring code correctness.
-
-**Q7: How is zero-trust security enforced on client LLM prompts?**  
-A: API keys are isolated on the server via proxy endpoints (`/api/generate`). Client requests pass through Pydantic schema validation and SlowAPI rate limiters (100 req/min).
-
-**Q8: What is the benefit of the Model Context Protocol (MCP) server integration?**  
-A: MCP standardizes tool calls for AI agents. By mounting `/mcp/tools/retrieve_code_context`, external coding agents like Claude Code or Cursor can invoke CodeSageZ's GraphRAG directly as a native context provider tool.
-
-**Q9: How does CodeSageZ scale to large repositories (100k+ lines of code)?**  
-A: Collections in ChromaDB are partitioned by repository ID (`_functions`, `_classes`, `_files`) using HNSW indexing. Call graph topology is stored as compressed JSONB in PostgreSQL and loaded into in-memory LRU caches upon first request.
-
-**Q10: What is the latency impact of 2-hop vs 1-hop graph expansion?**  
-A: 1-hop graph expansion takes ~0.8ms additional processing time (p95 total search latency = 5.8ms). 2-hop expansion adds ~1.5ms, recovering transitive call chains (A → B → C) while keeping total latency under 10ms.
-
----
-
-## License
-
-Distributed under the MIT License. See `LICENSE` for details.
