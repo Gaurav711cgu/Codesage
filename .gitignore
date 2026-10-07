@@ -42,8 +42,18 @@ Thumbs.db
 # Temp clone dir
 /tmp/
 
-# Local application state
+# Local application state & databases
+*.db
+*.sqlite
+*.sqlite3
+app.db
 backend/app.db
 backend/.chroma/
 .chroma/
 *.log
+
+# Caches & temporary fix scripts
+.pytest_cache/
+*/.pytest_cache/
+fix_*.py
+

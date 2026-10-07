@@ -20,33 +20,53 @@ _graph_cache: dict[str, nx.DiGraph] = {}
 
 # ─── Cache management ─────────────────────────────────────────────────────────
 
-def get_graph(repo_id: str, graph_data: Optional[dict | str] = None) -> nx.DiGraph:
+def deserialise_graph(graph_data: dict | str) -> nx.DiGraph:
+    """Deserialise a node-link dict or JSON string back into an nx.DiGraph."""
+    if isinstance(graph_data, str):
+        graph_data = json.loads(graph_data)
+    return nx.node_link_graph(graph_data)
+
+
+def get_graph(
+    repo_id: str,
+    graph_data: Optional[dict | str | list[tuple[str, str]]] = None,
+    edges: Optional[list[tuple[str, str]]] = None,
+) -> nx.DiGraph:
     """
     Return the cached graph for repo_id.
-    If not cached and graph_data is provided, deserialise and cache it.
+    If not cached and graph_data (or edges) is provided, deserialise and cache it.
     Raises ValueError if neither source is available.
     """
     if repo_id in _graph_cache:
         return _graph_cache[repo_id]
 
-    if graph_data is None:
+    source = edges if edges is not None else graph_data
+    if source is None:
         raise ValueError(
-            f"Graph for repo {repo_id} is not in cache and no JSON was provided. "
-            "Pass graph_data from the repos.graph_data column."
+            f"Graph for repo {repo_id} is not in cache and no graph data or edges were provided."
         )
 
-    if isinstance(graph_data, str):
-        graph_data = json.loads(graph_data)
+    if isinstance(source, (dict, str)):
+        G = deserialise_graph(source)
+    elif isinstance(source, list):
+        if source and isinstance(source[0], dict):
+            G = nx.node_link_graph(source)
+        else:
+            G = nx.DiGraph()
+            G.add_edges_from(source)
+    else:
+        raise ValueError(f"Unsupported graph data format: {type(source)}")
 
-    G = nx.node_link_graph(graph_data, edges="links")
     _graph_cache[repo_id] = G
     logger.info(
-        "Loaded graph for repo %s from JSON: %d nodes, %d edges",
+        "Loaded graph for repo %s: %d nodes, %d edges",
         repo_id,
         G.number_of_nodes(),
         G.number_of_edges(),
     )
     return G
+
+
 
 
 def cache_graph(repo_id: str, G: nx.DiGraph) -> None:
@@ -69,7 +89,7 @@ def invalidate_graph(repo_id: str) -> None:
 
 def serialise_graph(G: nx.DiGraph) -> dict:
     """Serialise a DiGraph to a dict for PostgreSQL JSONB storage."""
-    return nx.node_link_data(G, edges="links")
+    return nx.node_link_data(G)
 
 
 # ─── Graph construction (called by ingestion) ─────────────────────────────────

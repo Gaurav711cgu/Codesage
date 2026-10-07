@@ -16,7 +16,7 @@ def test_retrieval_verifier_and_expansion():
     graph_json = graph_svc.serialise_graph(G)
 
     # Test graph retrieval and node resolution
-    g_loaded = graph_svc.get_graph("test_repo", graph_json)
+    g_loaded = graph_svc.get_graph("test_repo", edges=list(G.edges()))
     assert g_loaded.number_of_nodes() == 2
     assert g_loaded.number_of_edges() == 1
 

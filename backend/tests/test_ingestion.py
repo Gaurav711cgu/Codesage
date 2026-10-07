@@ -2,14 +2,22 @@
 Tests for the Tree-sitter parsing and graph-building logic.
 These run without any external services (no DB, no ChromaDB, no Gemini).
 """
+import json
 import textwrap
 import uuid
 from pathlib import Path
 
+import networkx as nx
 import pytest
 
 from app.services.ingestion import parse_python_file, CodeUnit
-from app.services.graph import build_graph, expand_one_hop, serialise_graph, get_graph
+from app.services.graph import (
+    build_graph,
+    expand_one_hop,
+    serialise_graph,
+    deserialise_graph,
+    get_graph,
+)
 
 
 # ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -192,11 +200,60 @@ def test_expand_excludes_seeds():
 
 def test_serialise_and_deserialise():
     units = _make_units([
-        ("r::f::x", "x", ["y"]),
-        ("r::f::y", "y", []),
+        ("repo::mod::caller", "caller", ["callee_a", "callee_b"]),
+        ("repo::mod::callee_a", "callee_a", ["callee_b"]),
+        ("repo::mod::callee_b", "callee_b", []),
     ])
     G = build_graph(units)
-    json_str = serialise_graph(G)
-    G2 = get_graph("test-roundtrip", json_str)
-    assert set(G2.nodes) == set(G.nodes)
-    assert set(G2.edges) == set(G.edges)
+
+    # Assert source graph structure
+    assert isinstance(G, nx.DiGraph)
+    assert G.number_of_nodes() == 3
+    assert G.number_of_edges() == 3
+    assert G.has_edge("repo::mod::caller", "repo::mod::callee_a")
+    assert G.has_edge("repo::mod::caller", "repo::mod::callee_b")
+    assert G.has_edge("repo::mod::callee_a", "repo::mod::callee_b")
+
+    # Serialise to dict and json
+    data_dict = serialise_graph(G)
+    assert isinstance(data_dict, dict)
+    assert "nodes" in data_dict
+    assert "links" in data_dict
+
+    json_str = json.dumps(data_dict)
+    assert isinstance(json_str, str)
+
+    # Deserialise via deserialise_graph
+    G_dict = deserialise_graph(data_dict)
+    G_json = deserialise_graph(json_str)
+
+    # Deserialise via get_graph caching loader
+    unique_repo_id = f"test-repo-{uuid.uuid4()}"
+    G_cached = get_graph(unique_repo_id, json_str)
+
+    for reconstructed in (G_dict, G_json, G_cached):
+        # 1. Type and directedness equivalence
+        assert isinstance(reconstructed, nx.DiGraph)
+        assert reconstructed.is_directed() == G.is_directed()
+
+        # 2. Exact node sets
+        assert set(reconstructed.nodes) == set(G.nodes)
+        assert reconstructed.number_of_nodes() == G.number_of_nodes()
+
+        # 3. Exact edge sets
+        assert set(reconstructed.edges) == set(G.edges)
+        assert reconstructed.number_of_edges() == G.number_of_edges()
+
+        # 4. Exact node attributes and types
+        for node_id in G.nodes:
+            orig_attrs = G.nodes[node_id]
+            recon_attrs = reconstructed.nodes[node_id]
+            assert orig_attrs == recon_attrs
+            assert recon_attrs["type"] == "function"
+            assert recon_attrs["file"] == "f.py"
+            assert isinstance(recon_attrs["start_line"], int)
+            assert isinstance(recon_attrs["end_line"], int)
+
+        # 5. Graph operations produce identical 1-hop expansion
+        assert expand_one_hop(reconstructed, ["repo::mod::caller"]) == expand_one_hop(G, ["repo::mod::caller"])
+

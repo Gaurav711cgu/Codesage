@@ -1,12 +1,24 @@
 import pytest
-from training.dataset_prep import (
-    filter_language,
-    filter_message_quality,
-    filter_file_size,
-    filter_actual_change,
-    filter_bugfix_signal,
-    filter_syntax_valid,
-)
+
+try:
+    from training.dataset_prep import (
+        filter_language,
+        filter_message_quality,
+        filter_file_size,
+        filter_actual_change,
+        filter_bugfix_signal,
+        filter_syntax_valid,
+    )
+except ImportError:
+    from dataset_prep import (
+        filter_language,
+        filter_message_quality,
+        filter_file_size,
+        filter_actual_change,
+        filter_bugfix_signal,
+        filter_syntax_valid,
+    )
+
 
 def test_filter_language():
     assert filter_language({"lang": "python"}) is True

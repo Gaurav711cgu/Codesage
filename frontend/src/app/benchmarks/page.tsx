@@ -1,102 +1,86 @@
 import React from 'react';
-import RevealSection from '@/components/RevealSection';
-
-
-import { TrendingUp, Activity, Cpu, DollarSign } from 'lucide-react';
+import { TrendingUp, Database, BrainCircuit, ShieldCheck } from 'lucide-react';
+import { BenchmarkChart } from '@/components/BenchmarkChart';
 
 export default function BenchmarksPage() {
   return (
-    <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center p-4 sm:p-8">
+    <div className="max-w-5xl mx-auto py-16 space-y-16 px-6 font-sans">
       
-      
-      <main className="flex-1 w-full max-w-4xl mt-24 mb-16 space-y-12">
-        <RevealSection className="space-y-6 text-center">
-          <div className="inline-block px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-sm font-semibold mb-4">
-            Phase 5: Evaluation
+      {/* Header */}
+      <div className="border-b border-border pb-6">
+        <div className="text-xs font-mono text-muted-foreground uppercase tracking-widest mb-2">[ codesagez / benchmarks ]</div>
+        <h1 className="text-3xl font-bold text-foreground">Empirical Evaluation</h1>
+        <p className="mt-4 text-sm text-muted-foreground max-w-2xl leading-relaxed">
+          System performance metrics evaluated against naive baselines. Measurements validate the effectiveness of structural Graph-RAG expansion over semantic-only vector databases.
+        </p>
+      </div>
+
+      <main className="w-full space-y-12">
+        
+        {/* Core RAG Metric Chart */}
+        <section>
+          <BenchmarkChart />
+        </section>
+
+        {/* System Stats Grid */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-6 border border-border bg-surface flex flex-col items-start gap-4 rounded-sm">
+            <Database className="w-6 h-6 text-primary" />
+            <div>
+              <div className="text-2xl font-mono text-foreground">0.0%</div>
+              <div className="text-xs text-muted-foreground font-mono uppercase mt-1">Naive Recall@8</div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">Standard semantic chunking fails to fetch interconnected call graph dependencies.</p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
-            Benchmarks &amp; Metrics
-          </h1>
-          <p className="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
-            Measurable improvements in code generation capabilities through targeted fine-tuning on our curated 52K dataset.
-          </p>
-        </RevealSection>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-16">
-          {/* Cost Metric */}
-          <RevealSection delay={100} className="p-6 rounded-xl border border-white/10 bg-white/5 flex items-center gap-4">
-            <div className="p-4 rounded-full bg-green-500/10 border border-green-500/30 text-green-400">
-              <DollarSign size={32} />
-            </div>
+          <div className="p-6 border border-border bg-surface flex flex-col items-start gap-4 rounded-sm border-l-2 border-l-primary">
+            <TrendingUp className="w-6 h-6 text-primary" />
             <div>
-              <div className="text-3xl font-bold text-white">$9.40</div>
-              <div className="text-gray-400 text-sm">Total Fine-Tuning Cost (Modal A100)</div>
+              <div className="text-2xl font-mono text-foreground">50.8%</div>
+              <div className="text-xs text-muted-foreground font-mono uppercase mt-1">Graph Recall@8</div>
             </div>
-          </RevealSection>
+            <p className="text-[11px] text-muted-foreground">1-hop AST structural expansion successfully retrieves callers and callees.</p>
+          </div>
 
-          {/* Throughput Metric */}
-          <RevealSection delay={200} className="p-6 rounded-xl border border-white/10 bg-white/5 flex items-center gap-4">
-            <div className="p-4 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400">
-              <Activity size={32} />
-            </div>
+          <div className="p-6 border border-border bg-surface flex flex-col items-start gap-4 rounded-sm">
+            <BrainCircuit className="w-6 h-6 text-primary" />
             <div>
-              <div className="text-3xl font-bold text-white">12,500 tok/s</div>
-              <div className="text-gray-400 text-sm">vLLM Throughput on H100</div>
+              <div className="text-2xl font-mono text-foreground">70.02</div>
+              <div className="text-xs text-muted-foreground font-mono uppercase mt-1">CodeBLEU Score</div>
             </div>
-          </RevealSection>
-        </div>
+            <p className="text-[11px] text-muted-foreground">Qwen2.5 QLoRA finetuned model achieves +9.38 improvement over base model.</p>
+          </div>
+        </section>
 
-        <RevealSection delay={300} className="mt-12 p-8 rounded-xl border border-white/10 bg-[#0a0a0a]">
-          <h3 className="text-2xl font-bold text-white mb-8 flex items-center gap-3">
-            <TrendingUp className="text-green-400" />
-            Accuracy Improvements
+        {/* Security / Stability section */}
+        <section className="p-8 border border-border bg-surface-hi rounded-sm">
+          <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-3 font-mono uppercase tracking-widest">
+            <ShieldCheck className="text-primary w-5 h-5" />
+            Stability Enhancements
           </h3>
           
-          <div className="space-y-10">
-            {/* HumanEval */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-end">
-                <span className="text-lg font-bold text-white">HumanEval (pass@1)</span>
-                <span className="text-green-400 font-mono font-bold">+7.1%</span>
-              </div>
-              <div className="relative h-6 bg-white/5 rounded overflow-hidden">
-                <div className="absolute top-0 left-0 h-full bg-gray-600 w-[67.2%] flex items-center px-2 text-xs font-bold text-white/80">
-                  Base Llama 3.3 8B (67.2%)
-                </div>
-                <div className="absolute top-0 left-[67.2%] h-full bg-green-500 w-[7.1%] flex items-center justify-end px-2 text-xs font-bold text-black border-l border-black/20">
-                  74.3%
-                </div>
-              </div>
-            </div>
-
-            {/* MBPP */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-end">
-                <span className="text-lg font-bold text-white">MBPP (pass@1)</span>
-                <span className="text-green-400 font-mono font-bold">+6.3%</span>
-              </div>
-              <div className="relative h-6 bg-white/5 rounded overflow-hidden">
-                <div className="absolute top-0 left-0 h-full bg-gray-600 w-[71.8%] flex items-center px-2 text-xs font-bold text-white/80">
-                  Base Llama 3.3 8B (71.8%)
-                </div>
-                <div className="absolute top-0 left-[71.8%] h-full bg-green-500 w-[6.3%] flex items-center justify-end px-2 text-xs font-bold text-black border-l border-black/20">
-                  78.1%
-                </div>
-              </div>
+          <div className="space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between py-3 border-b border-border gap-2">
+              <span className="text-sm font-semibold text-foreground">Memory Bloat (OOM)</span>
+              <span className="text-xs font-mono text-success flex items-center gap-2"><span className="w-1.5 h-1.5 bg-success rounded-full"></span> mitigated</span>
+              <span className="text-sm text-muted-foreground">Migrated `nx.node_link_data` JSON directly into normalized `GraphEdge` SQL.</span>
             </div>
             
+            <div className="flex flex-col md:flex-row md:items-center justify-between py-3 border-b border-border gap-2">
+              <span className="text-sm font-semibold text-foreground">Thread Starvation</span>
+              <span className="text-xs font-mono text-success flex items-center gap-2"><span className="w-1.5 h-1.5 bg-success rounded-full"></span> mitigated</span>
+              <span className="text-sm text-muted-foreground">Replaced blocking GitPython threads with `asyncio.create_subprocess_exec`.</span>
+            </div>
+            
+            <div className="flex flex-col md:flex-row md:items-center justify-between py-3 gap-2">
+              <span className="text-sm font-semibold text-foreground">API Rate Limiting</span>
+              <span className="text-xs font-mono text-success flex items-center gap-2"><span className="w-1.5 h-1.5 bg-success rounded-full"></span> mitigated</span>
+              <span className="text-sm text-muted-foreground">CircuitBreaker isolates Gemini API timeouts; SingleFlight coalesces RAG queries.</span>
+            </div>
           </div>
-          
-          <div className="mt-8 p-4 bg-white/5 border border-white/10 rounded-lg flex gap-3 text-sm text-gray-400">
-            <Cpu className="shrink-0 text-gray-500" size={20} />
-            <p>
-              Both evaluations were run at <strong>temperature=0.2</strong>, top_p=0.95. The significant improvement in HumanEval is largely attributed to the QLoRA all-linear target adaptation and the high-quality synthetic problem-solution pairs generated by GPT-4o.
-            </p>
-          </div>
-        </RevealSection>
+        </section>
+
       </main>
-      
-      
     </div>
   );
 }

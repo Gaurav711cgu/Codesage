@@ -11,7 +11,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from app.main import app
-from app.core.database import Base, get_db
+from app.core.database import Base, get_db, get_db_readonly
 from app.models.repo import Repo, Task
 
 
@@ -23,6 +23,14 @@ test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
 TestSessionLocal = async_sessionmaker(test_engine, class_=AsyncSession,
                                       expire_on_commit=False)
 
+
+
+async def override_get_db_readonly():
+    async with TestSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.rollback()
 
 async def override_get_db():
     async with TestSessionLocal() as session:
@@ -39,6 +47,7 @@ async def setup_db():
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_db_readonly] = override_get_db_readonly
     yield
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

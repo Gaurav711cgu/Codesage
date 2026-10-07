@@ -10,6 +10,7 @@ from chromadb.config import Settings as ChromaSettings
 
 from app.core.circuit_breaker import chroma_breaker
 from app.core.config import settings
+from app.services.embedder import _get_provider
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,8 @@ SUFFIXES = ("_functions", "_classes", "_files")
 
 
 def collection_name(repo_id: str, suffix: str) -> str:
-    return f"{repo_id}{suffix}"
+    provider = _get_provider()
+    return f"{repo_id}{suffix}_{provider}"
 
 
 def get_or_create_collection(repo_id: str, suffix: str) -> chromadb.Collection:

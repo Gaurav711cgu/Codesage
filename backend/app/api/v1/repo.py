@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import AsyncSessionLocal, get_db
+from app.core.database import AsyncSessionLocal, get_db, get_db_readonly
 from app.models.repo import Repo, Task
 from app.models.schemas import (
     ApiResponse,
@@ -280,7 +280,7 @@ async def ingest_progress(
 @router.get("/repo/ingest/{task_id}/status", response_model=ApiResponse)
 async def ingest_status(
     task_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db_readonly),
 ):
     result = await db.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()
@@ -302,7 +302,7 @@ async def ingest_status(
 
 
 @router.get("/repos", response_model=ApiResponse)
-async def list_repos(db: AsyncSession = Depends(get_db)):
+async def list_repos(db: AsyncSession = Depends(get_db_readonly)):
     result = await db.execute(
         select(Repo).order_by(Repo.created_at.desc())
     )
@@ -374,7 +374,9 @@ async def query_repo(
             _err("REPO_NOT_READY",
                  f"Repo is not ready (status: {repo.status}). Wait for ingestion to complete.",
                  400)
-        graph_data_json: str | None = repo.graph_data
+        from app.models.repo import GraphEdge
+        edges_result = await query_db.execute(select(GraphEdge.source, GraphEdge.target).where(GraphEdge.repo_id == body.repo_id))
+        edges = [(row[0], row[1]) for row in edges_result.all()]
 
     async def _stream() -> AsyncGenerator[str, None]:
         import time
@@ -385,7 +387,7 @@ async def query_repo(
                 str(body.repo_id),
                 body.query,
                 body.retrieval_mode,
-                graph_data_json,
+                edges,
             )
 
             yield _sse_event("retrieval_done", {

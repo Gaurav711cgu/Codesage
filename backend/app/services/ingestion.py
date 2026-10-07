@@ -400,14 +400,14 @@ async def run_ingestion(
         clone_dir.mkdir(parents=True, exist_ok=True)
         await emit({"stage": "cloning", "message": "Cloning repository (depth=1)…"})
 
-        await asyncio.to_thread(
-            GitRepo.clone_from,
-            github_url,
-            str(clone_dir),
-            depth=1,
-            single_branch=True,
-            multi_options=["-c", "core.symlinks=false"],
+        proc = await asyncio.create_subprocess_exec(
+            "git", "clone", "--depth", "1", "--single-branch", github_url, str(clone_dir),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
+        stdout, stderr = await proc.communicate()
+        if proc.returncode != 0:
+            raise RuntimeError(f"Git clone failed: {stderr.decode()}")
         logger.info("Cloned %s to %s", github_url, clone_dir)
 
         # ── Stage 2: Discover files ───────────────────────────────────────────
@@ -504,7 +504,7 @@ async def run_ingestion(
         G = await asyncio.to_thread(
             graph_svc.build_graph, [u.to_graph_dict() for u in all_units]
         )
-        graph_json = graph_svc.serialise_graph(G)
+        graph_json = None  # Dropped giant json serialization!
 
         await emit({
             "stage": "graph",
@@ -609,10 +609,18 @@ async def run_ingestion(
             "classes": len(classes),
             "edges": G.number_of_edges(),
         }
+        
+        # Insert edges into normalized GraphEdge table
+        from sqlalchemy import insert
+        edges_to_insert = [{"repo_id": repo_id, "source": u, "target": v} for u, v in G.edges()]
+        if edges_to_insert:
+            await db.execute(insert(GraphEdge).values(edges_to_insert))
+            await db.commit()
+
         await _update_repo_status(
             db, repo_id, "complete",
             stats=stats,
-            graph_data=graph_json,
+            graph_data=None,
         )
         await _update_task(db, task_id, "complete", status="complete")
 

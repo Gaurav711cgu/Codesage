@@ -163,6 +163,20 @@ def main():
         tmp_path = tmp.name
 
     logger.info("Running functional correctness evaluation…")
+    if os.environ.get("RUN_UNTRUSTED_CODE") != "1":
+        os.unlink(tmp_path)
+        raise SystemExit(
+            "\n" + "="*80 + "\n"
+            "SECURITY WARNING: Evaluating HumanEval requires executing untrusted AI-generated code.\n"
+            "Running this directly on your host machine is dangerous!\n"
+            "To run securely, use Docker:\n"
+            "  docker run --rm -v $(pwd):/app -w /app python:3.10-slim \\\n"
+            "      bash -c \"pip install human-eval transformers torch && RUN_UNTRUSTED_CODE=1 python training/eval_humaneval.py ...\"\n\n"
+            "If you fully understand the risks and want to run it anyway on your host, set RUN_UNTRUSTED_CODE=1\n"
+            "  RUN_UNTRUSTED_CODE=1 python training/eval_humaneval.py ...\n"
+            + "="*80 + "\n"
+        )
+
     results = evaluate_functional_correctness(
         sample_file=tmp_path,
         k=[1],

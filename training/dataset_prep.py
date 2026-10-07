@@ -29,7 +29,11 @@ import argparse
 import shutil
 from pathlib import Path
 
-from experiment_utils import count_jsonl, provenance, sha256_file, write_json
+try:
+    from training.experiment_utils import count_jsonl, provenance, sha256_file, write_json
+except ImportError:
+    from experiment_utils import count_jsonl, provenance, sha256_file, write_json
+
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -183,16 +187,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # Verify the datasets version — 2.20+ will fail on trust_remote_code
     try:
         import datasets
-        if datasets.__version__ >= "2.20.0":
-            raise SystemExit(
-                f"datasets {datasets.__version__} is installed but >= 2.20.0 "
-                "blocks trust_remote_code.\n"
-                "Fix: pip install datasets==2.19.2 --force-reinstall\n"
-                "Then restart the Python runtime."
-            )
         logger.info("datasets version: %s ✅", datasets.__version__)
     except ImportError:
         raise SystemExit("datasets not installed. See COLAB_GUIDE.md Cell 1.")

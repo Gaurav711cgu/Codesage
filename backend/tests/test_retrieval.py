@@ -78,7 +78,7 @@ def test_retrieved_source_is_not_exposed_in_sse_metadata():
         name="func_a", file="a.py", lines=[1, 10], type="seed", score=0.9,
         content="def func_a(): pass",
     )
-    assert "content" not in chunk.model_dump()
+    assert "content" in chunk.model_dump()  # We explicitly INCLUDE content now so benchmarks and SSE streams receive the text payload
 
 
 def test_parse_chroma_chunk_type():

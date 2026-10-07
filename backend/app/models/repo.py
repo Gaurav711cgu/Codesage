@@ -110,3 +110,13 @@ class Message(Base):
     )
 
     repo: Mapped["Repo | None"] = relationship("Repo", back_populates="messages")
+
+class GraphEdge(Base):
+    __tablename__ = "graph_edges"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    repo_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("repos.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    source: Mapped[str] = mapped_column(Text, nullable=False, index=True)
+    target: Mapped[str] = mapped_column(Text, nullable=False, index=True)

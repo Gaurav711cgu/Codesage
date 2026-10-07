@@ -79,7 +79,7 @@ class RetrievedChunk(BaseModel):
     lines: list[int]
     type: Literal["seed", "neighbor"]
     score: float
-    content: str = Field(default="", exclude=True)
+    content: str = Field(default="")
 
 
 class RetrievalDoneEvent(BaseModel):

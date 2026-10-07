@@ -158,19 +158,9 @@ def main():
             if lang == "python":
                 try:
                     lang_raw = tree_sitter_python.language()
-                    if isinstance(lang_raw, Language):
+                    if isinstance(lang_raw, Language) or type(lang_raw).__name__ == "Language":
                         return lang_raw
-                    if isinstance(lang_raw, int):
-                        return Language(lang_raw)
-                    # Extract pointer from PyCapsule
-                    try:
-                        ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
-                        ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
-                        ptr = ctypes.pythonapi.PyCapsule_GetPointer(lang_raw, None)
-                        if ptr:
-                            return Language(ptr)
-                    except Exception:
-                        pass
+                    return Language(lang_raw)
                 except Exception:
                     pass
             try:

@@ -38,3 +38,16 @@ async def get_db() -> AsyncSession:
             raise
         finally:
             await session.close()
+
+async def get_db_readonly() -> AsyncSession:
+    """FastAPI dependency that yields a database session for read-only queries.
+    Rolls back automatically to prevent transaction log bloat."""
+    async with AsyncSessionLocal() as session:
+        # For Postgres, setting isolation_level to AUTOCOMMIT avoids transaction locks
+        if not settings.async_database_url.startswith("sqlite"):
+            await session.connection(execution_options={"isolation_level": "AUTOCOMMIT"})
+        try:
+            yield session
+        finally:
+            await session.rollback()
+            await session.close()
