@@ -69,8 +69,8 @@ class RepoSummary(BaseModel):
 class QueryRequest(BaseModel):
     repo_id: uuid.UUID
     query: str
-    retrieval_mode: Literal["naive", "graph", "2hop"] = "graph"
-    """retrieval_mode: 'graph'=1-hop AST expansion, '2hop'=transitive dependency recovery, 'naive'=vector-only"""
+    retrieval_mode: Literal["naive", "graph", "2hop", "hybrid"] = "graph"
+    """retrieval_mode: 'hybrid'=Dense+BM25 with RRF, 'graph'=1-hop AST expansion, '2hop'=transitive dependency recovery, 'naive'=vector-only"""
 
 
 class RetrievedChunk(BaseModel):

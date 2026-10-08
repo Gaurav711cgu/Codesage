@@ -19,7 +19,7 @@ def main():
         resp = requests.post(f"{BACKEND_URL}/api/v1/repo/ingest", json={"github_url": url})
         
         if resp.status_code == 409:
-            print(f"✅ {url} is already indexed. Skipping.")
+            print(f"[OK] {url} is already indexed. Skipping.")
             continue
             
         resp.raise_for_status()
@@ -36,10 +36,10 @@ def main():
                 stage = data["stage"]
                 print(f"[{url}] Status: {status} | Stage: {stage}")
                 if status == "complete":
-                    print(f"✅ {url} ingestion completed successfully!")
+                    print(f"[OK] {url} ingestion completed successfully!")
                     break
                 elif status == "failed":
-                    print(f"❌ {url} ingestion failed! Error: {data.get('error')}")
+                    print(f"[ERROR] {url} ingestion failed! Error: {data.get('error')}")
                     break
             else:
                 print(f"[{url}] Failed to get status: {resp.status_code}")

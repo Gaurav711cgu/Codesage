@@ -24,6 +24,8 @@ from app.models.schemas import (
     TestGenResponse,
 )
 from app.services.gemini import call_llm, stream_llm
+from app.services.structured_output import call_llm_structured
+from app.core.prompt_defense import prompt_defense
 from app.services import ollama as ollama_svc
 from app.core.rate_limit import limiter
 from app.core.config import settings
@@ -65,26 +67,40 @@ from app.prompts.code_prompts import CODE_REVIEW_PROMPT_V1
 @router.post("/code/review", response_model=ApiResponse)
 @limiter.limit("20/minute")
 async def review_code(request: Request, body: CodeReviewRequest):
-    prompt = CODE_REVIEW_PROMPT_V1.format(language=body.language, code=body.code)
+    assessment = prompt_defense.detect_adversarial_patterns(body.code)
+    sanitized_code = prompt_defense.sanitize_delimiters(body.code)
+    prompt = CODE_REVIEW_PROMPT_V1.format(language=body.language, code=sanitized_code)
 
-    raw = await asyncio.to_thread(call_llm, prompt)
     try:
-        parsed = _extract_json(raw)
-        issues = [CodeIssue(**i) for i in parsed.get("issues", [])]
-        response = CodeReviewResponse(
-            overall_score=int(parsed.get("overall_score", 50)),
-            issues=issues,
-            strengths=parsed.get("strengths", []),
-            summary=parsed.get("summary", ""),
-        )
+        response = await asyncio.to_thread(call_llm_structured, prompt, CodeReviewResponse)
     except Exception as exc:
-        logger.warning("Failed to parse review JSON: %s\nRaw: %s", exc, raw[:500])
-        # Degrade gracefully — return raw text in summary
-        response = CodeReviewResponse(
-            overall_score=50,
-            issues=[],
-            strengths=[],
-            summary=raw[:1000],
+        logger.warning("Structured review validation failed, using fallback parsing: %s", exc)
+        raw = await asyncio.to_thread(call_llm, prompt)
+        try:
+            parsed = _extract_json(raw)
+            issues = [CodeIssue(**i) for i in parsed.get("issues", [])]
+            response = CodeReviewResponse(
+                overall_score=int(parsed.get("overall_score", 50)),
+                issues=issues,
+                strengths=parsed.get("strengths", []),
+                summary=parsed.get("summary", ""),
+            )
+        except Exception:
+            response = CodeReviewResponse(
+                overall_score=50,
+                issues=[],
+                strengths=[],
+                summary=raw[:1000],
+            )
+
+    if not assessment.is_safe:
+        response.issues.insert(
+            0,
+            CodeIssue(
+                severity="critical",
+                description=f"Potential prompt injection detected: {', '.join(assessment.detected_patterns)}",
+                suggestion="Sanitize untrusted docstrings and comments before passing to LLM context.",
+            ),
         )
 
     return {"data": response.model_dump(), "error": None}
@@ -187,27 +203,31 @@ async def generate_tests(request: Request, body: TestGenRequest):
     if len(body.code) > 10000:
         _err("CODE_TOO_LONG", "Code exceeds 10,000 character limit")
 
+    sanitized_code = prompt_defense.sanitize_delimiters(body.code)
     prompt = TEST_GEN_PROMPT_V1.format(
         language=body.language,
         framework=body.framework,
-        code=body.code,
+        code=sanitized_code,
     )
 
-    raw = await asyncio.to_thread(call_llm, prompt)
     try:
-        parsed = _extract_json(raw)
-        cases = [TestCase(**c) for c in parsed.get("cases", [])]
-        response = TestGenResponse(
-            test_code=parsed.get("test_code", ""),
-            test_count=int(parsed.get("test_count", len(cases))),
-            cases=cases,
-        )
+        response = await asyncio.to_thread(call_llm_structured, prompt, TestGenResponse)
     except Exception as exc:
-        logger.warning("Failed to parse test JSON: %s\nRaw: %s", exc, raw[:500])
-        response = TestGenResponse(
-            test_code=raw,
-            test_count=0,
-            cases=[],
-        )
+        logger.warning("Structured test gen validation failed, using fallback parsing: %s", exc)
+        raw = await asyncio.to_thread(call_llm, prompt)
+        try:
+            parsed = _extract_json(raw)
+            cases = [TestCase(**c) for c in parsed.get("cases", [])]
+            response = TestGenResponse(
+                test_code=parsed.get("test_code", ""),
+                test_count=int(parsed.get("test_count", len(cases))),
+                cases=cases,
+            )
+        except Exception:
+            response = TestGenResponse(
+                test_code=raw,
+                test_count=0,
+                cases=[],
+            )
 
     return {"data": response.model_dump(), "error": None}

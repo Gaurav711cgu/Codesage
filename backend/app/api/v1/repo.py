@@ -32,6 +32,7 @@ from app.models.schemas import (
     TaskStatusResponse,
 )
 from app.services import chromadb_client, graph as graph_svc, retrieval as retrieval_svc
+from app.services.hybrid_search import bm25_manager
 from app.services.ingestion import run_ingestion
 from app.services.gemini import stream_llm
 from app.core.rate_limit import limiter
@@ -348,8 +349,9 @@ async def delete_repo(
     except Exception as exc:
         logger.warning("Failed to delete ChromaDB collections for repo %s: %s", repo_id, exc)
 
-    # Evict graph from cache
+    # Evict graph and BM25 index from cache
     graph_svc.invalidate_graph(str(repo_id))
+    bm25_manager.invalidate(str(repo_id))
 
     # Cascade-delete via FK
     await db.delete(repo)

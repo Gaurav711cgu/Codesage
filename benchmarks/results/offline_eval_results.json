@@ -1,0 +1,2870 @@
+{
+  "timestamp": "2026-10-08T14:52:51Z",
+  "dataset": "/Users/gauravkumarnayak/Desktop/Codesage/benchmarks/data/golden_eval_dataset.json",
+  "summaries": {
+    "dense": {
+      "mode": "dense",
+      "query_count": 20,
+      "mean_precision_at_1": 0.55,
+      "mean_precision_at_3": 0.35,
+      "mean_precision_at_5": 0.27,
+      "mean_precision_at_8": 0.2,
+      "mean_recall_at_1": 0.1667,
+      "mean_recall_at_3": 0.3208,
+      "mean_recall_at_5": 0.4208,
+      "mean_recall_at_8": 0.4875,
+      "mean_reciprocal_rank": 0.5975,
+      "latency_p50_ms": 67.15,
+      "latency_p95_ms": 3280.81,
+      "latency_mean_ms": 227.99
+    },
+    "bm25": {
+      "mode": "bm25",
+      "query_count": 20,
+      "mean_precision_at_1": 0.55,
+      "mean_precision_at_3": 0.3333,
+      "mean_precision_at_5": 0.26,
+      "mean_precision_at_8": 0.1875,
+      "mean_recall_at_1": 0.1667,
+      "mean_recall_at_3": 0.3,
+      "mean_recall_at_5": 0.4,
+      "mean_recall_at_8": 0.4583,
+      "mean_reciprocal_rank": 0.6017,
+      "latency_p50_ms": 0.09,
+      "latency_p95_ms": 7.11,
+      "latency_mean_ms": 0.49
+    },
+    "hybrid": {
+      "mode": "hybrid",
+      "query_count": 20,
+      "mean_precision_at_1": 0.55,
+      "mean_precision_at_3": 0.3333,
+      "mean_precision_at_5": 0.28,
+      "mean_precision_at_8": 0.1938,
+      "mean_recall_at_1": 0.1667,
+      "mean_recall_at_3": 0.3125,
+      "mean_recall_at_5": 0.4333,
+      "mean_recall_at_8": 0.475,
+      "mean_reciprocal_rank": 0.6225,
+      "latency_p50_ms": 68.37,
+      "latency_p95_ms": 73.69,
+      "latency_mean_ms": 68.09
+    },
+    "graph": {
+      "mode": "graph",
+      "query_count": 20,
+      "mean_precision_at_1": 0.55,
+      "mean_precision_at_3": 0.35,
+      "mean_precision_at_5": 0.27,
+      "mean_precision_at_8": 0.2062,
+      "mean_recall_at_1": 0.1667,
+      "mean_recall_at_3": 0.3208,
+      "mean_recall_at_5": 0.4208,
+      "mean_recall_at_8": 0.5042,
+      "mean_reciprocal_rank": 0.5975,
+      "latency_p50_ms": 67.81,
+      "latency_p95_ms": 77.39,
+      "latency_mean_ms": 68.06
+    }
+  },
+  "query_evaluations": {
+    "dense": [
+      {
+        "query_id": "Q01",
+        "query": "jwt authentication token verification and claims decode",
+        "category": "security",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "dispatch",
+          "APIKeyMiddleware",
+          "RequestIDMiddleware",
+          "dispatch",
+          "IdempotencyMiddleware",
+          "local_hash_embed",
+          "IdempotencyStore",
+          "_err"
+        ],
+        "expected_symbols": [
+          "authenticate_request",
+          "decode_jwt",
+          "verify_token"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 3280.8085410001695
+      },
+      {
+        "query_id": "Q02",
+        "query": "circuit breaker state transitions open half open recovery timeout",
+        "category": "resilience",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "CircuitState",
+          "_on_success",
+          "CircuitBreakerOpenError",
+          "__init__",
+          "_on_failure",
+          "CircuitBreaker",
+          "call_async",
+          "execute_with_resilience_sync"
+        ],
+        "expected_symbols": [
+          "call_async",
+          "call_sync",
+          "CircuitState",
+          "CircuitBreaker"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.25,
+          "5": 0.25,
+          "8": 0.75
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 82.71416700017653
+      },
+      {
+        "query_id": "Q03",
+        "query": "singleflight request coalescing concurrent duplicate in flight query deduplication",
+        "category": "concurrency",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "__init__",
+          "_Call",
+          "SingleFlightGroup",
+          "_exec",
+          "__init__",
+          "do",
+          "async_retrieve",
+          "QueryResultCache"
+        ],
+        "expected_symbols": [
+          "do",
+          "SingleFlight",
+          "single_flight"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 0.16666666666666666,
+        "latency_ms": 67.90045900015684
+      },
+      {
+        "query_id": "Q04",
+        "query": "tree sitter AST parse python class definitions and method boundaries",
+        "category": "ast",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "__init__",
+          "_chunk_python_ast_fallback::part_1",
+          "_split_oversized_unit::part_2",
+          "_chunk_python_ast_fallback::part_2",
+          "process_ast_node::part_2",
+          "process_ast_node::part_1",
+          "process_node::part_2",
+          "process_node::part_1"
+        ],
+        "expected_symbols": [
+          "chunk_source",
+          "ParentContext",
+          "ASTChunker",
+          "parse_file"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 67.06816699988849
+      },
+      {
+        "query_id": "Q05",
+        "query": "reciprocal rank fusion rrf constant k 60 merge dense and bm25",
+        "category": "retrieval",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "BM25IndexManager",
+          "invalidate",
+          "reciprocal_rank_fusion",
+          "get_index",
+          "build_and_register",
+          "set_index",
+          "__init__",
+          "retrieve_hybrid::part_1"
+        ],
+        "expected_symbols": [
+          "BM25Okapi",
+          "retrieve_hybrid",
+          "reciprocal_rank_fusion"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.3333333333333333,
+          "5": 0.3333333333333333,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 0.3333333333333333,
+        "latency_ms": 69.59725000024264
+      },
+      {
+        "query_id": "Q06",
+        "query": "prompt injection detection canary token adversarial pattern delimiter escape",
+        "category": "security",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "PromptInjectionDefense",
+          "_extract_json",
+          "_do_generate",
+          "stream_llm",
+          "extract_json_payload",
+          "_err",
+          "ASTChunker",
+          "call_llm"
+        ],
+        "expected_symbols": [
+          "detect_adversarial_patterns",
+          "PromptInjectionDefense",
+          "generate_canary"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.3333333333333333,
+          "5": 0.3333333333333333,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 62.92191600005026
+      },
+      {
+        "query_id": "Q07",
+        "query": "pydantic structured output json validation automatic repair retry",
+        "category": "validation",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "SchemaValidationError",
+          "call_llm_structured",
+          "extract_json_payload",
+          "__init__",
+          "ASTRefactoringSuggestion",
+          "ASTNodeSummary",
+          "RetrieveResponse",
+          "_extract_json"
+        ],
+        "expected_symbols": [
+          "extract_json_payload",
+          "SchemaValidationError",
+          "call_llm_structured"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 0.6,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 1.0,
+          "5": 1.0,
+          "8": 1.0
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 67.15458300004684
+      },
+      {
+        "query_id": "Q08",
+        "query": "exponential backoff with full jitter delay calculation",
+        "category": "resilience",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "compute_jittered_delay",
+          "execute_with_resilience_sync",
+          "execute_with_resilience_async",
+          "compute_jittered_ttl",
+          "CircuitBreaker",
+          "call_llm",
+          "set",
+          "CircuitState"
+        ],
+        "expected_symbols": [
+          "execute_with_resilience_sync",
+          "compute_jittered_delay",
+          "embedding_breaker"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.6666666666666666,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 63.416125000003376
+      },
+      {
+        "query_id": "Q09",
+        "query": "networkx directed graph 1-hop 2-hop topological call expansion",
+        "category": "graph",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "expand_one_hop",
+          "expand_two_hop",
+          "get_node_metadata",
+          "build_cross_language_edges",
+          "cache_graph",
+          "invalidate_graph",
+          "build_graph",
+          "get_graph"
+        ],
+        "expected_symbols": [
+          "build_graph",
+          "get_graph",
+          "expand_one_hop",
+          "expand_two_hop"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.5
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.5,
+          "5": 0.5,
+          "8": 1.0
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 65.07791700005328
+      },
+      {
+        "query_id": "Q10",
+        "query": "query cache jittered ttl stampede prevention eviction",
+        "category": "caching",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "compute_jittered_ttl",
+          "set",
+          "QueryResultCache",
+          "clear",
+          "get",
+          "_make_key",
+          "__init__",
+          "invalidate_repo"
+        ],
+        "expected_symbols": [
+          "set",
+          "get",
+          "compute_jittered_ttl",
+          "query_cache"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.6,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.5,
+          "5": 0.75,
+          "8": 0.75
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 65.8411670001442
+      },
+      {
+        "query_id": "Q11",
+        "query": "bm25 okapi inverted index tokenization robertson idf avgdl",
+        "category": "retrieval",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "BM25Okapi",
+          "__init__",
+          "index_documents",
+          "get_document",
+          "search",
+          "set_index",
+          "BM25IndexManager",
+          "build_and_register"
+        ],
+        "expected_symbols": [
+          "BM25Okapi",
+          "index_documents",
+          "search",
+          "tokenize_code"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.6,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.5,
+          "5": 0.75,
+          "8": 0.75
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 67.67458300009821
+      },
+      {
+        "query_id": "Q12",
+        "query": "chromadb upsert collection cosine distance similarity conversion",
+        "category": "retrieval",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "_cosine_distance_to_similarity",
+          "query_collection",
+          "upsert_documents",
+          "_parse_chroma_results",
+          "get_or_create_collection",
+          "get_documents_by_ids",
+          "collection_name",
+          "retrieve_naive"
+        ],
+        "expected_symbols": [
+          "_cosine_distance_to_similarity",
+          "query_collection",
+          "upsert_documents"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 0.6,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 1.0,
+          "5": 1.0,
+          "8": 1.0
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 63.85391699996035
+      },
+      {
+        "query_id": "Q13",
+        "query": "idempotency key middleware header redis lock payload hash",
+        "category": "architecture",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "set",
+          "get",
+          "IdempotencyStore",
+          "dispatch",
+          "IdempotencyMiddleware",
+          "__init__",
+          "dispatch",
+          "APIKeyMiddleware"
+        ],
+        "expected_symbols": [
+          "dispatch",
+          "IdempotencyMiddleware",
+          "is_idempotent"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 0.25,
+        "latency_ms": 67.51179100001536
+      },
+      {
+        "query_id": "Q14",
+        "query": "rate limiting slowapi ip key sliding window limiter",
+        "category": "architecture",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "is_trusted_proxy",
+          "get_real_client_identifier",
+          "SingleFlightGroup",
+          "compute_jittered_ttl",
+          "_Call",
+          "compute_jittered_delay",
+          "__init__",
+          "APIKeyMiddleware"
+        ],
+        "expected_symbols": [
+          "limiter",
+          "rate_limit"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 68.40425000018513
+      },
+      {
+        "query_id": "Q15",
+        "query": "code review structured issues severity line numbers recommendation",
+        "category": "validation",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "CodeReviewResponse",
+          "ASTRefactoringSuggestion",
+          "CodeReviewRequest",
+          "CodeIssue",
+          "call_llm_structured",
+          "ASTNodeSummary",
+          "_split_oversized_unit::part_2",
+          "__init__"
+        ],
+        "expected_symbols": [
+          "review_code",
+          "CodeReviewResponse",
+          "CodeIssue"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.3333333333333333,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 68.82254199990712
+      },
+      {
+        "query_id": "Q16",
+        "query": "offline evaluation precision recall mrr benchmark metrics",
+        "category": "evaluation",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "RetrievalVerifier",
+          "record",
+          "RetrieveResponse",
+          "verify",
+          "RetrievalTracer",
+          "reciprocal_rank_fusion",
+          "__init__",
+          "set_index"
+        ],
+        "expected_symbols": [
+          "compute_mrr",
+          "evaluate_retrieval",
+          "compute_precision_at_k"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 62.60033399985332
+      },
+      {
+        "query_id": "Q17",
+        "query": "parent context header imports class docstring attachment to isolated chunks",
+        "category": "ast",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "chunk_source::part_1",
+          "_split_oversized_unit::part_1",
+          "chunk_source::part_2",
+          "_chunk_python_ast_fallback::part_1",
+          "ASTChunker",
+          "chunk_file",
+          "_chunk_python_ast_fallback::part_2",
+          "process_node::part_2"
+        ],
+        "expected_symbols": [
+          "ParentContext",
+          "format_header",
+          "to_document"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 63.0721249999624
+      },
+      {
+        "query_id": "Q18",
+        "query": "gemini flash streaming sse token generation events",
+        "category": "generation",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "stream_llm",
+          "_do_generate",
+          "_generation_unavailable",
+          "call_llm",
+          "_get_client",
+          "emit",
+          "_noop_sse",
+          "generate_with_local_model"
+        ],
+        "expected_symbols": [
+          "query_repo",
+          "_do_stream",
+          "stream_llm"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.3333333333333333,
+          "5": 0.3333333333333333,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 71.77358400031153
+      },
+      {
+        "query_id": "Q19",
+        "query": "retrieval verifier quality floor score fallback naive search",
+        "category": "retrieval",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "RetrievalVerifier",
+          "verify",
+          "search",
+          "get_document",
+          "retrieve_hybrid::part_1",
+          "reciprocal_rank_fusion",
+          "__init__",
+          "retrieve_naive"
+        ],
+        "expected_symbols": [
+          "RetrievalVerifier",
+          "verifier",
+          "verify"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.6666666666666666,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 66.52408299987655
+      },
+      {
+        "query_id": "Q20",
+        "query": "git depth 1 clone temp directory gitignore pattern matching",
+        "category": "ingestion",
+        "mode": "dense",
+        "retrieved_symbols": [
+          "IngestRequest",
+          "tokenize_code",
+          "GitHubIngestRequest",
+          "_sse_event",
+          "_check_repo_size",
+          "_err",
+          "build_and_register",
+          "get_index"
+        ],
+        "expected_symbols": [
+          "_check_repo_size",
+          "run_ingestion"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.5,
+          "8": 0.5
+        },
+        "reciprocal_rank": 0.2,
+        "latency_ms": 67.15220799969757
+      }
+    ],
+    "bm25": [
+      {
+        "query_id": "Q01",
+        "query": "jwt authentication token verification and claims decode",
+        "category": "security",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "Settings",
+          "_symbol_candidates",
+          "verify",
+          "tokenize_code",
+          "RetrievalVerifier",
+          "_raw_retrieve",
+          "validate_production_config",
+          "PromptInjectionDefense"
+        ],
+        "expected_symbols": [
+          "authenticate_request",
+          "decode_jwt",
+          "verify_token"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 7.105916999989859
+      },
+      {
+        "query_id": "Q02",
+        "query": "circuit breaker state transitions open half open recovery timeout",
+        "category": "resilience",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "CircuitBreaker",
+          "__init__",
+          "CircuitState",
+          "_on_success",
+          "_on_failure",
+          "call_async",
+          "call_sync",
+          "CircuitBreakerOpenError"
+        ],
+        "expected_symbols": [
+          "call_async",
+          "call_sync",
+          "CircuitState",
+          "CircuitBreaker"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.5
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.5,
+          "5": 0.5,
+          "8": 1.0
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 0.08566599990444956
+      },
+      {
+        "query_id": "Q03",
+        "query": "singleflight request coalescing concurrent duplicate in flight query deduplication",
+        "category": "concurrency",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "__init__",
+          "_exec",
+          "do",
+          "_Call",
+          "__init__",
+          "SingleFlightGroup",
+          "async_retrieve",
+          "APIKeyMiddleware"
+        ],
+        "expected_symbols": [
+          "do",
+          "SingleFlight",
+          "single_flight"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.3333333333333333,
+          "5": 0.3333333333333333,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 0.3333333333333333,
+        "latency_ms": 0.15829099993425189
+      },
+      {
+        "query_id": "Q04",
+        "query": "tree sitter AST parse python class definitions and method boundaries",
+        "category": "ast",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "_chunk_python_ast_fallback::part_2",
+          "chunk_source::part_1",
+          "process_ast_node::part_2",
+          "_split_oversized_unit::part_2",
+          "__init__",
+          "_chunk_python_ast_fallback::part_1",
+          "chunk_file",
+          "process_node::part_2"
+        ],
+        "expected_symbols": [
+          "chunk_source",
+          "ParentContext",
+          "ASTChunker",
+          "parse_file"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 0.25545800008330843
+      },
+      {
+        "query_id": "Q05",
+        "query": "reciprocal rank fusion rrf constant k 60 merge dense and bm25",
+        "category": "retrieval",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "reciprocal_rank_fusion",
+          "retrieve_hybrid::part_1",
+          "__init__",
+          "invalidate",
+          "set_index",
+          "get_index",
+          "build_and_register",
+          "get_document"
+        ],
+        "expected_symbols": [
+          "BM25Okapi",
+          "retrieve_hybrid",
+          "reciprocal_rank_fusion"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.3333333333333333,
+          "5": 0.3333333333333333,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 0.12904200002594735
+      },
+      {
+        "query_id": "Q06",
+        "query": "prompt injection detection canary token adversarial pattern delimiter escape",
+        "category": "security",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "PromptInjectionDefense",
+          "call_llm_structured",
+          "generate_with_local_model",
+          "_do_generate",
+          "stream_llm",
+          "call_llm",
+          "tokenize_code",
+          "search"
+        ],
+        "expected_symbols": [
+          "detect_adversarial_patterns",
+          "PromptInjectionDefense",
+          "generate_canary"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.3333333333333333,
+          "5": 0.3333333333333333,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 0.04849999959333218
+      },
+      {
+        "query_id": "Q07",
+        "query": "pydantic structured output json validation automatic repair retry",
+        "category": "validation",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "SchemaValidationError",
+          "__init__",
+          "call_llm_structured",
+          "ASTNodeSummary",
+          "ASTRefactoringSuggestion",
+          "extract_json_payload",
+          "_extract_json",
+          "_err"
+        ],
+        "expected_symbols": [
+          "extract_json_payload",
+          "SchemaValidationError",
+          "call_llm_structured"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.6666666666666666,
+          "5": 0.6666666666666666,
+          "8": 1.0
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 0.6022920001669263
+      },
+      {
+        "query_id": "Q08",
+        "query": "exponential backoff with full jitter delay calculation",
+        "category": "resilience",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "compute_jittered_delay",
+          "execute_with_resilience_sync",
+          "execute_with_resilience_async",
+          "call_llm",
+          "compute_jittered_ttl",
+          "set",
+          "clear",
+          "_make_key"
+        ],
+        "expected_symbols": [
+          "execute_with_resilience_sync",
+          "compute_jittered_delay",
+          "embedding_breaker"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.6666666666666666,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 0.09333400021205307
+      },
+      {
+        "query_id": "Q09",
+        "query": "networkx directed graph 1-hop 2-hop topological call expansion",
+        "category": "graph",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "expand_two_hop",
+          "expand_one_hop",
+          "retrieve_graph_augmented::part_1",
+          "QueryRequest",
+          "retrieve_graph_augmented::part_2",
+          "_raw_retrieve",
+          "retrieve",
+          "GitHubIngestRequest"
+        ],
+        "expected_symbols": [
+          "build_graph",
+          "get_graph",
+          "expand_one_hop",
+          "expand_two_hop"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.5,
+          "5": 0.5,
+          "8": 0.5
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 0.14025000018591527
+      },
+      {
+        "query_id": "Q10",
+        "query": "query cache jittered ttl stampede prevention eviction",
+        "category": "caching",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "compute_jittered_ttl",
+          "set",
+          "QueryResultCache",
+          "get",
+          "clear",
+          "_make_key",
+          "invalidate_repo",
+          "__init__"
+        ],
+        "expected_symbols": [
+          "set",
+          "get",
+          "compute_jittered_ttl",
+          "query_cache"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.6,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.5,
+          "5": 0.75,
+          "8": 0.75
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 0.06824999991295044
+      },
+      {
+        "query_id": "Q11",
+        "query": "bm25 okapi inverted index tokenization robertson idf avgdl",
+        "category": "retrieval",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "index_documents",
+          "BM25Okapi",
+          "__init__",
+          "search",
+          "get_document",
+          "build_and_register",
+          "BM25IndexManager",
+          "set_index"
+        ],
+        "expected_symbols": [
+          "BM25Okapi",
+          "index_documents",
+          "search",
+          "tokenize_code"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.6,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.5,
+          "5": 0.75,
+          "8": 0.75
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 0.03345799996168353
+      },
+      {
+        "query_id": "Q12",
+        "query": "chromadb upsert collection cosine distance similarity conversion",
+        "category": "retrieval",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "_cosine_distance_to_similarity",
+          "_parse_chroma_results",
+          "upsert_documents",
+          "get_or_create_collection",
+          "retrieve_hybrid::part_2",
+          "_retrieve_seeds",
+          "retrieve_hybrid::part_1",
+          "delete_repo_collections"
+        ],
+        "expected_symbols": [
+          "_cosine_distance_to_similarity",
+          "query_collection",
+          "upsert_documents"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.6666666666666666,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 0.4226669998388388
+      },
+      {
+        "query_id": "Q13",
+        "query": "idempotency key middleware header redis lock payload hash",
+        "category": "architecture",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "set",
+          "IdempotencyStore",
+          "__init__",
+          "get",
+          "IdempotencyMiddleware",
+          "dispatch",
+          "set",
+          "QueryResultCache"
+        ],
+        "expected_symbols": [
+          "dispatch",
+          "IdempotencyMiddleware",
+          "is_idempotent"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.2,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.3333333333333333,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 0.2,
+        "latency_ms": 0.09058300020114984
+      },
+      {
+        "query_id": "Q14",
+        "query": "rate limiting slowapi ip key sliding window limiter",
+        "category": "architecture",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "get_real_client_identifier",
+          "is_trusted_proxy",
+          "Settings",
+          "inc_request",
+          "MetricsRegistry",
+          "call_async",
+          "call_sync",
+          "CircuitBreaker"
+        ],
+        "expected_symbols": [
+          "limiter",
+          "rate_limit"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 0.04808400035472005
+      },
+      {
+        "query_id": "Q15",
+        "query": "code review structured issues severity line numbers recommendation",
+        "category": "validation",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "ASTRefactoringSuggestion",
+          "_err",
+          "_extract_json",
+          "CodeReviewResponse",
+          "CodeIssue",
+          "CodeReviewRequest",
+          "extract_json_payload",
+          "ASTNodeSummary"
+        ],
+        "expected_symbols": [
+          "review_code",
+          "CodeReviewResponse",
+          "CodeIssue"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 0.25,
+        "latency_ms": 0.0737499999559077
+      },
+      {
+        "query_id": "Q16",
+        "query": "offline evaluation precision recall mrr benchmark metrics",
+        "category": "evaluation",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "RetrieveResponse",
+          "MetricsMiddleware",
+          "dispatch",
+          "inc_cache_hit",
+          "inc_cache_miss",
+          "__init__",
+          "observe_latency",
+          "inc_request"
+        ],
+        "expected_symbols": [
+          "compute_mrr",
+          "evaluate_retrieval",
+          "compute_precision_at_k"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 0.01633300007597427
+      },
+      {
+        "query_id": "Q17",
+        "query": "parent context header imports class docstring attachment to isolated chunks",
+        "category": "ast",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "_split_oversized_unit::part_2",
+          "_chunk_python_ast_fallback::part_2",
+          "_split_oversized_unit::part_1",
+          "process_node::part_2",
+          "chunk_source::part_2",
+          "process_ast_node::part_2",
+          "process_ast_node::part_1",
+          "_chunk_python_ast_fallback::part_1"
+        ],
+        "expected_symbols": [
+          "ParentContext",
+          "format_header",
+          "to_document"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 0.21629200000461424
+      },
+      {
+        "query_id": "Q18",
+        "query": "gemini flash streaming sse token generation events",
+        "category": "generation",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "stream_llm",
+          "generate_with_local_model",
+          "call_llm",
+          "_generation_unavailable",
+          "_do_generate",
+          "run_ingestion::part_1",
+          "Settings",
+          "local_hash_embed"
+        ],
+        "expected_symbols": [
+          "query_repo",
+          "_do_stream",
+          "stream_llm"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.3333333333333333,
+          "5": 0.3333333333333333,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 0.05012500014345278
+      },
+      {
+        "query_id": "Q19",
+        "query": "retrieval verifier quality floor score fallback naive search",
+        "category": "retrieval",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "RetrievalVerifier",
+          "verify",
+          "_raw_retrieve",
+          "async_retrieve",
+          "retrieve_hybrid::part_2",
+          "_retrieve_seeds",
+          "retrieve_naive",
+          "retrieve_graph_augmented::part_2"
+        ],
+        "expected_symbols": [
+          "RetrievalVerifier",
+          "verifier",
+          "verify"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.6666666666666666,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 0.0852920002216706
+      },
+      {
+        "query_id": "Q20",
+        "query": "git depth 1 clone temp directory gitignore pattern matching",
+        "category": "ingestion",
+        "mode": "bm25",
+        "retrieved_symbols": [
+          "run_ingestion::part_1",
+          "Settings",
+          "GitHubIngestRequest",
+          "_check_repo_size",
+          "_parse_fallback_languages",
+          "run_ingestion::part_4",
+          "_err",
+          "_noop_sse"
+        ],
+        "expected_symbols": [
+          "_check_repo_size",
+          "run_ingestion"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.5,
+          "8": 0.5
+        },
+        "reciprocal_rank": 0.25,
+        "latency_ms": 0.08520799974576221
+      }
+    ],
+    "hybrid": [
+      {
+        "query_id": "Q01",
+        "query": "jwt authentication token verification and claims decode",
+        "category": "security",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "tokenize_code",
+          "IdempotencyStore",
+          "PromptInjectionDefense",
+          "set",
+          "__init__",
+          "dispatch",
+          "Settings",
+          "APIKeyMiddleware"
+        ],
+        "expected_symbols": [
+          "authenticate_request",
+          "decode_jwt",
+          "verify_token"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 70.75962500039168
+      },
+      {
+        "query_id": "Q02",
+        "query": "circuit breaker state transitions open half open recovery timeout",
+        "category": "resilience",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "CircuitState",
+          "__init__",
+          "_on_success",
+          "CircuitBreaker",
+          "_on_failure",
+          "CircuitBreakerOpenError",
+          "call_async",
+          "call_sync"
+        ],
+        "expected_symbols": [
+          "call_async",
+          "call_sync",
+          "CircuitState",
+          "CircuitBreaker"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.4,
+          "8": 0.5
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.25,
+          "5": 0.5,
+          "8": 1.0
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 65.68266600015704
+      },
+      {
+        "query_id": "Q03",
+        "query": "singleflight request coalescing concurrent duplicate in flight query deduplication",
+        "category": "concurrency",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "__init__",
+          "_exec",
+          "_Call",
+          "do",
+          "SingleFlightGroup",
+          "__init__",
+          "async_retrieve",
+          "_make_key"
+        ],
+        "expected_symbols": [
+          "do",
+          "SingleFlight",
+          "single_flight"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.3333333333333333,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 0.25,
+        "latency_ms": 70.24199999978009
+      },
+      {
+        "query_id": "Q04",
+        "query": "tree sitter AST parse python class definitions and method boundaries",
+        "category": "ast",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "_chunk_python_ast_fallback::part_2",
+          "__init__",
+          "_split_oversized_unit::part_2",
+          "_chunk_python_ast_fallback::part_1",
+          "process_ast_node::part_2",
+          "chunk_source::part_1",
+          "process_node::part_2",
+          "process_ast_node::part_1"
+        ],
+        "expected_symbols": [
+          "chunk_source",
+          "ParentContext",
+          "ASTChunker",
+          "parse_file"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 66.02045799991174
+      },
+      {
+        "query_id": "Q05",
+        "query": "reciprocal rank fusion rrf constant k 60 merge dense and bm25",
+        "category": "retrieval",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "reciprocal_rank_fusion",
+          "invalidate",
+          "retrieve_hybrid::part_1",
+          "__init__",
+          "get_index",
+          "BM25IndexManager",
+          "set_index",
+          "build_and_register"
+        ],
+        "expected_symbols": [
+          "BM25Okapi",
+          "retrieve_hybrid",
+          "reciprocal_rank_fusion"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.3333333333333333,
+          "5": 0.3333333333333333,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 65.00695799968526
+      },
+      {
+        "query_id": "Q06",
+        "query": "prompt injection detection canary token adversarial pattern delimiter escape",
+        "category": "security",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "PromptInjectionDefense",
+          "_do_generate",
+          "stream_llm",
+          "call_llm",
+          "extract_json_payload",
+          "call_llm_structured",
+          "_extract_json",
+          "generate_with_local_model"
+        ],
+        "expected_symbols": [
+          "detect_adversarial_patterns",
+          "PromptInjectionDefense",
+          "generate_canary"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.3333333333333333,
+          "5": 0.3333333333333333,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 65.82458299999416
+      },
+      {
+        "query_id": "Q07",
+        "query": "pydantic structured output json validation automatic repair retry",
+        "category": "validation",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "SchemaValidationError",
+          "call_llm_structured",
+          "__init__",
+          "extract_json_payload",
+          "ASTNodeSummary",
+          "ASTRefactoringSuggestion",
+          "_extract_json",
+          "_err"
+        ],
+        "expected_symbols": [
+          "extract_json_payload",
+          "SchemaValidationError",
+          "call_llm_structured"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.6,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.6666666666666666,
+          "5": 1.0,
+          "8": 1.0
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 68.98441600014849
+      },
+      {
+        "query_id": "Q08",
+        "query": "exponential backoff with full jitter delay calculation",
+        "category": "resilience",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "compute_jittered_delay",
+          "execute_with_resilience_sync",
+          "execute_with_resilience_async",
+          "compute_jittered_ttl",
+          "call_llm",
+          "set",
+          "CircuitBreaker",
+          "clear"
+        ],
+        "expected_symbols": [
+          "execute_with_resilience_sync",
+          "compute_jittered_delay",
+          "embedding_breaker"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.6666666666666666,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 68.37383299989597
+      },
+      {
+        "query_id": "Q09",
+        "query": "networkx directed graph 1-hop 2-hop topological call expansion",
+        "category": "graph",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "expand_one_hop",
+          "expand_two_hop",
+          "retrieve_graph_augmented::part_1",
+          "get_node_metadata",
+          "retrieve_graph_augmented::part_2",
+          "invalidate_graph",
+          "build_cross_language_edges",
+          "_cosine_distance_to_similarity"
+        ],
+        "expected_symbols": [
+          "build_graph",
+          "get_graph",
+          "expand_one_hop",
+          "expand_two_hop"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.5,
+          "5": 0.5,
+          "8": 0.5
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 69.29437500002678
+      },
+      {
+        "query_id": "Q10",
+        "query": "query cache jittered ttl stampede prevention eviction",
+        "category": "caching",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "compute_jittered_ttl",
+          "set",
+          "QueryResultCache",
+          "clear",
+          "get",
+          "_make_key",
+          "__init__",
+          "invalidate_repo"
+        ],
+        "expected_symbols": [
+          "set",
+          "get",
+          "compute_jittered_ttl",
+          "query_cache"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.6,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.5,
+          "5": 0.75,
+          "8": 0.75
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 65.88054199983162
+      },
+      {
+        "query_id": "Q11",
+        "query": "bm25 okapi inverted index tokenization robertson idf avgdl",
+        "category": "retrieval",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "BM25Okapi",
+          "index_documents",
+          "__init__",
+          "get_document",
+          "search",
+          "build_and_register",
+          "set_index",
+          "BM25IndexManager"
+        ],
+        "expected_symbols": [
+          "BM25Okapi",
+          "index_documents",
+          "search",
+          "tokenize_code"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.6,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.5,
+          "5": 0.75,
+          "8": 0.75
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 73.69141699973625
+      },
+      {
+        "query_id": "Q12",
+        "query": "chromadb upsert collection cosine distance similarity conversion",
+        "category": "retrieval",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "_cosine_distance_to_similarity",
+          "_parse_chroma_results",
+          "upsert_documents",
+          "get_or_create_collection",
+          "query_collection",
+          "_retrieve_seeds",
+          "get_documents_by_ids",
+          "collection_name"
+        ],
+        "expected_symbols": [
+          "_cosine_distance_to_similarity",
+          "query_collection",
+          "upsert_documents"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.6,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.6666666666666666,
+          "5": 1.0,
+          "8": 1.0
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 65.65662499997416
+      },
+      {
+        "query_id": "Q13",
+        "query": "idempotency key middleware header redis lock payload hash",
+        "category": "architecture",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "set",
+          "IdempotencyStore",
+          "get",
+          "__init__",
+          "dispatch",
+          "IdempotencyMiddleware",
+          "dispatch",
+          "APIKeyMiddleware"
+        ],
+        "expected_symbols": [
+          "dispatch",
+          "IdempotencyMiddleware",
+          "is_idempotent"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.2,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.3333333333333333,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 0.2,
+        "latency_ms": 65.71291699992798
+      },
+      {
+        "query_id": "Q14",
+        "query": "rate limiting slowapi ip key sliding window limiter",
+        "category": "architecture",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "get_real_client_identifier",
+          "is_trusted_proxy",
+          "APIKeyMiddleware",
+          "dispatch",
+          "Settings",
+          "SingleFlightGroup",
+          "inc_request",
+          "compute_jittered_ttl"
+        ],
+        "expected_symbols": [
+          "limiter",
+          "rate_limit"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 67.84704199981206
+      },
+      {
+        "query_id": "Q15",
+        "query": "code review structured issues severity line numbers recommendation",
+        "category": "validation",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "ASTRefactoringSuggestion",
+          "CodeReviewResponse",
+          "CodeReviewRequest",
+          "CodeIssue",
+          "ASTNodeSummary",
+          "extract_json_payload",
+          "call_llm_structured",
+          "__init__"
+        ],
+        "expected_symbols": [
+          "review_code",
+          "CodeReviewResponse",
+          "CodeIssue"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.3333333333333333,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.3333333333333333,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 0.5,
+        "latency_ms": 70.13954100011688
+      },
+      {
+        "query_id": "Q16",
+        "query": "offline evaluation precision recall mrr benchmark metrics",
+        "category": "evaluation",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "RetrieveResponse",
+          "RetrievalVerifier",
+          "MetricsMiddleware",
+          "record",
+          "dispatch",
+          "inc_cache_hit",
+          "verify",
+          "inc_cache_miss"
+        ],
+        "expected_symbols": [
+          "compute_mrr",
+          "evaluate_retrieval",
+          "compute_precision_at_k"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 69.94091600017782
+      },
+      {
+        "query_id": "Q17",
+        "query": "parent context header imports class docstring attachment to isolated chunks",
+        "category": "ast",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "_split_oversized_unit::part_1",
+          "chunk_source::part_2",
+          "_chunk_python_ast_fallback::part_2",
+          "_chunk_python_ast_fallback::part_1",
+          "process_node::part_2",
+          "chunk_source::part_1",
+          "_split_oversized_unit::part_2",
+          "ASTChunker"
+        ],
+        "expected_symbols": [
+          "ParentContext",
+          "format_header",
+          "to_document"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 69.19804199969803
+      },
+      {
+        "query_id": "Q18",
+        "query": "gemini flash streaming sse token generation events",
+        "category": "generation",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "stream_llm",
+          "_do_generate",
+          "_generation_unavailable",
+          "call_llm",
+          "generate_with_local_model",
+          "_get_client",
+          "emit",
+          "_noop_sse"
+        ],
+        "expected_symbols": [
+          "query_repo",
+          "_do_stream",
+          "stream_llm"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.3333333333333333,
+          "5": 0.3333333333333333,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 66.42329200030872
+      },
+      {
+        "query_id": "Q19",
+        "query": "retrieval verifier quality floor score fallback naive search",
+        "category": "retrieval",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "RetrievalVerifier",
+          "verify",
+          "retrieve_hybrid::part_1",
+          "retrieve_naive",
+          "search",
+          "retrieve_hybrid::part_2",
+          "BM25Okapi",
+          "reciprocal_rank_fusion"
+        ],
+        "expected_symbols": [
+          "RetrievalVerifier",
+          "verifier",
+          "verify"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.6666666666666666,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 65.8030829999916
+      },
+      {
+        "query_id": "Q20",
+        "query": "git depth 1 clone temp directory gitignore pattern matching",
+        "category": "ingestion",
+        "mode": "hybrid",
+        "retrieved_symbols": [
+          "GitHubIngestRequest",
+          "_check_repo_size",
+          "_err",
+          "_sse_event",
+          "parse_file",
+          "IngestRequest",
+          "run_ingestion::part_1",
+          "Settings"
+        ],
+        "expected_symbols": [
+          "_check_repo_size",
+          "run_ingestion"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.5,
+          "5": 0.5,
+          "8": 0.5
+        },
+        "reciprocal_rank": 0.5,
+        "latency_ms": 71.34799999994357
+      }
+    ],
+    "graph": [
+      {
+        "query_id": "Q01",
+        "query": "jwt authentication token verification and claims decode",
+        "category": "security",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "dispatch",
+          "APIKeyMiddleware",
+          "RequestIDMiddleware",
+          "dispatch",
+          "IdempotencyMiddleware"
+        ],
+        "expected_symbols": [
+          "authenticate_request",
+          "decode_jwt",
+          "verify_token"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 71.44091700001809
+      },
+      {
+        "query_id": "Q02",
+        "query": "circuit breaker state transitions open half open recovery timeout",
+        "category": "resilience",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "CircuitState",
+          "_on_success",
+          "CircuitBreakerOpenError",
+          "__init__",
+          "_on_failure",
+          "call_async",
+          "call_sync",
+          "execute_with_resilience_async"
+        ],
+        "expected_symbols": [
+          "call_async",
+          "call_sync",
+          "CircuitState",
+          "CircuitBreaker"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.25,
+          "5": 0.25,
+          "8": 0.75
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 69.90041699964422
+      },
+      {
+        "query_id": "Q03",
+        "query": "singleflight request coalescing concurrent duplicate in flight query deduplication",
+        "category": "concurrency",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "__init__",
+          "_Call",
+          "SingleFlightGroup",
+          "_exec",
+          "__init__",
+          "do"
+        ],
+        "expected_symbols": [
+          "do",
+          "SingleFlight",
+          "single_flight"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 0.16666666666666666,
+        "latency_ms": 68.90308399988498
+      },
+      {
+        "query_id": "Q04",
+        "query": "tree sitter AST parse python class definitions and method boundaries",
+        "category": "ast",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "__init__",
+          "_chunk_python_ast_fallback::part_1",
+          "_split_oversized_unit::part_2",
+          "_chunk_python_ast_fallback::part_2",
+          "process_ast_node::part_2",
+          "walk"
+        ],
+        "expected_symbols": [
+          "chunk_source",
+          "ParentContext",
+          "ASTChunker",
+          "parse_file"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 69.48658300007082
+      },
+      {
+        "query_id": "Q05",
+        "query": "reciprocal rank fusion rrf constant k 60 merge dense and bm25",
+        "category": "retrieval",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "BM25IndexManager",
+          "invalidate",
+          "reciprocal_rank_fusion",
+          "get_index",
+          "build_and_register",
+          "BM25Okapi",
+          "retrieve_hybrid::part_1",
+          "retrieve_hybrid::part_2"
+        ],
+        "expected_symbols": [
+          "BM25Okapi",
+          "retrieve_hybrid",
+          "reciprocal_rank_fusion"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.3333333333333333,
+          "5": 0.3333333333333333,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 0.3333333333333333,
+        "latency_ms": 77.38583299988022
+      },
+      {
+        "query_id": "Q06",
+        "query": "prompt injection detection canary token adversarial pattern delimiter escape",
+        "category": "security",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "PromptInjectionDefense",
+          "_extract_json",
+          "_do_generate",
+          "stream_llm",
+          "extract_json_payload",
+          "_generation_unavailable",
+          "_get_client",
+          "call_llm_structured"
+        ],
+        "expected_symbols": [
+          "detect_adversarial_patterns",
+          "PromptInjectionDefense",
+          "generate_canary"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.3333333333333333,
+          "5": 0.3333333333333333,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 70.863792000182
+      },
+      {
+        "query_id": "Q07",
+        "query": "pydantic structured output json validation automatic repair retry",
+        "category": "validation",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "SchemaValidationError",
+          "call_llm_structured",
+          "extract_json_payload",
+          "__init__",
+          "ASTRefactoringSuggestion"
+        ],
+        "expected_symbols": [
+          "extract_json_payload",
+          "SchemaValidationError",
+          "call_llm_structured"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 0.6,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 1.0,
+          "5": 1.0,
+          "8": 1.0
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 66.97220800015202
+      },
+      {
+        "query_id": "Q08",
+        "query": "exponential backoff with full jitter delay calculation",
+        "category": "resilience",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "compute_jittered_delay",
+          "execute_with_resilience_sync",
+          "execute_with_resilience_async",
+          "compute_jittered_ttl",
+          "CircuitBreaker",
+          "CircuitBreakerOpenError",
+          "set",
+          "embed_query"
+        ],
+        "expected_symbols": [
+          "execute_with_resilience_sync",
+          "compute_jittered_delay",
+          "embedding_breaker"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.6666666666666666,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 67.22337500013964
+      },
+      {
+        "query_id": "Q09",
+        "query": "networkx directed graph 1-hop 2-hop topological call expansion",
+        "category": "graph",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "expand_one_hop",
+          "expand_two_hop",
+          "get_node_metadata",
+          "build_cross_language_edges",
+          "cache_graph",
+          "build_graph",
+          "run_ingestion::part_1",
+          "run_ingestion::part_2"
+        ],
+        "expected_symbols": [
+          "build_graph",
+          "get_graph",
+          "expand_one_hop",
+          "expand_two_hop"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.5,
+          "5": 0.5,
+          "8": 0.75
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 68.61608300005173
+      },
+      {
+        "query_id": "Q10",
+        "query": "query cache jittered ttl stampede prevention eviction",
+        "category": "caching",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "compute_jittered_ttl",
+          "set",
+          "QueryResultCache",
+          "clear",
+          "get",
+          "RetrievedChunk"
+        ],
+        "expected_symbols": [
+          "set",
+          "get",
+          "compute_jittered_ttl",
+          "query_cache"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.6,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.5,
+          "5": 0.75,
+          "8": 0.75
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 68.41083299968886
+      },
+      {
+        "query_id": "Q11",
+        "query": "bm25 okapi inverted index tokenization robertson idf avgdl",
+        "category": "retrieval",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "BM25Okapi",
+          "__init__",
+          "index_documents",
+          "get_document",
+          "search",
+          "build_and_register",
+          "tokenize_code"
+        ],
+        "expected_symbols": [
+          "BM25Okapi",
+          "index_documents",
+          "search",
+          "tokenize_code"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.6,
+          "8": 0.5
+        },
+        "recall_at_k": {
+          "1": 0.25,
+          "3": 0.5,
+          "5": 0.75,
+          "8": 1.0
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 63.754874999631284
+      },
+      {
+        "query_id": "Q12",
+        "query": "chromadb upsert collection cosine distance similarity conversion",
+        "category": "retrieval",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "_cosine_distance_to_similarity",
+          "query_collection",
+          "upsert_documents",
+          "_parse_chroma_results",
+          "get_or_create_collection",
+          "collection_name",
+          "count_documents",
+          "get_client"
+        ],
+        "expected_symbols": [
+          "_cosine_distance_to_similarity",
+          "query_collection",
+          "upsert_documents"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 0.6,
+          "8": 0.375
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 1.0,
+          "5": 1.0,
+          "8": 1.0
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 65.88162499974715
+      },
+      {
+        "query_id": "Q13",
+        "query": "idempotency key middleware header redis lock payload hash",
+        "category": "architecture",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "set",
+          "get",
+          "IdempotencyStore",
+          "dispatch",
+          "IdempotencyMiddleware"
+        ],
+        "expected_symbols": [
+          "dispatch",
+          "IdempotencyMiddleware",
+          "is_idempotent"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 0.25,
+        "latency_ms": 64.18308399997841
+      },
+      {
+        "query_id": "Q14",
+        "query": "rate limiting slowapi ip key sliding window limiter",
+        "category": "architecture",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "is_trusted_proxy",
+          "get_real_client_identifier",
+          "SingleFlightGroup",
+          "compute_jittered_ttl",
+          "_Call",
+          "do",
+          "set"
+        ],
+        "expected_symbols": [
+          "limiter",
+          "rate_limit"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 67.81004200001917
+      },
+      {
+        "query_id": "Q15",
+        "query": "code review structured issues severity line numbers recommendation",
+        "category": "validation",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "CodeReviewResponse",
+          "ASTRefactoringSuggestion",
+          "CodeReviewRequest",
+          "CodeIssue",
+          "call_llm_structured",
+          "SchemaValidationError",
+          "extract_json_payload"
+        ],
+        "expected_symbols": [
+          "review_code",
+          "CodeReviewResponse",
+          "CodeIssue"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.3333333333333333,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 65.53658400025597
+      },
+      {
+        "query_id": "Q16",
+        "query": "offline evaluation precision recall mrr benchmark metrics",
+        "category": "evaluation",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "RetrievalVerifier",
+          "record",
+          "RetrieveResponse",
+          "verify",
+          "RetrievalTracer"
+        ],
+        "expected_symbols": [
+          "compute_mrr",
+          "evaluate_retrieval",
+          "compute_precision_at_k"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 67.38099999984115
+      },
+      {
+        "query_id": "Q17",
+        "query": "parent context header imports class docstring attachment to isolated chunks",
+        "category": "ast",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "chunk_source::part_1",
+          "_split_oversized_unit::part_1",
+          "chunk_source::part_2",
+          "_chunk_python_ast_fallback::part_1",
+          "ASTChunker",
+          "_extract_calls",
+          "_extract_docstring",
+          "_extract_imports"
+        ],
+        "expected_symbols": [
+          "ParentContext",
+          "format_header",
+          "to_document"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0,
+          "8": 0.0
+        },
+        "reciprocal_rank": 0.0,
+        "latency_ms": 67.18704200011416
+      },
+      {
+        "query_id": "Q18",
+        "query": "gemini flash streaming sse token generation events",
+        "category": "generation",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "stream_llm",
+          "_do_generate",
+          "_generation_unavailable",
+          "call_llm",
+          "_get_client",
+          "execute_with_resilience_sync",
+          "generate_with_local_model"
+        ],
+        "expected_symbols": [
+          "query_repo",
+          "_do_stream",
+          "stream_llm"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.3333333333333333,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.3333333333333333,
+          "5": 0.3333333333333333,
+          "8": 0.3333333333333333
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 67.06395800028986
+      },
+      {
+        "query_id": "Q19",
+        "query": "retrieval verifier quality floor score fallback naive search",
+        "category": "retrieval",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "RetrievalVerifier",
+          "verify",
+          "search",
+          "get_document",
+          "retrieve_hybrid::part_1",
+          "RetrievedChunk",
+          "get_documents_by_ids",
+          "get_documents_by_metadata"
+        ],
+        "expected_symbols": [
+          "RetrievalVerifier",
+          "verifier",
+          "verify"
+        ],
+        "precision_at_k": {
+          "1": 1.0,
+          "3": 0.6666666666666666,
+          "5": 0.4,
+          "8": 0.25
+        },
+        "recall_at_k": {
+          "1": 0.3333333333333333,
+          "3": 0.6666666666666666,
+          "5": 0.6666666666666666,
+          "8": 0.6666666666666666
+        },
+        "reciprocal_rank": 1.0,
+        "latency_ms": 64.04504200008887
+      },
+      {
+        "query_id": "Q20",
+        "query": "git depth 1 clone temp directory gitignore pattern matching",
+        "category": "ingestion",
+        "mode": "graph",
+        "retrieved_symbols": [
+          "IngestRequest",
+          "tokenize_code",
+          "GitHubIngestRequest",
+          "_sse_event",
+          "_check_repo_size",
+          "index_documents",
+          "search",
+          "run_ingestion::part_1"
+        ],
+        "expected_symbols": [
+          "_check_repo_size",
+          "run_ingestion"
+        ],
+        "precision_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.2,
+          "8": 0.125
+        },
+        "recall_at_k": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.5,
+          "8": 0.5
+        },
+        "reciprocal_rank": 0.2,
+        "latency_ms": 69.08125000018117
+      }
+    ]
+  }
+}

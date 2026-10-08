@@ -16,6 +16,7 @@ import re
 from typing import Literal
 
 from app.core.config import settings
+from app.core.resilience import embedding_breaker, execute_with_resilience_sync
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,43 @@ def _get_provider() -> EmbeddingProvider:
     return "local"
 
 
+_default_dense_fn = None
+
+
+def get_default_dense_embedder():
+    """Lazily load the ChromaDB default ONNX all-MiniLM-L6-v2 embedding function."""
+    global _default_dense_fn
+    if _default_dense_fn is None:
+        try:
+            import chromadb.utils.embedding_functions as ef
+            _default_dense_fn = ef.DefaultEmbeddingFunction()
+        except Exception as exc:
+            logger.warning("Failed to initialize Chroma default ONNX dense embedder: %s", exc)
+            _default_dense_fn = None
+    return _default_dense_fn
+
+
+def local_dense_embed(texts: list[str]) -> list[list[float]]:
+    """
+    Generate authentic 384-dimensional dense semantic embeddings using the local ONNX
+    all-MiniLM-L6-v2 model (via ChromaDB built-in engine).
+    Requires zero external API keys or network requests.
+    Falls back gracefully to local_hash_embed if ONNX runtime is unavailable.
+    """
+    fn = get_default_dense_embedder()
+    if fn is not None:
+        try:
+            raw_embeddings = fn(texts)
+            normalized = []
+            for vec in raw_embeddings:
+                norm = math.sqrt(sum(x * x for x in vec))
+                normalized.append([x / norm for x in vec] if norm > 0.0 else [float(x) for x in vec])
+            return normalized
+        except Exception as exc:
+            logger.warning("Local dense embedding batch failed: %s; falling back to feature hash", exc)
+    return [local_hash_embed(t) for t in texts]
+
+
 def local_hash_embed(text: str, dimension: int = 384) -> list[float]:
     """
     Generate a normalized Lexical Bag-of-Words Feature Hash vector (the Hashing Trick).
@@ -38,7 +76,7 @@ def local_hash_embed(text: str, dimension: int = 384) -> list[float]:
     NOTE: This is a fast, zero-dependency lexical token-matching baseline (similar to
     MinHash/FeatureHasher), NOT a learned semantic transformer model. For true semantic
     similarity across synonyms (e.g. 'async function' vs 'speedy coroutine'), configure
-    EMBEDDING_PROVIDER="gemini" (3072-dim) or "voyage" (1024-dim).
+    local_dense_embed (local ONNX MiniLM), EMBEDDING_PROVIDER="gemini", or "voyage".
     """
     words = re.findall(r'[a-zA-Z_0-9]+', text.lower())
     vector = [0.0] * dimension
@@ -79,17 +117,28 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
         from google import genai
         if not settings.gemini_api_key:
             raise RuntimeError("GEMINI_API_KEY is not configured")
-        client = genai.Client(api_key=settings.gemini_api_key)
-        response = client.models.embed_content(
-            model="gemini-embedding-001",
-            contents=texts,
-        )
-        if hasattr(response, "embeddings") and response.embeddings:
-            return [e.values for e in response.embeddings]
-        raise RuntimeError("Gemini embed_content returned no embeddings")
 
-    logger.warning("No external embedding provider configured (EMBEDDING_PROVIDER not set, no GEMINI_API_KEY). Falling back to lexical feature hashing embeddings. Semantic synonym matching will be degraded.")
-    return [local_hash_embed(t) for t in texts]
+        def _do_gemini_texts():
+            client = genai.Client(api_key=settings.gemini_api_key)
+            response = client.models.embed_content(
+                model="gemini-embedding-001",
+                contents=texts,
+            )
+            if hasattr(response, "embeddings") and response.embeddings:
+                return [e.values for e in response.embeddings]
+            raise RuntimeError("Gemini embed_content returned no embeddings")
+
+        try:
+            return execute_with_resilience_sync(_do_gemini_texts, breaker=embedding_breaker, max_retries=3)
+        except Exception as exc:
+            logger.warning("Gemini embedding failed via resilience engine: %s. Falling back to local hashing.", exc)
+            return [local_hash_embed(t) for t in texts]
+
+    elif provider == "local":
+        return local_dense_embed(texts)
+
+    logger.info("No external embedding provider configured. Using local ONNX dense embeddings (all-MiniLM-L6-v2, 384-dim).")
+    return local_dense_embed(texts)
 
 
 def embed_query(query: str) -> list[float]:
@@ -118,16 +167,27 @@ def embed_query(query: str) -> list[float]:
         from google import genai
         if not settings.gemini_api_key:
             raise RuntimeError("GEMINI_API_KEY is not configured")
-        client = genai.Client(api_key=settings.gemini_api_key)
-        response = client.models.embed_content(
-            model="gemini-embedding-001",
-            contents=query,
-        )
-        if hasattr(response, "embeddings") and response.embeddings:
-            return response.embeddings[0].values
-        if hasattr(response, "embedding") and response.embedding:
-            return response.embedding.values
-        raise RuntimeError("Gemini embed_content returned no embedding for query")
 
-    logger.warning("No external embedding provider configured; falling back to lexical feature hashing for query embedding.")
-    return local_hash_embed(query)
+        def _do_gemini_query():
+            client = genai.Client(api_key=settings.gemini_api_key)
+            response = client.models.embed_content(
+                model="gemini-embedding-001",
+                contents=query,
+            )
+            if hasattr(response, "embeddings") and response.embeddings:
+                return response.embeddings[0].values
+            if hasattr(response, "embedding") and response.embedding:
+                return response.embedding.values
+            raise RuntimeError("Gemini embed_content returned no embedding for query")
+
+        try:
+            return execute_with_resilience_sync(_do_gemini_query, breaker=embedding_breaker, max_retries=3)
+        except Exception as exc:
+            logger.warning("Gemini query embedding failed via resilience engine: %s. Falling back to local dense embed.", exc)
+            return local_dense_embed([query])[0]
+
+    elif provider == "local":
+        return local_dense_embed([query])[0]
+
+    logger.info("No external embedding provider configured; using local ONNX dense embedding for query.")
+    return local_dense_embed([query])[0]

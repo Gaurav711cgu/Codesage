@@ -1,0 +1,167 @@
+{
+  "dataset_version": "1.0",
+  "name": "codesage_golden_code_retrieval_benchmark",
+  "description": "Golden evaluation dataset for measuring Precision@K, Recall@K, and MRR across code retrieval paradigms.",
+  "queries": [
+    {
+      "query_id": "Q01",
+      "query": "jwt authentication token verification and claims decode",
+      "category": "security",
+      "expected_symbols": ["verify_token", "decode_jwt", "authenticate_request"],
+      "expected_files": ["app/core/security.py", "app/services/auth.py"],
+      "difficulty": "easy"
+    },
+    {
+      "query_id": "Q02",
+      "query": "circuit breaker state transitions open half open recovery timeout",
+      "category": "resilience",
+      "expected_symbols": ["CircuitBreaker", "CircuitState", "call_sync", "call_async"],
+      "expected_files": ["app/core/circuit_breaker.py"],
+      "difficulty": "easy"
+    },
+    {
+      "query_id": "Q03",
+      "query": "singleflight request coalescing concurrent duplicate in flight query deduplication",
+      "category": "concurrency",
+      "expected_symbols": ["SingleFlight", "do", "single_flight"],
+      "expected_files": ["app/core/singleflight.py"],
+      "difficulty": "medium"
+    },
+    {
+      "query_id": "Q04",
+      "query": "tree sitter AST parse python class definitions and method boundaries",
+      "category": "ast",
+      "expected_symbols": ["ASTChunker", "chunk_source", "ParentContext", "parse_file"],
+      "expected_files": ["app/services/ast_chunker.py", "app/services/ingestion.py"],
+      "difficulty": "medium"
+    },
+    {
+      "query_id": "Q05",
+      "query": "reciprocal rank fusion rrf constant k 60 merge dense and bm25",
+      "category": "retrieval",
+      "expected_symbols": ["reciprocal_rank_fusion", "retrieve_hybrid", "BM25Okapi"],
+      "expected_files": ["app/services/hybrid_search.py", "app/services/retrieval.py"],
+      "difficulty": "medium"
+    },
+    {
+      "query_id": "Q06",
+      "query": "prompt injection detection canary token adversarial pattern delimiter escape",
+      "category": "security",
+      "expected_symbols": ["PromptInjectionDefense", "detect_adversarial_patterns", "generate_canary"],
+      "expected_files": ["app/core/prompt_defense.py"],
+      "difficulty": "easy"
+    },
+    {
+      "query_id": "Q07",
+      "query": "pydantic structured output json validation automatic repair retry",
+      "category": "validation",
+      "expected_symbols": ["call_llm_structured", "extract_json_payload", "SchemaValidationError"],
+      "expected_files": ["app/services/structured_output.py"],
+      "difficulty": "easy"
+    },
+    {
+      "query_id": "Q08",
+      "query": "exponential backoff with full jitter delay calculation",
+      "category": "resilience",
+      "expected_symbols": ["compute_jittered_delay", "execute_with_resilience_sync", "embedding_breaker"],
+      "expected_files": ["app/core/resilience.py"],
+      "difficulty": "easy"
+    },
+    {
+      "query_id": "Q09",
+      "query": "networkx directed graph 1-hop 2-hop topological call expansion",
+      "category": "graph",
+      "expected_symbols": ["build_graph", "expand_one_hop", "expand_two_hop", "get_graph"],
+      "expected_files": ["app/services/graph.py"],
+      "difficulty": "medium"
+    },
+    {
+      "query_id": "Q10",
+      "query": "query cache jittered ttl stampede prevention eviction",
+      "category": "caching",
+      "expected_symbols": ["query_cache", "compute_jittered_ttl", "set", "get"],
+      "expected_files": ["app/services/cache.py"],
+      "difficulty": "medium"
+    },
+    {
+      "query_id": "Q11",
+      "query": "bm25 okapi inverted index tokenization robertson idf avgdl",
+      "category": "retrieval",
+      "expected_symbols": ["BM25Okapi", "tokenize_code", "search", "index_documents"],
+      "expected_files": ["app/services/hybrid_search.py"],
+      "difficulty": "hard"
+    },
+    {
+      "query_id": "Q12",
+      "query": "chromadb upsert collection cosine distance similarity conversion",
+      "category": "retrieval",
+      "expected_symbols": ["upsert_documents", "query_collection", "_cosine_distance_to_similarity"],
+      "expected_files": ["app/services/chromadb_client.py", "app/services/retrieval.py"],
+      "difficulty": "medium"
+    },
+    {
+      "query_id": "Q13",
+      "query": "idempotency key middleware header redis lock payload hash",
+      "category": "architecture",
+      "expected_symbols": ["IdempotencyMiddleware", "dispatch", "is_idempotent"],
+      "expected_files": ["app/core/idempotency.py"],
+      "difficulty": "hard"
+    },
+    {
+      "query_id": "Q14",
+      "query": "rate limiting slowapi ip key sliding window limiter",
+      "category": "architecture",
+      "expected_symbols": ["limiter", "rate_limit"],
+      "expected_files": ["app/core/rate_limit.py"],
+      "difficulty": "easy"
+    },
+    {
+      "query_id": "Q15",
+      "query": "code review structured issues severity line numbers recommendation",
+      "category": "validation",
+      "expected_symbols": ["review_code", "CodeReviewResponse", "CodeIssue"],
+      "expected_files": ["app/api/v1/code.py", "app/models/schemas.py"],
+      "difficulty": "medium"
+    },
+    {
+      "query_id": "Q16",
+      "query": "offline evaluation precision recall mrr benchmark metrics",
+      "category": "evaluation",
+      "expected_symbols": ["evaluate_retrieval", "compute_mrr", "compute_precision_at_k"],
+      "expected_files": ["benchmarks/offline_eval.py"],
+      "difficulty": "medium"
+    },
+    {
+      "query_id": "Q17",
+      "query": "parent context header imports class docstring attachment to isolated chunks",
+      "category": "ast",
+      "expected_symbols": ["ParentContext", "format_header", "to_document"],
+      "expected_files": ["app/services/ast_chunker.py"],
+      "difficulty": "medium"
+    },
+    {
+      "query_id": "Q18",
+      "query": "gemini flash streaming sse token generation events",
+      "category": "generation",
+      "expected_symbols": ["stream_llm", "_do_stream", "query_repo"],
+      "expected_files": ["app/services/gemini.py", "app/api/v1/repo.py"],
+      "difficulty": "easy"
+    },
+    {
+      "query_id": "Q19",
+      "query": "retrieval verifier quality floor score fallback naive search",
+      "category": "retrieval",
+      "expected_symbols": ["verifier", "RetrievalVerifier", "verify"],
+      "expected_files": ["app/services/retrieval_verifier.py"],
+      "difficulty": "medium"
+    },
+    {
+      "query_id": "Q20",
+      "query": "git depth 1 clone temp directory gitignore pattern matching",
+      "category": "ingestion",
+      "expected_symbols": ["run_ingestion", "_check_repo_size"],
+      "expected_files": ["app/services/ingestion.py"],
+      "difficulty": "easy"
+    }
+  ]
+}

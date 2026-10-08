@@ -36,6 +36,7 @@ from app.core.config import settings
 from app.models.repo import Repo, Task
 from app.services import chromadb_client, graph as graph_svc
 from app.services.gemini import embed_texts
+from app.services.hybrid_search import bm25_manager
 
 logger = logging.getLogger(__name__)
 
@@ -51,56 +52,9 @@ TSX_LANGUAGE = Language(tstypescript.language_tsx())
 _tsx_parser = Parser(TSX_LANGUAGE)
 
 
-# ─── Data model ───────────────────────────────────────────────────────────────
+# ─── Data model & AST Chunker ─────────────────────────────────────────────────
 
-@dataclass
-class CodeUnit:
-    id: str                       # "{repo_id}::{file_rel}::{name}"
-    repo_id: str
-    name: str
-    file: str                     # relative path inside repo
-    type: str                     # "function" | "class"
-    start_line: int
-    end_line: int
-    source: str                   # raw source text of the unit
-    docstring: str = ""
-    calls: list[str] = field(default_factory=list)
-    imports: list[str] = field(default_factory=list)
-
-    def to_document(self) -> str:
-        """Text fed to the embedder."""
-        parts = [
-            f"File: {self.file}",
-            f"Type: {self.type}",
-            f"Name: {self.name}",
-        ]
-        if self.docstring:
-            parts.append(f"Docstring: {self.docstring}")
-        if self.calls:
-            parts.append(f"Calls: {', '.join(self.calls)}")
-        parts.append(self.source)
-        return "\n".join(parts)
-
-    def to_metadata(self) -> dict:
-        return {
-            "name": self.name,
-            "file": self.file,
-            "type": self.type,
-            "start_line": self.start_line,
-            "end_line": self.end_line,
-            "calls": json.dumps(self.calls),
-        }
-
-    def to_graph_dict(self) -> dict:
-        return {
-            "id": self.id,
-            "name": self.name,
-            "file": self.file,
-            "type": self.type,
-            "start_line": self.start_line,
-            "end_line": self.end_line,
-            "calls": self.calls,
-        }
+from app.services.ast_chunker import ASTChunk as CodeUnit, default_ast_chunker
 
 
 # ─── SSE event helpers ────────────────────────────────────────────────────────
@@ -238,106 +192,8 @@ def _parse_fallback_languages(file_path: Path, repo_id: str, file_rel: str, src_
 def parse_file(
     file_path: Path, repo_id: str, file_rel: str
 ) -> list[CodeUnit]:
-    """Parse a single file and return a list of CodeUnit objects."""
-    try:
-        src_bytes = file_path.read_bytes()
-        src_text = src_bytes.decode("utf-8", errors="replace")
-    except Exception as exc:
-        logger.warning("Could not read %s: %s", file_path, exc)
-        return []
-
-    ext = file_path.suffix.lower()
-    if ext == ".py":
-        parser = _parser
-    elif ext == ".js":
-        parser = _js_parser
-    elif ext == ".ts":
-        parser = _ts_parser
-    elif ext in (".tsx", ".jsx"):
-        parser = _tsx_parser
-    else:
-        return _parse_fallback_languages(file_path, repo_id, file_rel, src_text)
-
-    try:
-        tree = parser.parse(src_bytes)
-        root = tree.root_node
-        imports = _extract_imports(root, src_bytes)
-    except Exception as exc:
-        logger.exception("Tree-sitter parse failed for %s: %s", file_path, exc)
-        return []
-    units: list[CodeUnit] = []
-
-    def process_node(node, parent_class: str | None = None):
-        if node.type in ("function_definition", "async_function_definition", "function_declaration", "method_definition", "arrow_function"):
-            name_node = node.child_by_field_name("name")
-            if not name_node and node.parent and node.parent.type == "variable_declarator":
-                name_node = node.parent.child_by_field_name("name")
-            
-            body_node = node.child_by_field_name("body") or node.child_by_field_name("statement_block")
-            if not name_node or not body_node:
-                pass
-            else:
-                name = _node_text(name_node, src_bytes)
-                qualified = f"{parent_class}.{name}" if parent_class else name
-                unit_id = f"{repo_id}::{file_rel}::{qualified}::{node.start_point[0] + 1}"
-                units.append(
-                    CodeUnit(
-                        id=unit_id,
-                        repo_id=repo_id,
-                        name=qualified,
-                        file=file_rel,
-                        type="function",
-                        start_line=node.start_point[0] + 1,
-                        end_line=node.end_point[0] + 1,
-                        source=_node_text(node, src_bytes),
-                        docstring=_extract_docstring(body_node, src_bytes),
-                        calls=_extract_calls(body_node, src_bytes),
-                        imports=imports,
-                    )
-                )
-            
-            # Recurse into nested
-            if body_node:
-                for child in body_node.children:
-                    process_node(child, parent_class)
-
-        elif node.type in ("class_definition", "class_declaration"):
-            name_node = node.child_by_field_name("name")
-            body_node = node.child_by_field_name("body")
-            if not name_node or not body_node:
-                return
-            class_name = _node_text(name_node, src_bytes)
-            unit_id = f"{repo_id}::{file_rel}::{class_name}::{node.start_point[0] + 1}"
-            units.append(
-                CodeUnit(
-                    id=unit_id,
-                    repo_id=repo_id,
-                    name=class_name,
-                    file=file_rel,
-                    type="class",
-                    start_line=node.start_point[0] + 1,
-                    end_line=node.end_point[0] + 1,
-                    source=_node_text(node, src_bytes),
-                    docstring=_extract_docstring(body_node, src_bytes),
-                    calls=[],
-                    imports=imports,
-                )
-            )
-            # Recurse into class body for methods
-            for child in body_node.children:
-                process_node(child, class_name)
-                
-        elif node.type in ("lexical_declaration", "variable_declarator", "export_statement"):
-            for child in node.children:
-                process_node(child, parent_class)
-
-    try:
-        for node in root.children:
-            process_node(node)
-    except Exception as exc:
-        logger.exception("Tree-sitter AST walk failed for %s: %s", file_path, exc)
-
-    return units
+    """Parse a single file and return a list of CodeUnit objects using ASTChunker."""
+    return default_ast_chunker.chunk_file(file_path, repo_id, file_rel)
 
 
 # ─── GitHub size check ────────────────────────────────────────────────────────
@@ -624,8 +480,15 @@ async def run_ingestion(
         )
         await _update_task(db, task_id, "complete", status="complete")
 
-        # Cache the graph in memory for fast retrieval
+        # Cache the graph and BM25 index in memory for fast hybrid retrieval
         graph_svc.cache_graph(repo_id_str, G)
+        if functions:
+            bm25_manager.build_and_register(
+                repo_id_str,
+                [u.id for u in functions],
+                [u.to_document() for u in functions],
+                [u.to_metadata() for u in functions],
+            )
 
         # Clean up clone dir
         shutil.rmtree(clone_dir, ignore_errors=True)

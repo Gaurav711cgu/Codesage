@@ -10,6 +10,7 @@ from google import genai
 from google.genai import types
 
 from app.core.circuit_breaker import gemini_breaker
+from app.core.resilience import execute_with_resilience_sync
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -83,9 +84,9 @@ def _do_generate(prompt: str) -> str:
 
 
 def call_llm(prompt: str) -> str:
-    """Single-shot Gemini call wrapped in circuit breaker."""
+    """Single-shot Gemini call wrapped in circuit breaker and exponential backoff with jitter."""
     try:
-        return gemini_breaker.call_sync(_do_generate, prompt)
+        return execute_with_resilience_sync(_do_generate, prompt, breaker=gemini_breaker, max_retries=3)
     except Exception as exc:
         logger.warning("Gemini generation failed via circuit breaker: %s", exc)
         return _generation_unavailable()

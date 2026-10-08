@@ -23,6 +23,7 @@ from app.core.singleflight import single_flight
 from app.services import chromadb_client, graph as graph_svc
 from app.services.cache import query_cache
 from app.services.embedder import _get_provider, embed_query
+from app.services.hybrid_search import bm25_manager, reciprocal_rank_fusion
 from app.services.retrieval_tracer import RetrievalTrace, tracer
 from app.services.retrieval_verifier import verifier
 
@@ -305,6 +306,108 @@ def retrieve_graph_augmented(
     return chunks, latency
 
 
+def retrieve_hybrid(
+    repo_id: str,
+    query_text: str,
+    n_results: int = TOP_FINAL,
+    rrf_k: int = 60,
+) -> tuple[list[RetrievedChunk], int]:
+    """
+    Dual-retrieval pipeline:
+    1. Dense vector embedding retrieval via ChromaDB
+    2. BM25 keyword search via BM25Okapi
+    3. Reciprocal Rank Fusion (RRF) with configurable constant k=60 to merge rankings
+    """
+    t0 = time.perf_counter()
+
+    # 1. Dense retrieval candidates
+    query_vec = embed_query(query_text)
+    dense_result = chromadb_client.query_collection(
+        repo_id, "_functions", query_embedding=query_vec, n_results=n_results * 2
+    )
+    dense_chunks = _parse_chroma_results(dense_result, "seed")
+    dense_ranked = [(c.id, c.vector_sim) for c in dense_chunks]
+    chunk_by_id: dict[str, _RankedChunk] = {c.id: c for c in dense_chunks}
+
+    # 2. BM25 keyword retrieval candidates
+    bm25_index = bm25_manager.get_index(repo_id)
+    if bm25_index is None:
+        try:
+            col_docs = chromadb_client.get_documents_by_metadata(repo_id, "_functions", {})
+            if not col_docs.get("ids"):
+                col = chromadb_client.get_or_create_collection(repo_id, "_functions")
+                col_docs = col.get(include=["documents", "metadatas"])
+            if col_docs.get("ids"):
+                bm25_index = bm25_manager.build_and_register(
+                    repo_id,
+                    col_docs.get("ids", []),
+                    col_docs.get("documents", []),
+                    col_docs.get("metadatas", []),
+                )
+        except Exception as exc:
+            logger.warning("Could not auto-build BM25 index for repo %s: %s", repo_id, exc)
+
+    bm25_ranked: list[tuple[str, float]] = []
+    if bm25_index:
+        bm25_ranked = bm25_index.search(query_text, top_k=n_results * 2)
+        missing_ids = [doc_id for doc_id, _ in bm25_ranked if doc_id not in chunk_by_id]
+        if missing_ids:
+            fetched = chromadb_client.get_documents_by_ids(repo_id, "_functions", missing_ids)
+            f_ids = fetched.get("ids", [])
+            f_docs = fetched.get("documents", [])
+            f_metas = fetched.get("metadatas", [])
+            for doc_id, doc_text, meta in zip(f_ids, f_docs, f_metas):
+                chunk_by_id[doc_id] = _RankedChunk(
+                    id=doc_id,
+                    name=str(meta.get("name", "")),
+                    file=str(meta.get("file", "")),
+                    lines=[int(meta.get("start_line", 0)), int(meta.get("end_line", 0))],
+                    chunk_type="seed",
+                    vector_sim=0.0,
+                    content=doc_text or "",
+                )
+
+    # 3. Reciprocal Rank Fusion
+    fused_scores = reciprocal_rank_fusion(
+        rankings_list=[dense_ranked, bm25_ranked],
+        k=rrf_k,
+        weights=[1.0, 1.0],
+    )
+
+    top_fused = fused_scores[:n_results]
+    chunks: list[RetrievedChunk] = []
+    for doc_id, score in top_fused:
+        if doc_id in chunk_by_id:
+            c = chunk_by_id[doc_id]
+            chunks.append(
+                RetrievedChunk(
+                    name=c.name,
+                    file=c.file,
+                    lines=c.lines,
+                    type="seed",
+                    score=round(score, 6),
+                    content=c.content,
+                )
+            )
+
+    latency = int((time.perf_counter() - t0) * 1000)
+    tracer.record(
+        RetrievalTrace(
+            query=query_text,
+            repo_id=repo_id,
+            mode="hybrid",
+            seed_count=len(chunks),
+            neighbour_count=0,
+            final_count=len(chunks),
+            latency_ms=latency,
+            embedding_provider=_get_provider(),
+            top_scores=[c.score for c in chunks],
+            exact_symbol_hit=bool(bm25_ranked and bm25_ranked[0][1] > 0),
+        )
+    )
+    return chunks, latency
+
+
 def _raw_retrieve(
     repo_id: str,
     query: str,
@@ -319,7 +422,9 @@ def _raw_retrieve(
         return chunks, 0  # 0ms cache hit latency
 
     # 2. Execute retrieval pipeline
-    if mode in ("graph", "2hop"):
+    if mode == "hybrid":
+        chunks, latency = retrieve_hybrid(repo_id, query, TOP_FINAL)
+    elif mode in ("graph", "2hop"):
         depth = 2 if mode == "2hop" else hop_depth
         chunks, latency = retrieve_graph_augmented(repo_id, query, graph_data_json, hop_depth=depth)
     else:
