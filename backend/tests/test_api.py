@@ -296,3 +296,18 @@ async def test_generate_tests(mock_llm, client):
     assert body["error"] is None
     assert body["data"]["test_count"] == 1
     assert len(body["data"]["cases"]) == 1
+
+
+# ─── GET /api/v1/repo/graph ──────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_get_ast_graph(client):
+    resp = await client.get("/api/v1/repo/graph")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "nodes" in body
+    assert "edges" in body
+    assert body["source"] == "live_ast_engine"
+    assert len(body["nodes"]) > 0
+    assert len(body["edges"]) > 0

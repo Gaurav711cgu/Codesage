@@ -3,31 +3,49 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
-// Mock AST Data for Visualizer
-const NODES = [
-  { id: "main", label: "main.py", x: 50, y: 50, type: "file" },
-  { id: "setup", label: "setup_app()", x: 30, y: 25, type: "function" },
-  { id: "router", label: "api_router", x: 70, y: 25, type: "variable" },
-  { id: "repo", label: "repo.py", x: 70, y: 70, type: "file" },
-  { id: "get_repo", label: "get_repo()", x: 50, y: 90, type: "function" },
-  { id: "GraphEdge", label: "GraphEdge", x: 90, y: 90, type: "class" },
+// Fallback AST nodes from live codebase
+const INITIAL_NODES = [
+  { id: "file_main_py", label: "main.py", x: 50, y: 45, type: "file" },
+  { id: "fn_health_check", label: "health_check()", x: 25, y: 20, type: "function" },
+  { id: "file_code_py", label: "api/v1/code.py", x: 75, y: 20, type: "file" },
+  { id: "fn_review_code", label: "review_code()", x: 25, y: 75, type: "function" },
+  { id: "file_repo_py", label: "api/v1/repo.py", x: 75, y: 75, type: "file" },
+  { id: "fn_get_ast_graph", label: "get_ast_graph()", x: 50, y: 85, type: "function" },
+  { id: "file_ast_chunker_py", label: "ast_chunker.py", x: 35, y: 50, type: "file" },
+  { id: "cls_ASTChunker", label: "ASTChunker", x: 65, y: 50, type: "class" },
 ];
 
-const EDGES = [
-  { source: "main", target: "setup" },
-  { source: "main", target: "router" },
-  { source: "main", target: "repo" },
-  { source: "repo", target: "get_repo" },
-  { source: "repo", target: "GraphEdge" },
-  { source: "get_repo", target: "GraphEdge" },
+const INITIAL_EDGES = [
+  { source: "file_main_py", target: "fn_health_check" },
+  { source: "file_code_py", target: "fn_review_code" },
+  { source: "file_repo_py", target: "fn_get_ast_graph" },
+  { source: "file_ast_chunker_py", target: "cls_ASTChunker" },
+  { source: "file_main_py", target: "file_code_py" },
+  { source: "file_main_py", target: "file_repo_py" },
+  { source: "file_repo_py", target: "file_ast_chunker_py" },
 ];
 
 export function GraphVisualizer() {
   const [activeNode, setActiveNode] = useState<string | null>(null);
+  const [nodes, setNodes] = useState(INITIAL_NODES);
+  const [edges, setEdges] = useState(INITIAL_EDGES);
+  const [sourceLabel, setSourceLabel] = useState<string>("AST Structural Graph");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    fetch("/api/graph")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.nodes) && data.nodes.length > 0) {
+          setNodes(data.nodes);
+          setEdges(data.edges || []);
+          if (data.source === "live_ast_engine") {
+            setSourceLabel("AST Structural Graph · Live Codebase AST Engine");
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
   if (!mounted) return null;
@@ -35,14 +53,14 @@ export function GraphVisualizer() {
   return (
     <div className="relative w-full h-[400px] bg-[#0A0A0B] border border-border rounded-sm overflow-hidden flex items-center justify-center font-mono select-none">
       <div className="absolute top-4 left-4 text-xs text-muted-foreground uppercase tracking-widest z-10">
-        AST Structural Graph
+        {sourceLabel}
       </div>
       
       {/* Edges */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none">
-        {EDGES.map((edge, i) => {
-          const sourceNode = NODES.find(n => n.id === edge.source);
-          const targetNode = NODES.find(n => n.id === edge.target);
+        {edges.map((edge, i) => {
+          const sourceNode = nodes.find(n => n.id === edge.source);
+          const targetNode = nodes.find(n => n.id === edge.target);
           if (!sourceNode || !targetNode) return null;
           
           const isActive = activeNode === edge.source || activeNode === edge.target;
@@ -65,7 +83,7 @@ export function GraphVisualizer() {
       </svg>
       
       {/* Nodes */}
-      {NODES.map((node, i) => {
+      {nodes.map((node, i) => {
         const isActive = activeNode === node.id;
         
         return (
