@@ -1,99 +1,93 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
-import anime from 'animejs';
+import React from 'react';
 
-const features = [
+const subsystems = [
   {
-    title: "Semantic Code Graph",
-    description: "Parses abstract syntax trees into an interconnected knowledge graph, understanding deep relationships between functions and classes.",
-    colSpan: "md:col-span-2",
-    icon: "M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" // Code icon
+    code: "AST-01",
+    subsystem: "AST Syntax Parsing",
+    engine: "Tree-sitter 0.22",
+    sla: "Zero Parse Loss",
+    detail: "Parses source files into concrete syntax trees using native C-bindings. Extracts function signatures, class hierarchies, and decorator scopes."
   },
   {
-    title: "Zero-Trust Ready",
-    description: "Built for enterprise security. Local-first execution prevents IP leakage to public models.",
-    colSpan: "md:col-span-1",
-    icon: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" // Lock icon
+    code: "GRP-02",
+    subsystem: "Relational Call Graph",
+    engine: "NetworkX 3.2 + SQLite",
+    sla: "1-Hop Expansion",
+    detail: "Constructs directed graphs linking caller and callee symbols. Expands seed vector matches with structural compiler context."
   },
   {
-    title: "Sub-50ms Caching",
-    description: "Distributed Redis cluster caches AST parses and embedding lookups for instant sequential queries.",
-    colSpan: "md:col-span-1",
-    icon: "M13 10V3L4 14h7v7l9-11h-7z" // Lightning icon
+    code: "CON-03",
+    subsystem: "SingleFlight Coalescer",
+    engine: "Request Coalescing Lock",
+    sla: "Zero Thundering Herd",
+    detail: "Deduplicates concurrent identical RAG queries in-flight. Dispatches a single vector search and shares the result across all waiting callers."
   },
   {
-    title: "Vector + Graph RAG",
-    description: "Combines dense vector search (ChromaDB) with structural traversal (NetworkX) to conquer the context limit.",
-    colSpan: "md:col-span-2",
-    icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" // Database icon
+    code: "VEC-04",
+    subsystem: "Dense Vector Storage",
+    engine: "ChromaDB HNSW Cosine",
+    sla: "<50ms P95 Retrieval",
+    detail: "Indexes 3072-dimensional embeddings locally. Zero IP leakage to public training sets with local lexical fallback."
   }
 ];
 
 export default function BentoFeatures() {
-  const gridRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Simple intersection observer to trigger Anime.js stagger
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          anime({
-            targets: '.bento-card',
-            translateY: [40, 0],
-            opacity: [0, 1],
-            delay: anime.stagger(150),
-            duration: 1000,
-            easing: 'easeOutExpo'
-          });
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1 });
-
-    if (gridRef.current) {
-      observer.observe(gridRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <section className="relative z-10 py-24 px-4 w-full max-w-6xl mx-auto pointer-events-auto">
-      <div className="mb-16 text-center md:text-left">
-        <h2 className="text-sm font-mono text-gray-500 uppercase tracking-widest mb-3">Architecture</h2>
-        <p className="text-3xl md:text-4xl font-semibold text-white tracking-tight">
-          Designed for structural intelligence.
-        </p>
+    <section className="w-full max-w-5xl mx-auto my-8 pointer-events-auto font-sans">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-3 mb-6 gap-2">
+        <div>
+          <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest block">
+            [ SPECIFICATION MATRIX ]
+          </span>
+          <h2 className="text-xl font-bold font-mono text-foreground">
+            System Subsystems &amp; Invariants
+          </h2>
+        </div>
+        <div className="font-mono text-xs text-muted-foreground">
+          TOTAL SUBSYSTEMS: 04 // PROTOCOL: v2.0
+        </div>
       </div>
 
-      <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {features.map((feat, i) => (
-          <div 
-            key={i} 
-            className={`bento-card opacity-0 translate-y-10 group relative p-8 rounded-3xl overflow-hidden ${feat.colSpan}`}
-            style={{ 
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-              backdropFilter: 'blur(10px)'
-            }}
-          >
-            {/* Subtle hover gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            
-            <div className="relative z-10">
-              <div className="w-12 h-12 mb-6 rounded-2xl flex items-center justify-center bg-white/5 border border-white/10 group-hover:bg-white/10 transition-colors duration-300">
-                <svg className="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={feat.icon} />
-                </svg>
+      <div className="border border-border bg-surface rounded-[3px] overflow-hidden">
+        {/* Table Header */}
+        <div className="hidden md:grid grid-cols-12 px-6 py-3 border-b border-border bg-surface-hi/40 text-[11px] font-mono text-muted-foreground uppercase tracking-wider">
+          <div className="col-span-1">ID</div>
+          <div className="col-span-3">Subsystem</div>
+          <div className="col-span-3">Engine / Stack</div>
+          <div className="col-span-2">Invariant</div>
+          <div className="col-span-3 text-right">Verification</div>
+        </div>
+
+        {/* Rows */}
+        <div className="divide-y divide-border">
+          {subsystems.map((item) => (
+            <div 
+              key={item.code} 
+              className="p-5 md:px-6 md:py-4 grid grid-cols-1 md:grid-cols-12 items-start md:items-center gap-2 md:gap-4 hover:bg-surface-hi/50 transition-colors"
+            >
+              <div className="col-span-1 font-mono text-xs font-semibold text-primary">
+                {item.code}
               </div>
-              <h3 className="text-xl font-medium text-white mb-3">{feat.title}</h3>
-              <p className="text-gray-400 font-light leading-relaxed">
-                {feat.description}
-              </p>
+              <div className="col-span-3">
+                <div className="text-sm font-semibold text-foreground">{item.subsystem}</div>
+                <div className="text-xs text-muted-foreground md:hidden mt-1">{item.detail}</div>
+              </div>
+              <div className="col-span-3 font-mono text-xs text-muted-foreground">
+                {item.engine}
+              </div>
+              <div className="col-span-2">
+                <span className="inline-block px-2 py-0.5 border border-border bg-background font-mono text-[10px] text-foreground rounded-[2px] uppercase">
+                  {item.sla}
+                </span>
+              </div>
+              <div className="col-span-3 hidden md:block text-right font-mono text-xs text-muted-foreground">
+                {item.detail}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );

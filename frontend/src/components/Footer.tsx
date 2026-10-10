@@ -5,47 +5,105 @@ import Link from 'next/link';
 
 export default function Footer() {
   return (
-    <footer className="py-12 px-4 sm:px-6 lg:px-8 mt-auto" style={{ borderTop: '1px solid var(--cs-border)' }}>
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-6">
-          <Link href="/" className="font-head font-bold text-lg mb-1 inline-block no-underline" style={{ color: 'var(--cs-text)' }}>
-            CodeSageZ — Graph-Augmented Retrieval
-          </Link>
-          <div className="text-xs" style={{ color: 'var(--cs-text3)' }}>
-            Built on Gemini + ChromaDB + NetworkX
+    <footer className="mt-auto border-t border-border bg-surface text-muted-foreground font-mono text-xs py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-8">
+        {/* Left Column: System identity & Telemetry */}
+        <div className="flex flex-col gap-2 max-w-sm">
+          <div className="flex items-center gap-2 text-foreground font-bold text-sm">
+            <span className="text-primary">&gt;_</span>
+            <span>CodeSageZ Platform</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Enterprise Graph-RAG inference engine. AST parsing via Tree-sitter, dense semantic vector search via ChromaDB, and structural graph traversal with NetworkX.
+          </p>
+          <div className="flex items-center gap-2 pt-2 text-[10px]">
+            <span className="w-1.5 h-1.5 bg-primary rounded-[1px]"></span>
+            <span className="text-foreground">MODEL: gemini-2.5-flash</span>
+            <span className="text-muted-foreground">|</span>
+            <span className="text-foreground">LATENCY: &lt;50ms</span>
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-3 mb-6">
-          <a href="https://github.com/Gaurav711cgu/Codesage" target="_blank" rel="noopener noreferrer"
-            className="text-xs px-3 py-1.5 rounded-md transition-colors duration-150 no-underline"
-            style={{ background: 'var(--cs-surface)', color: 'var(--cs-text2)', border: '1px solid var(--cs-border)' }}>
-            GitHub Repository
-          </a>
-        </div>
+        {/* Center Columns: Site Index */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 text-[11px]">
+          <div>
+            <div className="text-foreground font-semibold uppercase tracking-wider mb-2">[ Core Engine ]</div>
+            <ul className="space-y-1.5">
+              <li>
+                <Link href="/architecture" className="hover:text-primary transition-colors no-underline">
+                  Architecture
+                </Link>
+              </li>
+              <li>
+                <Link href="/benchmarks" className="hover:text-primary transition-colors no-underline">
+                  Benchmarks
+                </Link>
+              </li>
+              <li>
+                <Link href="/playground" className="hover:text-primary transition-colors no-underline">
+                  Playground
+                </Link>
+              </li>
+              <li>
+                <Link href="/repos" className="hover:text-primary transition-colors no-underline">
+                  Repository Ingestion
+                </Link>
+              </li>
+            </ul>
+          </div>
 
-        {/* Quick nav */}
-        <div className="flex flex-wrap justify-center gap-2 mb-6">
-          {[
-            { to: '/playground', label: 'Playground' },
-            { to: '/repos', label: 'Repos' },
-            { to: '/benchmarks', label: 'Benchmarks' },
-            { to: '/architecture', label: 'Architecture' },
-          ].map(link => (
-            <Link key={link.to} href={link.to} className="text-xs transition-colors duration-150 no-underline"
-              style={{ color: 'var(--cs-text3)' }}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--cs-text2)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--cs-text3)'}>
-              {link.label}
-            </Link>
-          ))}
-        </div>
+          <div>
+            <div className="text-foreground font-semibold uppercase tracking-wider mb-2">[ Runtime & Eval ]</div>
+            <ul className="space-y-1.5">
+              <li>
+                <Link href="/inference" className="hover:text-primary transition-colors no-underline">
+                  Inference &amp; KV Cache
+                </Link>
+              </li>
+              <li>
+                <Link href="/training" className="hover:text-primary transition-colors no-underline">
+                  Training Dynamics
+                </Link>
+              </li>
+              <li>
+                <Link href="/failures" className="hover:text-primary transition-colors no-underline">
+                  Failure Audits
+                </Link>
+              </li>
+              <li>
+                <Link href="/mcp" className="hover:text-primary transition-colors no-underline">
+                  MCP Protocol
+                </Link>
+              </li>
+            </ul>
+          </div>
 
-        <div className="text-center">
-          <p className="text-xs italic" style={{ color: 'var(--cs-text3)' }}>
-            &quot;Solving real codebase context limits with structural graph expansions.&quot;
-          </p>
+          <div>
+            <div className="text-foreground font-semibold uppercase tracking-wider mb-2">[ Artifacts ]</div>
+            <ul className="space-y-1.5">
+              <li>
+                <Link href="/stories" className="hover:text-primary transition-colors no-underline">
+                  Engineering Stories
+                </Link>
+              </li>
+              <li>
+                <a href="https://github.com/Gaurav711cgu/Codesage" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors no-underline">
+                  GitHub Source
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/Gaurav711cgu" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors no-underline">
+                  Author Profile
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto mt-8 pt-4 border-t border-border/40 flex flex-col sm:flex-row justify-between items-center gap-2 text-[10px] text-muted-foreground">
+        <div>&copy; 2026 CodeSageZ Systems. All systems operational.</div>
+        <div>Built for production LLM code generation &amp; high-throughput retrieval.</div>
       </div>
     </footer>
   );

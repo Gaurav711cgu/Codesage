@@ -71,15 +71,15 @@ export function SystemSimulation() {
           <div className="flex flex-col gap-2 p-4 border border-border bg-surface-hi/50 rounded-sm">
             <span className="text-xs font-mono text-primary mb-1">Architecture Components:</span>
             <div className="flex items-center gap-2 text-sm text-foreground">
-              <span className="w-2 h-2 rounded-full bg-success"></span> 
+              <span className="w-2 h-2 rounded-[1px] bg-success"></span> 
               {mode === "ingestion" ? "Tree-sitter Parser" : "SingleFlight Group"}
             </div>
             <div className="flex items-center gap-2 text-sm text-foreground">
-              <span className="w-2 h-2 rounded-full bg-success"></span> 
+              <span className="w-2 h-2 rounded-[1px] bg-success"></span> 
               {mode === "ingestion" ? "NetworkX Graph Builder" : "Circuit Breaker"}
             </div>
             <div className="flex items-center gap-2 text-sm text-foreground">
-              <span className="w-2 h-2 rounded-full bg-success"></span> 
+              <span className="w-2 h-2 rounded-[1px] bg-success"></span> 
               {mode === "ingestion" ? "ChromaDB Upsert" : "Graph Edge Traversal"}
             </div>
           </div>

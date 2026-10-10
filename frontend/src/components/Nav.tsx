@@ -3,16 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Image from 'next/image';
 
 const NAV_LINKS = [
-  { to: '/playground', label: 'Playground' },
-  { to: '/training', label: 'Training' },
-  { to: '/benchmarks', label: 'Benchmarks' },
-  { to: '/inference', label: 'Inference' },
-  { to: '/failures', label: 'Failures' },
-  { to: '/mcp', label: 'MCP' },
-  { to: '/stories', label: 'Stories' },
+  { to: '/architecture', label: 'Architecture' },
+  { to: '/benchmarks',   label: 'Benchmarks' },
+  { to: '/playground',   label: 'Playground' },
+  { to: '/training',     label: 'Training' },
+  { to: '/inference',    label: 'Inference' },
+  { to: '/failures',     label: 'Failures' },
+  { to: '/mcp',          label: 'MCP' },
+  { to: '/stories',      label: 'Stories' },
 ];
 
 export default function Nav() {
@@ -21,12 +21,11 @@ export default function Nav() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 60);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
@@ -35,23 +34,36 @@ export default function Nav() {
     <>
       <nav
         data-testid="sticky-nav"
-        className="fixed top-0 left-0 right-0 z-50 transition-colors duration-200"
+        className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-150 border-b ${
+          scrolled
+            ? 'bg-background/95 backdrop-blur-md border-border shadow-sm'
+            : 'bg-background/80 border-border/40 backdrop-blur-sm'
+        }`}
         role="navigation"
         aria-label="Main navigation"
-        style={{
-          background: scrolled ? 'rgba(10,10,11,0.92)' : 'transparent',
-          backdropFilter: scrolled ? 'blur(16px)' : 'none',
-          borderBottom: scrolled ? '1px solid var(--cs-border)' : '1px solid transparent',
-        }}
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-20">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group no-underline" aria-label="CodeSage Home">
-            <span className="font-playfair font-bold text-xl tracking-tight" style={{ color: 'var(--cs-text)' }}>CodeSage</span>
-          </Link>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14">
+          {/* Logo & Technical Monogram */}
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2 font-mono font-bold text-sm tracking-tight text-foreground hover:text-primary transition-colors no-underline">
+              {/* Minimalist AST Compiler SVG Monogram */}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" className="text-primary">
+                <rect x="3" y="3" width="6" height="6" />
+                <rect x="15" y="3" width="6" height="6" />
+                <rect x="9" y="15" width="6" height="6" />
+                <path d="M6 9v3h6v3" />
+                <path d="M18 9v3h-6" />
+              </svg>
+              <span>codesagez</span>
+            </Link>
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 border border-border bg-surface text-[10px] font-mono text-muted-foreground uppercase tracking-wider rounded-[2px]">
+              <span className="w-1.5 h-1.5 bg-primary rounded-[1px]"></span>
+              SYS:ONLINE
+            </span>
+          </div>
 
-          {/* Center links (desktop) */}
-          <div className="hidden md:flex items-center gap-1">
+          {/* Desktop Navigation Links */}
+          <div className="hidden lg:flex items-center gap-1">
             {NAV_LINKS.map((link) => {
               const active = pathname === link.to;
               return (
@@ -59,11 +71,11 @@ export default function Nav() {
                   key={link.to}
                   href={link.to}
                   data-testid={`nav-link-${link.to.slice(1)}`}
-                  className="text-sm px-4 py-2 rounded-full transition-all duration-300 no-underline"
-                  style={{
-                    color: active ? 'var(--cs-primary)' : 'var(--cs-text2)',
-                    background: active ? 'rgba(255,51,102,0.08)' : 'transparent',
-                  }}
+                  className={`text-xs font-mono uppercase tracking-wider px-3 py-1.5 transition-colors no-underline rounded-[2px] ${
+                    active
+                      ? 'text-primary bg-primary/10 border border-primary/30'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-surface border border-transparent'
+                  }`}
                 >
                   {link.label}
                 </Link>
@@ -71,71 +83,64 @@ export default function Nav() {
             })}
           </div>
 
-          {/* Right buttons */}
-          <div className="flex items-center gap-4">
+          {/* Right Action buttons */}
+          <div className="flex items-center gap-2.5">
             <a
               href="https://github.com/Gaurav711cgu"
               target="_blank"
               rel="noopener noreferrer"
               data-testid="nav-github-link"
-              className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 hover:bg-white/5 no-underline"
-              style={{ border: '1px solid var(--cs-border)', color: 'var(--cs-text)' }}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 border border-border bg-surface hover:bg-surface-hi text-xs font-mono text-muted-foreground hover:text-foreground transition-colors no-underline rounded-[2px]"
             >
-              <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-              GitHub
+              <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+              </svg>
+              <span>GitHub</span>
             </a>
 
-            {/* Mobile menu button */}
+            <Link
+              href="/playground"
+              data-testid="nav-open-playground-button"
+              className="px-3.5 py-1.5 border border-primary/40 bg-surface hover:bg-primary/10 text-primary font-mono text-xs uppercase tracking-wider transition-colors no-underline rounded-[2px] flex items-center gap-1.5"
+            >
+              <span className="text-[10px]">&gt;_</span>
+              <span>Console</span>
+            </Link>
+
+            {/* Mobile menu toggle */}
             <button
-              className="md:hidden p-3 rounded-full transition-colors duration-150 active:scale-95"
-              style={{ 
-                color: 'var(--cs-text)', 
-                background: mobileOpen ? 'rgba(255,51,102,0.1)' : 'transparent',
-                minWidth: '44px',
-                minHeight: '44px'
-              }}
+              className="lg:hidden p-1.5 border border-border bg-surface text-muted-foreground hover:text-foreground rounded-[2px]"
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileOpen}
               data-testid="mobile-menu-toggle"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
                 {mobileOpen ? (
                   <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
                 ) : (
-                  <><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></>
+                  <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>
                 )}
               </svg>
             </button>
-
-            <Link
-              href="/playground"
-              data-testid="nav-open-playground-button"
-              className="hidden sm:inline-flex px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 hover:scale-105 shadow-md no-underline"
-              style={{ background: 'linear-gradient(135deg, #FF3366, #FB7185)', color: 'white' }}
-            >
-              Try Live Demo
-            </Link>
           </div>
         </div>
       </nav>
 
-      {/* Mobile menu dropdown */}
+      {/* Mobile Menu Dropdown */}
       {mobileOpen && (
-        <div 
-          className="fixed inset-0 z-40 md:hidden animate-fadeIn" 
+        <div
+          className="fixed inset-0 z-40 lg:hidden bg-background/90 backdrop-blur-md pt-16 px-4"
           onClick={() => setMobileOpen(false)}
           data-testid="mobile-menu-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Mobile navigation menu"
         >
-          <div className="absolute inset-0" style={{ background: 'rgba(8,11,18,0.85)', backdropFilter: 'blur(8px)' }}></div>
-          <div 
-            className="relative top-16 mx-4 rounded-xl p-4 space-y-1 animate-slideDown shadow-2xl"
-            style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)' }}
-            onClick={e => e.stopPropagation()}
+          <div
+            className="border border-border bg-surface p-4 flex flex-col gap-2 rounded-[2px]"
+            onClick={(e) => e.stopPropagation()}
           >
+            <div className="text-[11px] font-mono text-muted-foreground uppercase tracking-widest pb-2 border-b border-border">
+              Subsystem Index
+            </div>
             {NAV_LINKS.map((link) => {
               const active = pathname === link.to;
               return (
@@ -143,45 +148,16 @@ export default function Nav() {
                   key={link.to}
                   href={link.to}
                   data-testid={`mobile-nav-link-${link.to.slice(1)}`}
-                  className="block text-base px-4 py-3 rounded-lg transition-all duration-150 active:scale-98 no-underline"
-                  style={{
-                    color: active ? 'var(--cs-blue)' : 'var(--cs-text2)',
-                    background: active ? 'rgba(59,130,246,0.12)' : 'transparent',
-                    minHeight: '44px',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}
+                  className={`px-3 py-2 text-xs font-mono uppercase tracking-wider border rounded-[2px] ${
+                    active
+                      ? 'border-primary text-primary bg-primary/10'
+                      : 'border-border text-muted-foreground hover:text-foreground hover:bg-surface-hi'
+                  }`}
                 >
                   {link.label}
                 </Link>
               );
             })}
-            <div className="pt-2 mt-2" style={{ borderTop: '1px solid var(--cs-border)' }}>
-              <Link 
-                href="/stack" 
-                data-testid="mobile-nav-link-stack"
-                className="block text-base px-4 py-3 rounded-lg transition-colors duration-150 no-underline" 
-                style={{ color: 'var(--cs-text3)', minHeight: '44px', display: 'flex', alignItems: 'center' }}
-              >
-                Tech Stack
-              </Link>
-              <Link 
-                href="/resume" 
-                data-testid="mobile-nav-link-resume"
-                className="block text-base px-4 py-3 rounded-lg transition-colors duration-150 no-underline" 
-                style={{ color: 'var(--cs-text3)', minHeight: '44px', display: 'flex', alignItems: 'center' }}
-              >
-                Resume
-              </Link>
-            </div>
-            <Link 
-              href="/playground"
-              data-testid="mobile-nav-cta"
-              className="block w-full text-center px-4 py-3 rounded-lg text-base font-semibold mt-3 text-white transition-transform duration-150 active:scale-98 no-underline"
-              style={{ background: 'linear-gradient(135deg, #3B82F6, #60A5FA)', minHeight: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              Try Live Demo
-            </Link>
           </div>
         </div>
       )}

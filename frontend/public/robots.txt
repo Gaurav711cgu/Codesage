@@ -1,0 +1,29 @@
+# CodeSageZ AI Search & Citation Bot Configuration
+User-agent: *
+Allow: /
+
+# Explicit AI Search & Citation Engines (AEO / GEO)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Prevent training scrape dumps without citation
+User-agent: CCBot
+Disallow: /

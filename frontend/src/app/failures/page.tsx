@@ -1,80 +1,79 @@
+"use client";
+
 import React from 'react';
 import { FAILURE_MODES } from '@/constants/content';
-import RevealSection from '@/components/RevealSection';
 
-
-import { AlertTriangle, Info, ShieldAlert } from 'lucide-react';
-
-const severityMap: Record<string, { color: string, icon: React.ReactNode }> = {
-  high: { color: 'text-red-400 border-red-500/30 bg-red-500/10', icon: <ShieldAlert size={20} /> },
-  medium: { color: 'text-amber-400 border-amber-500/30 bg-amber-500/10', icon: <AlertTriangle size={20} /> },
-  low: { color: 'text-blue-400 border-blue-500/30 bg-blue-500/10', icon: <Info size={20} /> },
+const severityBadge: Record<string, { label: string; class: string }> = {
+  high: { label: "SEV-1 // CRITICAL", class: "border-destructive/40 text-destructive bg-destructive/10" },
+  medium: { label: "SEV-2 // ELEVATED", class: "border-warning/40 text-warning bg-warning/10" },
+  low: { label: "SEV-3 // LOW", class: "border-border text-muted-foreground bg-background" },
 };
 
 export default function FailuresPage() {
   return (
-    <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center p-4 sm:p-8">
-      
-      
-      <main className="flex-1 w-full max-w-4xl mt-24 mb-16 space-y-12">
-        <RevealSection className="space-y-6">
-          <div className="inline-block px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-red-400 text-sm font-semibold mb-4">
-            Phase 3: Post-Mortems
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
-            Failure Modes &amp; Fixes
-          </h1>
-          <p className="text-gray-400 text-lg leading-relaxed max-w-2xl">
-            Building LLM systems is messy. This is a transparent log of what went wrong during training and deployment, and the engineering required to fix it.
-          </p>
-        </RevealSection>
+    <div className="max-w-5xl mx-auto py-12 space-y-12 px-4 sm:px-6 font-sans">
+      {/* Header */}
+      <div className="border-b border-border pb-6">
+        <div className="text-[11px] font-mono text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center gap-2">
+          <span>CODESAGEZ</span>
+          <span className="text-border">/</span>
+          <span className="text-primary font-semibold">INCIDENT POST-MORTEMS</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold font-mono text-foreground">Edge Cases &amp; Root Cause Analysis</h1>
+        <p className="mt-2 text-sm text-muted-foreground max-w-2xl leading-relaxed">
+          Production engineering audit detailing real failure modes encountered during repository AST ingestion, QLoRA quantization, and vLLM continuous batching, with applied mitigations.
+        </p>
+      </div>
 
-        <div className="space-y-8 mt-16">
+      <main className="w-full space-y-6">
+        <div className="border border-border bg-surface rounded-[3px] divide-y divide-border overflow-hidden">
           {FAILURE_MODES.map((failure, idx) => {
-            const sev = severityMap[failure.severity] || severityMap.low;
+            const badge = severityBadge[failure.severity] || severityBadge.low;
             return (
-              <RevealSection key={idx} delay={idx * 100} className="rounded-xl border border-white/10 bg-[#0a0a0a] overflow-hidden flex flex-col">
-                <div className="border-b border-white/10 bg-white/5 px-6 py-4 flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-white flex items-center gap-3">
-                    <span className={`${sev.color.split(' ')[0]}`}>{sev.icon}</span>
-                    {failure.title}
-                  </h3>
-                  <span className={`px-2 py-1 text-xs font-bold uppercase rounded border ${sev.color}`}>
-                    {failure.severity} SEVERITY
+              <div key={idx} className="p-6 space-y-4 hover:bg-surface-hi/30 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs text-muted-foreground">INC-0{idx + 1}</span>
+                    <h2 className="text-sm font-bold font-mono text-foreground">{failure.title}</h2>
+                  </div>
+                  <span className={`px-2 py-0.5 font-mono text-[10px] uppercase font-semibold border rounded-[2px] self-start sm:self-auto ${badge.class}`}>
+                    {badge.label}
                   </span>
                 </div>
                 
-                <div className="p-6 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <h4 className="text-gray-500 text-xs font-bold uppercase tracking-wider">The Problem</h4>
-                      <p className="text-gray-300 text-sm leading-relaxed">{failure.problem}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Root Cause</h4>
-                      <p className="text-gray-300 text-sm leading-relaxed">{failure.rootCause}</p>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs leading-relaxed">
+                  <div className="space-y-1">
+                    <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider block">
+                      [ FAILURE TRIGGER ]
+                    </span>
+                    <p className="text-foreground/90">{failure.problem}</p>
                   </div>
-                  
-                  <div className="border-t border-white/10 pt-6">
-                    <h4 className="text-green-400 text-xs font-bold uppercase tracking-wider mb-3">The Fix</h4>
-                    <div className="bg-green-500/5 border border-green-500/20 rounded p-4 text-green-400 text-sm leading-relaxed">
-                      {failure.fix}
-                    </div>
-                  </div>
-                  
-                  <div className="bg-black/50 rounded p-4 text-gray-400 text-xs flex items-start gap-2 border border-white/5">
-                    <Info size={16} className="shrink-0 mt-0.5" />
-                    <span><strong className="text-gray-300">Residual Risk:</strong> {failure.risk}</span>
+                  <div className="space-y-1">
+                    <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider block">
+                      [ ROOT CAUSE DIAGNOSIS ]
+                    </span>
+                    <p className="text-foreground/90">{failure.rootCause}</p>
                   </div>
                 </div>
-              </RevealSection>
+                
+                <div className="p-3 border border-border bg-background rounded-[2px] space-y-1 font-mono text-xs">
+                  <span className="text-[10px] text-primary uppercase tracking-wider block">
+                    &gt; APPLIED ARCHITECTURAL MITIGATION:
+                  </span>
+                  <div className="text-foreground/90 leading-relaxed">
+                    {failure.fix}
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground pt-1">
+                  <span>Residual Risk Boundary: <span className="text-foreground">{failure.risk}</span></span>
+                  <span className="text-success">[STATUS: STABILIZED]</span>
+                </div>
+              </div>
             );
           })}
         </div>
       </main>
-      
-      
     </div>
   );
 }

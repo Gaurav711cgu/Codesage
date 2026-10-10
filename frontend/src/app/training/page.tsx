@@ -1,92 +1,85 @@
+"use client";
+
 import React from 'react';
 import { TRAINING_STAGES } from '@/constants/content';
-import RevealSection from '@/components/RevealSection';
-
-
-import { Database, Sliders, LineChart, GitMerge, Cloud } from 'lucide-react';
-
-const iconMap: Record<string, React.ReactNode> = {
-  database: <Database size={24} color="currentColor" />,
-  sliders: <Sliders size={24} color="currentColor" />,
-  chart: <LineChart size={24} color="currentColor" />,
-  merge: <GitMerge size={24} color="currentColor" />,
-  cloud: <Cloud size={24} color="currentColor" />,
-};
 
 export default function TrainingPage() {
   return (
-    <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center p-4 sm:p-8">
-      
-      
-      <main className="flex-1 w-full max-w-4xl mt-24 mb-16 space-y-12">
-        <RevealSection className="space-y-6">
-          <div className="inline-block px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-sm font-semibold mb-4">
-            Phase 1: Knowledge Acquisition
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
-            Training &amp; Fine-Tuning
-          </h1>
-          <p className="text-gray-400 text-lg leading-relaxed max-w-2xl">
-            A comprehensive look at the end-to-end pipeline for turning a base Llama 3.3 8B model into a highly-specialized code completion engine.
-          </p>
-        </RevealSection>
+    <div className="max-w-5xl mx-auto py-12 space-y-12 px-4 sm:px-6 font-sans">
+      {/* Header */}
+      <div className="border-b border-border pb-6">
+        <div className="text-[11px] font-mono text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center gap-2">
+          <span>CODESAGEZ</span>
+          <span className="text-border">/</span>
+          <span className="text-primary font-semibold">QLORA TRAINING PIPELINE</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold font-mono text-foreground">Adaptation &amp; Training Dynamics</h1>
+        <p className="mt-2 text-sm text-muted-foreground max-w-2xl leading-relaxed">
+          Full execution lifecycle for fine-tuning Llama-3.3-8B and Qwen2.5-Coder across 52K verified code pairs using QLoRA, DoRA, and NF4 quantization on Modal A100 GPUs ($9.40 total compute).
+        </p>
+      </div>
 
-        <div className="space-y-16 mt-16 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-green-500/20 before:to-transparent">
+      <main className="w-full space-y-8">
+        <div className="border border-border bg-surface rounded-[3px] divide-y divide-border overflow-hidden">
           {TRAINING_STAGES.map((stage, idx) => (
-            <RevealSection key={idx} delay={idx * 100} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-              {/* Timeline dot */}
-              <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-black bg-green-500/20 text-green-400 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 absolute left-0 md:left-1/2 transform -translate-x-1/2">
-                {iconMap[stage.icon] || <Database size={16} />}
-              </div>
-
-              {/* Content Card */}
-              <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] ml-auto md:ml-0 p-6 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm hover:border-green-500/30 transition-all">
-                <div className="flex items-center gap-3 mb-4">
-                  <h3 className="text-xl font-bold text-white">{stage.title}</h3>
+            <div key={idx} className="p-6 flex flex-col md:flex-row gap-6 hover:bg-surface-hi/30 transition-colors">
+              {/* Stage Identifier & Constraints */}
+              <div className="shrink-0 md:w-52 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-primary font-mono text-xs font-semibold">STAGE-0{idx + 1}</span>
+                  <span className="text-border">/</span>
+                  <h2 className="text-sm font-bold font-mono text-foreground">{stage.title}</h2>
                 </div>
-                
-                <div className="mb-4 inline-block px-2 py-1 bg-green-500/10 text-green-400 text-xs font-semibold rounded">
+                <div className="inline-block px-2 py-0.5 border border-border bg-background font-mono text-[10px] text-muted-foreground rounded-[2px] uppercase">
                   {stage.badge}
                 </div>
+              </div>
+
+              {/* Technical Specifications */}
+              <div className="flex-1 space-y-4">
+                <p className="text-xs text-foreground font-mono leading-relaxed bg-background p-2.5 border border-border rounded-[2px]">
+                  {stage.summary}
+                </p>
                 
-                <p className="text-gray-400 text-sm mb-6">{stage.summary}</p>
-                
-                <div className="space-y-4 text-sm text-gray-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-xs">
                   {Object.entries(stage.content).map(([key, value], i) => (
-                    <div key={i} className="border-t border-white/10 pt-3">
-                      <h4 className="text-green-400 capitalize mb-2">{key.replace(/([A-Z])/g, ' $1').trim()}</h4>
+                    <div key={i} className="space-y-1.5">
+                      <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest block border-b border-border/50 pb-0.5">
+                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
                       {Array.isArray(value) ? (
-                        <ul className="list-disc list-inside space-y-1">
+                        <ul className="space-y-1 font-mono text-[11px]">
                           {value.map((item, j) => (
-                            <li key={j} className="text-gray-400 leading-relaxed">
+                            <li key={j} className="text-muted-foreground leading-relaxed flex items-start gap-1.5">
+                              <span className="text-primary font-bold">›</span>
                               {typeof item === 'string' ? item : (
-                                <span><strong className="text-white">{item.name || item.config}</strong> - {item.details || item.status}</span>
+                                <span>
+                                  <strong className="text-foreground">{item.name || item.config}</strong>: {item.details || item.status}
+                                </span>
                               )}
                             </li>
                           ))}
                         </ul>
                       ) : typeof value === 'object' && value !== null ? (
-                        <div className="grid grid-cols-1 gap-1">
+                        <div className="space-y-1 font-mono text-[11px]">
                           {Object.entries(value).map(([k, v], j) => (
-                            <div key={j} className="flex gap-2">
-                              <span className="text-gray-500">{k}:</span>
-                              <span className="text-gray-300">{v as string}</span>
+                            <div key={j} className="flex justify-between border-b border-border/30 pb-0.5">
+                              <span className="text-muted-foreground">{k}:</span>
+                              <span className="text-foreground font-semibold">{v as string}</span>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-gray-400">{String(value)}</p>
+                        <p className="text-muted-foreground font-mono text-[11px] leading-relaxed">{String(value)}</p>
                       )}
                     </div>
                   ))}
                 </div>
               </div>
-            </RevealSection>
+            </div>
           ))}
         </div>
       </main>
-      
-      
     </div>
   );
 }

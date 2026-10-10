@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
-// Fallback AST nodes from live codebase
 const INITIAL_NODES = [
   { id: "file_main_py", label: "main.py", x: 50, y: 45, type: "file" },
   { id: "fn_health_check", label: "health_check()", x: 25, y: 20, type: "function" },
@@ -29,7 +28,7 @@ export function GraphVisualizer() {
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const [nodes, setNodes] = useState(INITIAL_NODES);
   const [edges, setEdges] = useState(INITIAL_EDGES);
-  const [sourceLabel, setSourceLabel] = useState<string>("AST Structural Graph");
+  const [sourceLabel, setSourceLabel] = useState<string>("AST RELATIONAL CALL GRAPH // TOPOLOGY TRACE");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -41,7 +40,7 @@ export function GraphVisualizer() {
           setNodes(data.nodes);
           setEdges(data.edges || []);
           if (data.source === "live_ast_engine") {
-            setSourceLabel("AST Structural Graph · Live Codebase AST Engine");
+            setSourceLabel("LIVE AST ENGINE // TREE-SITTER SYMBOL MAP");
           }
         }
       })
@@ -51,9 +50,10 @@ export function GraphVisualizer() {
   if (!mounted) return null;
 
   return (
-    <div className="relative w-full h-[400px] bg-[#0A0A0B] border border-border rounded-sm overflow-hidden flex items-center justify-center font-mono select-none">
-      <div className="absolute top-4 left-4 text-xs text-muted-foreground uppercase tracking-widest z-10">
-        {sourceLabel}
+    <div className="relative w-full h-[380px] bg-surface border border-border rounded-[3px] overflow-hidden flex items-center justify-center font-mono select-none">
+      <div className="absolute top-3 left-4 text-[10px] text-muted-foreground uppercase tracking-widest z-10 flex items-center gap-2">
+        <span className="w-1.5 h-1.5 bg-primary rounded-[1px]"></span>
+        <span>{sourceLabel}</span>
       </div>
       
       {/* Edges */}
@@ -73,10 +73,10 @@ export function GraphVisualizer() {
               x2={`${targetNode.x}%`}
               y2={`${targetNode.y}%`}
               stroke={isActive ? "hsl(var(--primary))" : "hsl(var(--border))"}
-              strokeWidth={isActive ? 2 : 1}
+              strokeWidth={isActive ? 1.5 : 1}
               initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: 1, opacity: isActive ? 1 : 0.4 }}
-              transition={{ duration: 1, delay: i * 0.1 }}
+              animate={{ pathLength: 1, opacity: isActive ? 1 : 0.3 }}
+              transition={{ duration: 0.6, delay: i * 0.05 }}
             />
           );
         })}
@@ -89,16 +89,26 @@ export function GraphVisualizer() {
         return (
           <motion.div
             key={node.id}
-            className={`absolute flex flex-col items-center justify-center -translate-x-1/2 -translate-y-1/2 cursor-crosshair group`}
+            className="absolute flex flex-col items-center justify-center -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
             style={{ left: `${node.x}%`, top: `${node.y}%` }}
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", delay: 0.5 + i * 0.1 }}
+            transition={{ type: "spring", delay: 0.2 + i * 0.05 }}
             onMouseEnter={() => setActiveNode(node.id)}
             onMouseLeave={() => setActiveNode(null)}
           >
-            <div className={`w-3 h-3 rounded-full mb-2 transition-colors ${isActive ? 'bg-primary shadow-[0_0_10px_hsl(var(--primary))]' : 'bg-muted-foreground'}`} />
-            <div className={`text-[10px] whitespace-nowrap px-2 py-1 rounded-sm border transition-colors ${isActive ? 'border-primary text-primary bg-primary/10' : 'border-border bg-surface text-muted-foreground'}`}>
+            {/* Square/Diamond Technical Node */}
+            <div className={`w-2.5 h-2.5 rotate-45 mb-1.5 border transition-all ${
+              isActive 
+                ? 'border-primary bg-primary' 
+                : 'border-muted-foreground/60 bg-background'
+            }`} />
+            
+            <div className={`text-[10px] whitespace-nowrap px-2 py-0.5 border transition-colors rounded-[2px] ${
+              isActive 
+                ? 'border-primary text-primary bg-surface-hi' 
+                : 'border-border bg-background text-muted-foreground'
+            }`}>
               {node.label}
             </div>
           </motion.div>
