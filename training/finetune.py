@@ -273,8 +273,8 @@ def train(base_model_name: str = DEFAULT_MODEL) -> None:
         lr_scheduler_type="cosine",
         optim="adamw_8bit",        # 8-bit optimizer saves ~2GB VRAM
         weight_decay=0.01,
-        fp16=True,                 # T4 uses fp16
-        bf16=False,                # T4 does NOT support bfloat16
+        fp16=False,                # Disable GradScaler (prevents BFloat16 unscale crash on T4)
+        bf16=False,                # T4 lacks native hardware bf16
         logging_steps=25,
         eval_strategy="epoch",     # evaluate after every epoch
         save_strategy="epoch",     # CRITICAL: save after every epoch
@@ -333,16 +333,29 @@ def train(base_model_name: str = DEFAULT_MODEL) -> None:
             args=training_args,
         )
 
+    # ── Tesla T4 GradScaler Safety ───────────────────────────────────────────
+    # If a GradScaler was created, disable it so it never attempts to unscale BFloat16 gradients.
+    if hasattr(trainer, "accelerator") and hasattr(trainer.accelerator, "scaler"):
+        trainer.accelerator.scaler = None
+        logger.info("Disabled accelerator.scaler to avoid BFloat16 unscale crash on T4")
+
     # ── Fix Unsloth AttributeError on transformers >= 4.46 ───────────────────
     # 'int' object has no attribute 'mean' — triggered when num_items_in_batch
     # is passed as a plain int rather than a tensor.
     _orig_training_step = trainer.training_step
 
     def _safe_training_step(model, inputs, num_items_in_batch=None):
-        """Guard num_items_in_batch before delegating to the real training step."""
+        """Guard num_items_in_batch and prevent BFloat16 unscale crashes."""
         if isinstance(num_items_in_batch, int):
             num_items_in_batch = None
-        return _orig_training_step(model, inputs, num_items_in_batch)
+        loss = _orig_training_step(model, inputs, num_items_in_batch)
+        # Ensure scaler remains disabled and gradients are safe
+        if getattr(trainer.accelerator, "scaler", None) is not None:
+            trainer.accelerator.scaler = None
+        for p in model.parameters():
+            if p.grad is not None and p.grad.dtype == torch.bfloat16:
+                p.grad.data = p.grad.data.to(torch.float16)
+        return loss
 
     trainer.training_step = _safe_training_step
 
