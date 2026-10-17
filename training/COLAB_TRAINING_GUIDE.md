@@ -53,13 +53,15 @@ This guide walks you through fine-tuning **`Qwen/Qwen2.5-Coder-1.5B-Instruct`** 
   ```
 
 ### Cell 8: QLoRA Fine-Tuning Execution
-- Executes `python training/finetune.py`.
+- Executes `python training/finetune.py --model-size 1.5b` (or `--model-size 7b`).
+- **Model Choice:**
+  - **`1.5b` (`Qwen2.5-Coder-1.5B-Instruct`):** Guaranteed safe on free Colab T4 (~7 GB VRAM). Fast 3-epoch training in ~25 mins.
+  - **`7b` (`Qwen2.5-Coder-7B-Instruct`):** State-of-the-art open code model. Fits in ~10 GB VRAM with 4-bit Unsloth. Recommended if using Colab A100/L4 or for high-accuracy SWE reasoning.
 - **Hyperparameters:**
-  - Base Model: `Qwen/Qwen2.5-Coder-1.5B-Instruct`
   - Quantization: 4-bit NormalFloat (NF4) via BitsAndBytes
   - LoRA Config: rank $r=16$, $\alpha=32$, dropout $0.05$
   - Target Modules: `q_proj`, `k_proj`, `v_proj`, `o_proj`, `gate_proj`, `up_proj`, `down_proj`
-  - Sequence Length: `1024` tokens (fits safely in 7 GB VRAM on T4)
+  - Sequence Length: `1024` tokens
   - Batch Size: `1` per device, `8` gradient accumulation steps (effective batch size 8)
   - Optimizer: `adamw_8bit`
   - Learning Rate: `2e-4` with cosine decay
