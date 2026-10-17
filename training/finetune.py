@@ -266,7 +266,7 @@ def train(base_model_name: str = DEFAULT_MODEL) -> None:
         metric_for_best_model="eval_loss",
         greater_is_better=False,
         seed=RANDOM_SEED,
-        report_to="wandb",
+        report_to="wandb" if os.environ.get("WANDB_API_KEY") else "none",
         dataloader_num_workers=2,
     )
 
