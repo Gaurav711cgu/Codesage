@@ -11,7 +11,13 @@ export async function POST(req: NextRequest) {
   }
 
   let retrievedContextStr = "";
-  let retrievedChunks: Array<{ name: string; file: string; type: string }> = [];
+  let retrievedChunks: Array<{
+    name: string;
+    file: string;
+    type: string;
+    content?: string;
+    score?: number;
+  }> = [];
 
   // 1. Query CodeSage Graph-RAG Backend for AST & topological context
   try {
@@ -34,6 +40,8 @@ export async function POST(req: NextRequest) {
           name: c.name || "symbol",
           file: c.file || c.file_path || "source.py",
           type: c.type || "seed",
+          content: c.content || "",
+          score: c.score ?? 0,
         }));
 
         retrievedContextStr =
