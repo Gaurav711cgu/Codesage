@@ -61,8 +61,8 @@ def local_dense_embed(texts: list[str]) -> list[list[float]]:
             raw_embeddings = fn(texts)
             normalized = []
             for vec in raw_embeddings:
-                norm = math.sqrt(sum(x * x for x in vec))
-                normalized.append([x / norm for x in vec] if norm > 0.0 else [float(x) for x in vec])
+                norm = math.sqrt(sum(float(x) * float(x) for x in vec))
+                normalized.append([float(x / norm) for x in vec] if norm > 0.0 else [float(x) for x in vec])
             return normalized
         except Exception as exc:
             logger.warning("Local dense embedding batch failed: %s; falling back to feature hash", exc)
