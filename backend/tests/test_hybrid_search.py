@@ -102,8 +102,8 @@ def test_rrf_monotonicity_and_ranking_stability():
     assert scores["bm25_rank2"] > scores["bm25_rank3"]
 
 
-def test_bm25_manager_caching_and_invalidation():
-    manager = BM25IndexManager()
+def test_bm25_manager_caching_and_invalidation(tmp_path):
+    manager = BM25IndexManager(storage_dir=tmp_path / "bm25")
     repo_id = "test_repo_123"
 
     assert manager.get_index(repo_id) is None
@@ -113,3 +113,26 @@ def test_bm25_manager_caching_and_invalidation():
 
     manager.invalidate(repo_id)
     assert manager.get_index(repo_id) is None
+
+
+def test_bm25_manager_disk_persistence(tmp_path):
+    storage_dir = tmp_path / "bm25_persist"
+    manager1 = BM25IndexManager(storage_dir=storage_dir)
+    repo_id = "repo_persist_xyz"
+
+    manager1.build_and_register(
+        repo_id,
+        ["doc_1", "doc_2"],
+        ["def calculate_total(items): return sum(items)", "def send_email(): pass"],
+    )
+
+    # Instantiate a second manager pointing to the same storage directory
+    manager2 = BM25IndexManager(storage_dir=storage_dir)
+    loaded_idx = manager2.get_index(repo_id)
+    assert loaded_idx is not None
+    assert loaded_idx.corpus_size == 2
+
+    # Query the persistent index loaded from disk
+    results = loaded_idx.search("calculate total items", top_k=1)
+    assert len(results) == 1
+    assert results[0][0] == "doc_1"

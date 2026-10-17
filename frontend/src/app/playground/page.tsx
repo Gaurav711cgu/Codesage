@@ -1,9 +1,23 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Terminal, Code, ArrowRight, Zap } from "lucide-react";
+import { Terminal, Code, ArrowRight, Zap, Layers3 } from "lucide-react";
 
-async function callGemini(prompt: string): Promise<string> {
+interface ChunkInfo {
+  name: string;
+  file: string;
+  type: string;
+}
+
+interface ChatMessage {
+  type: "system" | "user" | "assistant" | "error";
+  content: string;
+  chunks?: ChunkInfo[];
+}
+
+async function callGemini(
+  prompt: string
+): Promise<{ result: string; chunks?: ChunkInfo[] }> {
   const res = await fetch("/api/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -11,7 +25,10 @@ async function callGemini(prompt: string): Promise<string> {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-  return data.result as string;
+  return {
+    result: data.result as string,
+    chunks: data.retrieved_chunks,
+  };
 }
 
 const EXAMPLES = [
@@ -23,12 +40,12 @@ const EXAMPLES = [
 
 export default function PlaygroundPage() {
   const [input, setInput] = useState("");
-  const [history, setHistory] = useState([
-    { type: "system", content: "CodeSageZ — Interactive Sandbox" },
+  const [history, setHistory] = useState<ChatMessage[]>([
+    { type: "system", content: "CodeSage — Interactive Sandbox" },
     {
       type: "system",
       content:
-        'Direct REPL connection to the underlying semantic generation models.',
+        "Direct REPL connection to the underlying semantic generation models with Graph-RAG augmentation.",
     },
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -38,8 +55,11 @@ export default function PlaygroundPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [history]);
 
-  const addMsg = (type: string, content: string) =>
-    setHistory((prev) => [...prev, { type, content }]);
+  const addMsg = (
+    type: "system" | "user" | "assistant" | "error",
+    content: string,
+    chunks?: ChunkInfo[]
+  ) => setHistory((prev) => [...prev, { type, content, chunks }]);
 
   const submit = async (query: string) => {
     if (!query.trim() || isGenerating) return;
@@ -47,8 +67,8 @@ export default function PlaygroundPage() {
     addMsg("user", "> " + query);
     setIsGenerating(true);
     try {
-      const result = await callGemini(query);
-      addMsg("assistant", result);
+      const data = await callGemini(query);
+      addMsg("assistant", data.result, data.chunks);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       addMsg("error", "Error: " + msg);
@@ -67,12 +87,14 @@ export default function PlaygroundPage() {
       <main className="flex-1 w-full max-w-4xl mt-16 mb-16 space-y-8 flex flex-col">
         {/* Header */}
         <div className="space-y-2 shrink-0 border-b border-border pb-6">
-          <div className="text-xs font-mono text-muted-foreground uppercase tracking-widest mb-2">[ codesagez / playground ]</div>
+          <div className="text-xs font-mono text-muted-foreground uppercase tracking-widest mb-2">
+            [ codesage / playground ]
+          </div>
           <h1 className="text-3xl font-bold text-foreground">
             Interactive Sandbox
           </h1>
           <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">
-            Direct REPL connection to the underlying semantic generation models (Gemini 2.5 Flash / Qwen2.5).
+            Live generation workbench connected to backend 2-hop Graph-RAG and Gemini 2.5.
           </p>
         </div>
 
@@ -109,20 +131,30 @@ export default function PlaygroundPage() {
           {/* Output area */}
           <div className="flex-1 p-5 overflow-y-auto space-y-4 text-[13px] leading-relaxed font-mono">
             {history.map((msg, i) => (
-              <div key={i}>
+              <div key={i} className="space-y-1.5">
                 {msg.type === "user" && (
                   <div className="text-primary opacity-90">{msg.content}</div>
                 )}
                 {msg.type === "system" && (
-                  <div className="text-muted-foreground text-[11px] uppercase tracking-widest">{msg.content}</div>
+                  <div className="text-muted-foreground text-[11px] uppercase tracking-widest">
+                    {msg.content}
+                  </div>
                 )}
                 {msg.type === "error" && (
                   <div className="text-destructive text-xs">{msg.content}</div>
                 )}
                 {msg.type === "assistant" && (
-                  <pre className="whitespace-pre-wrap break-words text-foreground text-[13px] leading-relaxed">
-                    {msg.content}
-                  </pre>
+                  <div>
+                    {msg.chunks && msg.chunks.length > 0 && (
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 mb-2 bg-primary/10 border border-primary/20 text-primary text-[10px] uppercase tracking-wider rounded-[2px]">
+                        <Layers3 size={11} />
+                        Graph-RAG Injected: {msg.chunks.length} AST Chunks ({msg.chunks.map((c) => c.name).join(", ")})
+                      </div>
+                    )}
+                    <pre className="whitespace-pre-wrap break-words text-foreground text-[13px] leading-relaxed">
+                      {msg.content}
+                    </pre>
+                  </div>
                 )}
               </div>
             ))}
@@ -145,7 +177,7 @@ export default function PlaygroundPage() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Execute command..."
+              placeholder="Execute command or enter query..."
               className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground font-mono text-[13px]"
               disabled={isGenerating}
               autoComplete="off"
@@ -160,7 +192,6 @@ export default function PlaygroundPage() {
             </button>
           </form>
         </div>
-
       </main>
     </div>
   );

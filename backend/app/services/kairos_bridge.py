@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from app.services.retrieval import retrieve
 from app.services.graph import get_graph, get_node_metadata
+from app.services.ast_pruner import prune_to_signature
 from app.models.schemas import RetrievedChunk
 
 
@@ -92,12 +93,17 @@ def generate_kairos_context(
         payload_lines.append("- **Callees:** None detected or leaf node")
 
     payload_lines.append("")
-    payload_lines.append("#### Ranked Code Chunks")
+    payload_lines.append("#### Ranked Code Chunks (Budgeted)")
     for i, c in enumerate(selected_chunks, 1):
         c_path = c.file
         lines_str = f"L{c.lines[0]}-L{c.lines[-1]}" if c.lines else "L1"
         c_code = c.content or ""
-        payload_lines.append(f"**[{i}] {c_path} ({lines_str}):**")
+        
+        # Apply AST signature pruning on secondary neighbors to protect LLM context budget
+        if getattr(c, "type", "seed") == "neighbor":
+            c_code = prune_to_signature(c_code)
+
+        payload_lines.append(f"**[{i}] {c_path} ({lines_str}) [{getattr(c, 'type', 'seed')}]:**")
         payload_lines.append("```python")
         payload_lines.append(c_code.strip())
         payload_lines.append("```")

@@ -8,6 +8,7 @@ Graph edges:    directed — caller → callee  (A calls B  ⟹  edge A→B)
 """
 import json
 import logging
+from pathlib import Path
 from typing import Optional
 
 import networkx as nx
@@ -142,14 +143,73 @@ def build_graph(code_units: list[dict]) -> nx.DiGraph:
             "end_line": unit.get("end_line", 0),
         })
 
-    # Build a name → id lookup for call resolution
-    name_to_id: dict[str, str] = {u["name"]: u["id"] for u in code_units}
+    # Build multi-tier lookups for scope-aware call resolution
+    name_to_id: dict[str, str] = {}
+    base_name_to_ids: dict[str, list[str]] = {}
+    file_and_base_to_id: dict[tuple[str, str], str] = {}
+    class_and_method_to_id: dict[tuple[str, str], str] = {}
 
-    # Second pass: add edges from caller → callee
+    for unit in code_units:
+        u_id = unit["id"]
+        u_name = unit.get("name", "")
+        u_file = unit.get("file", "")
+        name_to_id[u_name] = u_id
+
+        # Base name (e.g. "add" from "Calculator.add")
+        base_name = u_name.split(".")[-1]
+        base_name_to_ids.setdefault(base_name, []).append(u_id)
+        file_and_base_to_id[(u_file, base_name)] = u_id
+
+        if "." in u_name:
+            parts = u_name.split(".")
+            class_and_method_to_id[(parts[0], parts[-1])] = u_id
+
+    # Second pass: add edges from caller → callee using scope resolution
     for unit in code_units:
         caller_id = unit["id"]
-        for callee_name in unit.get("calls", []):
-            callee_id = name_to_id.get(callee_name)
+        caller_file = unit.get("file", "")
+        caller_name = unit.get("name", "")
+        caller_class = caller_name.split(".")[0] if "." in caller_name else None
+
+        for callee_raw in unit.get("calls", []):
+            callee_id = None
+            callee_base = callee_raw.split(".")[-1]
+
+            # 1. Exact match on qualified name
+            if callee_raw in name_to_id:
+                callee_id = name_to_id[callee_raw]
+            # 2. Member call (e.g. "calc.add" or "self.add") matching class method
+            elif "." in callee_raw:
+                parts = callee_raw.split(".")
+                callee_id = class_and_method_to_id.get((parts[0], parts[-1]))
+            
+            # 3. Intra-class resolution (calling sibling method in same class)
+            if not callee_id and caller_class:
+                callee_id = class_and_method_to_id.get((caller_class, callee_base))
+
+            # 4. Intra-file resolution (function in same module)
+            if not callee_id:
+                callee_id = file_and_base_to_id.get((caller_file, callee_base))
+
+            # 5. Global unique base name match
+            if not callee_id and callee_base in base_name_to_ids:
+                candidates = base_name_to_ids[callee_base]
+                if len(candidates) == 1:
+                    callee_id = candidates[0]
+                else:
+                    # Pick candidate with closest file directory match
+                    caller_dir = str(Path(caller_file).parent)
+                    best_match = None
+                    for c_id in candidates:
+                        if caller_dir in c_id:
+                            best_match = c_id
+                            break
+                    callee_id = best_match or candidates[0]
+
+            # 6. Fallback to basic name lookup
+            if not callee_id:
+                callee_id = name_to_id.get(callee_raw)
+
             if callee_id and callee_id != caller_id:
                 G.add_edge(caller_id, callee_id)
 
