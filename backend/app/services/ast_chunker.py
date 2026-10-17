@@ -135,6 +135,36 @@ class ASTChunk:
             "calls": self.calls,
         }
 
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "repo_id": self.repo_id,
+            "name": self.name,
+            "file": self.file,
+            "type": self.type,
+            "start_line": self.start_line,
+            "end_line": self.end_line,
+            "source": self.source,
+            "docstring": self.docstring,
+            "calls": self.calls,
+            "imports": self.imports,
+            "parent_class": self.parent_class,
+            "parent_docstring": self.parent_docstring,
+            "parent_header": self.parent_header,
+            "chunk_index": self.chunk_index,
+            "total_chunks": self.total_chunks,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> ASTChunk:
+        valid_keys = {
+            "id", "repo_id", "name", "file", "type", "start_line", "end_line",
+            "source", "docstring", "calls", "imports", "parent_class",
+            "parent_docstring", "parent_header", "chunk_index", "total_chunks",
+        }
+        kwargs = {k: v for k, v in data.items() if k in valid_keys}
+        return cls(**kwargs)
+
 
 class ASTChunker:
     """

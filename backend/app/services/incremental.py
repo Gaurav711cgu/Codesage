@@ -32,6 +32,7 @@ class FileEntry:
     rel_path: str
     sha256: str
     chunk_ids: list[str] = field(default_factory=list)
+    chunks_data: list[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -62,6 +63,7 @@ class IncrementalManifest:
                     rel_path=rel_path,
                     sha256=entry["sha256"],
                     chunk_ids=entry.get("chunk_ids", []),
+                    chunks_data=entry.get("chunks_data", []),
                 )
                 for rel_path, entry in data.items()
             }
@@ -71,7 +73,11 @@ class IncrementalManifest:
 
     def save(self) -> None:
         data = {
-            rel: {"sha256": e.sha256, "chunk_ids": e.chunk_ids}
+            rel: {
+                "sha256": e.sha256,
+                "chunk_ids": e.chunk_ids,
+                "chunks_data": e.chunks_data,
+            }
             for rel, e in self.entries.items()
         }
         self.manifest_path.write_text(json.dumps(data, indent=2))
@@ -104,8 +110,33 @@ class IncrementalManifest:
 
         return diff
 
-    def record_file(self, rel_path: str, sha256: str, chunk_ids: list[str]) -> None:
-        self.entries[rel_path] = FileEntry(rel_path=rel_path, sha256=sha256, chunk_ids=chunk_ids)
+    def record_file(
+        self,
+        rel_path: str,
+        sha256: str,
+        chunk_ids: list[str],
+        chunks_data: list[dict] | None = None,
+    ) -> None:
+        self.entries[rel_path] = FileEntry(
+            rel_path=rel_path,
+            sha256=sha256,
+            chunk_ids=chunk_ids,
+            chunks_data=chunks_data or [],
+        )
+
+    def get_file_chunks(self, rel_path: str) -> list[Any]:
+        from app.services.ast_chunker import ASTChunk
+        entry = self.entries.get(rel_path)
+        if not entry or not entry.chunks_data:
+            return []
+        return [ASTChunk.from_dict(d) for d in entry.chunks_data]
+
+    def get_all_cached_units(self) -> list[Any]:
+        from app.services.ast_chunker import ASTChunk
+        all_units = []
+        for entry in self.entries.values():
+            all_units.extend([ASTChunk.from_dict(d) for d in entry.chunks_data])
+        return all_units
 
     def remove_file(self, rel_path: str) -> list[str]:
         entry = self.entries.pop(rel_path, None)

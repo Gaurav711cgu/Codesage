@@ -135,8 +135,23 @@ def upsert_documents(
     }
     if embeddings is not None:
         kwargs["embeddings"] = embeddings
-    
     collection.upsert(**kwargs)
+
+
+def delete_documents_by_ids(
+    repo_id: str,
+    suffix: str,
+    ids: list[str],
+) -> None:
+    """Delete specific documents by their IDs from a collection."""
+    if not ids:
+        return
+    try:
+        collection = get_or_create_collection(repo_id, suffix)
+        chroma_breaker.call_sync(collection.delete, ids=ids)
+        logger.info("Deleted %d obsolete chunks from %s%s", len(ids), repo_id, suffix)
+    except Exception as exc:
+        logger.warning("Failed to delete %d documents from %s%s: %s", len(ids), repo_id, suffix, exc)
 
 
 # ─── Retrieval ────────────────────────────────────────────────────────────────

@@ -362,31 +362,66 @@ async def run_ingestion(
             repo_id_str, len(diff.added_files), len(diff.modified_files), len(diff.deleted_paths), diff.unchanged_count
         )
 
+        # 1. Evict obsolete chunks from deleted and modified files
+        obsolete_file_rels = list(diff.deleted_paths) + [str(p.relative_to(clone_dir)) for p in diff.modified_files]
+        for rel in obsolete_file_rels:
+            old_ids = manifest.remove_file(rel)
+            if old_ids:
+                for suffix in ("_functions", "_classes", "_files"):
+                    await asyncio.to_thread(
+                        chromadb_client.delete_documents_by_ids,
+                        repo_id_str, suffix, old_ids
+                    )
+
+        dirty_file_set = set(diff.added_files + diff.modified_files)
+        is_initial_ingest = (diff.unchanged_count == 0 and len(diff.modified_files) == 0 and len(diff.deleted_paths) == 0)
+
         # ── Stage 3: Parse ────────────────────────────────────────────────────
         all_units: list[CodeUnit] = []
-        for i, fpath in enumerate(target_files):
-            file_rel = str(fpath.relative_to(clone_dir))
-            units = await asyncio.to_thread(
-                parse_file, fpath, repo_id_str, file_rel
-            )
-            all_units.extend(units)
-            if i % 10 == 0 or i == total_files - 1:
-                await emit({"stage": "parsing", "current": i + 1, "total": total_files})
-                await _update_task(db, task_id, "parsing", i + 1, total_files)
+        dirty_units: list[CodeUnit] = []
 
-        # Record file hashes and chunk ids in manifest
-        for fpath in target_files:
-            file_rel = str(fpath.relative_to(clone_dir))
-            fhash = compute_file_sha256(fpath)
-            unit_ids = [u.id for u in all_units if u.file == file_rel]
-            manifest.record_file(file_rel, fhash, unit_ids)
-        manifest.save()
+        # If repo is 100% unchanged, fast-load all units from manifest cache
+        if not dirty_file_set and not diff.deleted_paths and not is_initial_ingest:
+            cached_all = manifest.get_all_cached_units()
+            if cached_all:
+                all_units = cached_all
+                logger.info("Zero dirty files: reused %d cached AST units from manifest", len(all_units))
+
+        if not all_units:
+            for i, fpath in enumerate(target_files):
+                file_rel = str(fpath.relative_to(clone_dir))
+
+                # Check if file can be reused from cache
+                if fpath not in dirty_file_set and not is_initial_ingest:
+                    cached_file_units = manifest.get_file_chunks(file_rel)
+                    if cached_file_units:
+                        all_units.extend(cached_file_units)
+                        continue
+
+                # Dirty or un-cached file: parse fresh
+                units = await asyncio.to_thread(
+                    parse_file, fpath, repo_id_str, file_rel
+                )
+                all_units.extend(units)
+                dirty_units.extend(units)
+
+                # Record dirty file in manifest
+                fhash = compute_file_sha256(fpath)
+                unit_ids = [u.id for u in units]
+                unit_dicts = [u.to_dict() for u in units]
+                manifest.record_file(file_rel, fhash, unit_ids, unit_dicts)
+
+                if i % 10 == 0 or i == total_files - 1:
+                    await emit({"stage": "parsing", "current": i + 1, "total": total_files})
+                    await _update_task(db, task_id, "parsing", i + 1, total_files)
+
+            manifest.save()
 
         functions = [u for u in all_units if u.type == "function"]
         classes   = [u for u in all_units if u.type == "class"]
         logger.info(
-            "Parsed %d units (%d functions, %d classes)",
-            len(all_units), len(functions), len(classes),
+            "Active units for %s: %d total (%d functions, %d classes)",
+            repo_id_str, len(all_units), len(functions), len(classes),
         )
 
         # ── Stage 4: Build call graph ─────────────────────────────────────────
@@ -396,6 +431,7 @@ async def run_ingestion(
         G = await asyncio.to_thread(
             graph_svc.build_graph, [u.to_graph_dict() for u in all_units]
         )
+        graph_svc.cache_graph(repo_id_str, G)
         graph_json = None  # Dropped giant json serialization!
 
         await emit({
@@ -408,16 +444,22 @@ async def run_ingestion(
         # ── Stage 5+6: Embed and store ────────────────────────────────────────
         await _update_repo_status(db, repo_id, "embedding")
 
+        # Determine units to embed: on incremental update, embed ONLY dirty units
+        units_to_embed = dirty_units if (dirty_units and not is_initial_ingest) else all_units
+
         # Group units by collection suffix
+        embed_functions = [u for u in units_to_embed if u.type == "function"]
+        embed_classes   = [u for u in units_to_embed if u.type == "class"]
+
         unit_groups = {
-            "_functions": functions,
-            "_classes": classes,
+            "_functions": embed_functions,
+            "_classes": embed_classes,
             "_files": [],  # file-level summaries added below
         }
 
-        # Build one file-level document per file (aggregated imports + unit names)
+        # Build file-level document for dirty or initial files
         file_map: dict[str, list[CodeUnit]] = {}
-        for u in all_units:
+        for u in units_to_embed:
             file_map.setdefault(u.file, []).append(u)
 
         file_units: list[CodeUnit] = []
@@ -479,7 +521,7 @@ async def run_ingestion(
                         repo_id_str, suffix, batch_ids, batch_docs, batch_embeddings, batch_metas,
                     )
                     batch_done += 1
-                    pct = int(batch_done / total_batches * 100)
+                    pct = int(batch_done / total_batches * 100) if total_batches else 100
                     await emit({"stage": "storing", "current": batch_done,
                                 "total": total_batches, "progress": pct})
                     await _update_task(db, task_id, "storing", batch_done, total_batches)
