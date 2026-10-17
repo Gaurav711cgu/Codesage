@@ -8,8 +8,10 @@ Dual-retrieval pipeline combining:
 """
 from __future__ import annotations
 
+import json
 import logging
 import math
+from pathlib import Path
 import re
 import threading
 from collections import Counter
@@ -168,6 +170,33 @@ class BM25Okapi:
     def get_document(self, doc_id: str) -> Optional[dict[str, Any]]:
         return self.doc_store.get(doc_id)
 
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "k1": self.k1,
+            "b": self.b,
+            "doc_ids": self.doc_ids,
+            "doc_lengths": self.doc_lengths,
+            "avgdl": self.avgdl,
+            "corpus_size": self.corpus_size,
+            "doc_term_freqs": [dict(tf) for tf in self.doc_term_freqs],
+            "inverted_index": self.inverted_index,
+            "idf": self.idf,
+            "doc_store": self.doc_store,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> BM25Okapi:
+        idx = cls(k1=data.get("k1", 1.5), b=data.get("b", 0.75))
+        idx.doc_ids = data.get("doc_ids", [])
+        idx.doc_lengths = data.get("doc_lengths", [])
+        idx.avgdl = data.get("avgdl", 0.0)
+        idx.corpus_size = data.get("corpus_size", 0)
+        idx.doc_term_freqs = [Counter(tf) for tf in data.get("doc_term_freqs", [])]
+        idx.inverted_index = data.get("inverted_index", {})
+        idx.idf = data.get("idf", {})
+        idx.doc_store = data.get("doc_store", {})
+        return idx
+
 
 def reciprocal_rank_fusion(
     rankings_list: list[list[tuple[str, float]]],
@@ -208,19 +237,43 @@ def reciprocal_rank_fusion(
 
 
 class BM25IndexManager:
-    """Thread-safe manager maintaining BM25 indices per repository."""
+    """Thread-safe manager maintaining BM25 indices per repository with disk persistence."""
 
-    def __init__(self) -> None:
+    def __init__(self, storage_dir: Path | None = None) -> None:
         self._indices: dict[str, BM25Okapi] = {}
         self._lock = threading.Lock()
+        self.storage_dir = storage_dir or Path(".chroma") / "bm25"
+        self.storage_dir.mkdir(parents=True, exist_ok=True)
+
+    def _index_path(self, repo_id: str) -> Path:
+        return self.storage_dir / f"{repo_id}_bm25.json"
 
     def get_index(self, repo_id: str) -> Optional[BM25Okapi]:
         with self._lock:
-            return self._indices.get(repo_id)
+            if repo_id in self._indices:
+                return self._indices[repo_id]
+
+            # Try loading from disk persistence
+            idx_file = self._index_path(repo_id)
+            if idx_file.exists():
+                try:
+                    data = json.loads(idx_file.read_text())
+                    idx = BM25Okapi.from_dict(data)
+                    self._indices[repo_id] = idx
+                    logger.info("Loaded persistent BM25 index for repo %s from disk", repo_id)
+                    return idx
+                except Exception as exc:
+                    logger.warning("Failed to load persistent BM25 index for %s: %s", repo_id, exc)
+
+            return None
 
     def set_index(self, repo_id: str, index: BM25Okapi) -> None:
         with self._lock:
             self._indices[repo_id] = index
+            try:
+                self._index_path(repo_id).write_text(json.dumps(index.to_dict()))
+            except Exception as exc:
+                logger.warning("Failed to save persistent BM25 index for %s: %s", repo_id, exc)
 
     def build_and_register(
         self,
@@ -231,13 +284,15 @@ class BM25IndexManager:
     ) -> BM25Okapi:
         index = BM25Okapi()
         index.index_documents(doc_ids, documents, metadatas)
-        with self._lock:
-            self._indices[repo_id] = index
+        self.set_index(repo_id, index)
         return index
 
     def invalidate(self, repo_id: str) -> None:
         with self._lock:
             self._indices.pop(repo_id, None)
+            idx_file = self._index_path(repo_id)
+            if idx_file.exists():
+                idx_file.unlink(missing_ok=True)
 
 
 # Global BM25 index manager instance

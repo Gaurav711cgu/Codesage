@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     chroma_persist_directory: str = "./.chroma"
     chroma_auth_token: str = ""
 
+    @property
+    def chroma_persist_dir(self) -> str:
+        return self.chroma_persist_directory
+
     # Ollama
     ollama_enabled: bool = False
     ollama_url: str = "http://localhost:11434"

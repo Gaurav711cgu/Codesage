@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
 
 @layer base {
   :root {
@@ -10,23 +9,23 @@
      * CODESAGEZ: INDUSTRIAL GLASS 
      * Deep darks, zero saturation backgrounds
      */
-    --background: 224 71% 4%;
-    --surface:    224 71% 6%;
-    --surface-hi: 224 71% 10%;
+    --background: 135 8% 7%;
+    --surface:    135 8% 10%;
+    --surface-hi: 135 8% 15%;
     
     --foreground: 210 40% 98%;
-    --muted:      224 71% 12%;
+    --muted:      135 8% 19%;
     --muted-foreground: 215 20.2% 65.1%;
     
-    --border:     224 71% 12%;
-    --input:      224 71% 12%;
+    --border:     135 8% 19%;
+    --input:      135 8% 19%;
     
     /* Strict Cyan Accent */
-    --primary: 191 81% 53%;
-    --primary-foreground: 224 71% 4%;
-    --primary-dim: 191 81% 53% / 0.15;
+    --primary: 95 23% 72%;
+    --primary-foreground: 135 8% 7%;
+    --primary-dim: 95 23% 72% / 0.15;
     
-    --card:       224 71% 6%;
+    --card:       135 8% 10%;
     --card-foreground: 210 40% 98%;
     
     --destructive: 0 84.2% 60.2%;
@@ -35,7 +34,7 @@
     --success: 142.1 76.2% 36.3%;
     --warning: 38 92% 50%;
     
-    --ring:       191 81% 53%;
+    --ring:       95 23% 72%;
     
     /* Strict sharp corners */
     --radius: 3px;
@@ -48,13 +47,13 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'IBM Plex Sans', sans-serif;
+    font-family: Arial, sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'IBM Plex Sans', sans-serif;
+    font-family: Arial, sans-serif;
   }
   code, pre {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: monospace;
   }
 }
 
@@ -65,7 +64,7 @@
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
   color: hsl(var(--foreground));
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: monospace;
   font-size: 13px;
   outline: none;
   transition: border-color 150ms ease-out;
@@ -83,7 +82,7 @@
   color: hsl(var(--primary-foreground));
   border: none;
   border-radius: var(--radius);
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: Arial, sans-serif;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -99,11 +98,11 @@
 
 .btn-ghost {
   padding: 7px 18px;
-  background: transparent;
+  background: hsl(var(--surface-hi));
   color: hsl(var(--muted-foreground));
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: Arial, sans-serif;
   font-size: 13px;
   cursor: pointer;
   transition: color 120ms, border-color 120ms;
@@ -137,3 +136,6 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground));
 }
+
+/* Product navigation uses filled, plain-language controls. */
+nav[aria-label="Main navigation"] a{font-family:Arial,sans-serif;letter-spacing:0;text-transform:none;border-radius:5px}nav[aria-label="Main navigation"]>div{max-width:1480px;gap:14px}nav[aria-label="Main navigation"] a[data-testid^="nav-link"]{background:#263027;color:#bcc9b6;border:1px solid #364438;padding:7px 10px}nav[aria-label="Main navigation"] a[data-testid^="nav-link"]:hover{background:#3a4737;color:#f0f4e7}nav[aria-label="Main navigation"] a[data-testid="nav-open-playground-button"]{background:#d8e2cc;color:#1d271c;border-color:#d8e2cc}nav[aria-label="Main navigation"] a[data-testid="nav-github-link"]{background:#2d3830;color:#d4ddcc}nav[aria-label="Main navigation"]>div>div:first-child>span{display:none}@media(min-width:1024px) and (max-width:1250px){nav[aria-label="Main navigation"] a[data-testid^="nav-link"]{padding:7px 6px;font-size:11px}}

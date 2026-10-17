@@ -113,7 +113,11 @@ MAX_SEQ_LENGTH   = 1024   # 2048 OOMs on T4 (15GB). 1024 uses ~7GB safely.
 BATCH_SIZE       = 1      # T4 constraint. Compensated by GRAD_ACCUM_STEPS.
 GRAD_ACCUM_STEPS = 8      # Effective batch = BATCH_SIZE × GRAD_ACCUM_STEPS = 8
 RANDOM_SEED      = 42
-BASE_MODEL       = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
+DEFAULT_MODEL    = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
+MODEL_MAP = {
+    "1.5b": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+    "7b": "Qwen/Qwen2.5-Coder-7B-Instruct",
+}
 
 
 # ── Dataset loader ───────────────────────────────────────────────────────────
@@ -182,7 +186,7 @@ def _sftconfig_accepts(param: str) -> bool:
 
 # ── Training ─────────────────────────────────────────────────────────────────
 
-def train() -> None:
+def train(base_model_name: str = DEFAULT_MODEL) -> None:
     import torch
     from unsloth import FastLanguageModel
 
@@ -204,7 +208,7 @@ def train() -> None:
     if not manifest_path.exists():
         raise SystemExit(
             "Missing training/data/dataset_manifest.json.\n"
-            "Run Cell 3 in COLAB_GUIDE.md (dataset preparation) first."
+            "Run dataset preparation first: python training/dataset_prep.py or seed_starter_data.py"
         )
     train_dataset = load_jsonl(DATA_DIR / "train.jsonl")
     val_dataset   = load_jsonl(DATA_DIR / "val.jsonl")
@@ -217,9 +221,9 @@ def train() -> None:
         logger.info("No existing checkpoint — starting fresh")
 
     # Load model
-    logger.info("Loading %s (4-bit QLoRA)", BASE_MODEL)
+    logger.info("Loading %s (4-bit QLoRA)", base_model_name)
     model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name=BASE_MODEL,
+        model_name=base_model_name,
         max_seq_length=MAX_SEQ_LENGTH,
         dtype=torch.float16,      # Explicit. T4 uses fp16, not bfloat16.
         load_in_4bit=True,
@@ -262,7 +266,7 @@ def train() -> None:
         metric_for_best_model="eval_loss",
         greater_is_better=False,
         seed=RANDOM_SEED,
-        report_to="wandb",
+        report_to="wandb" if os.environ.get("WANDB_API_KEY") else "none",
         dataloader_num_workers=2,
     )
 
@@ -453,7 +457,19 @@ def export_model() -> None:
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Fine-tune Qwen2.5-Coder-1.5B on CommitPack")
+    parser = argparse.ArgumentParser(description="Fine-tune Qwen2.5-Coder (1.5B or 7B) on CommitPack")
+    parser.add_argument(
+        "--model-size",
+        choices=["1.5b", "7b"],
+        default="1.5b",
+        help="Model size: '1.5b' (T4 safe, ~7GB VRAM) or '7b' (recommended for A100/L4 or deeper SWE reasoning)",
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="Custom HuggingFace model repo ID (overrides --model-size)",
+    )
     parser.add_argument(
         "--export",
         action="store_true",
@@ -461,7 +477,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    chosen_model = args.model or MODEL_MAP.get(args.model_size, DEFAULT_MODEL)
     if args.export:
         export_model()
     else:
-        train()
+        train(base_model_name=chosen_model)

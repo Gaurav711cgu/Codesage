@@ -59,13 +59,47 @@ SUFFIXES = ("_functions", "_classes", "_files")
 
 def collection_name(repo_id: str, suffix: str) -> str:
     provider = _get_provider()
-    return f"{repo_id}{suffix}_{provider}"
+    norm_id = repo_id
+    if len(repo_id) == 32 and "-" not in repo_id:
+        try:
+            import uuid
+            norm_id = str(uuid.UUID(repo_id))
+        except Exception:
+            pass
+    return f"{norm_id}{suffix}_{provider}"
 
 
 def get_or_create_collection(repo_id: str, suffix: str) -> chromadb.Collection:
-    name = collection_name(repo_id, suffix)
-    return get_client().get_or_create_collection(
-        name=name,
+    norm_id = repo_id
+    if len(repo_id) == 32 and "-" not in repo_id:
+        try:
+            import uuid
+            norm_id = str(uuid.UUID(repo_id))
+        except Exception:
+            norm_id = repo_id
+
+    client = get_client()
+    target_name = collection_name(norm_id, suffix)
+
+    try:
+        existing_cols = {c.name: c for c in client.list_collections()}
+        if target_name in existing_cols:
+            return existing_cols[target_name]
+
+        # Check fallback candidates (e.g. without provider or unhyphenated)
+        candidates = [
+            collection_name(repo_id, suffix),
+            f"{norm_id}{suffix}",
+            f"{repo_id}{suffix}",
+        ]
+        for cand in candidates:
+            if cand in existing_cols:
+                return existing_cols[cand]
+    except Exception:
+        pass
+
+    return client.get_or_create_collection(
+        name=target_name,
         metadata={"hnsw:space": "cosine"},
     )
 
@@ -101,8 +135,23 @@ def upsert_documents(
     }
     if embeddings is not None:
         kwargs["embeddings"] = embeddings
-    
     collection.upsert(**kwargs)
+
+
+def delete_documents_by_ids(
+    repo_id: str,
+    suffix: str,
+    ids: list[str],
+) -> None:
+    """Delete specific documents by their IDs from a collection."""
+    if not ids:
+        return
+    try:
+        collection = get_or_create_collection(repo_id, suffix)
+        chroma_breaker.call_sync(collection.delete, ids=ids)
+        logger.info("Deleted %d obsolete chunks from %s%s", len(ids), repo_id, suffix)
+    except Exception as exc:
+        logger.warning("Failed to delete %d documents from %s%s: %s", len(ids), repo_id, suffix, exc)
 
 
 # ─── Retrieval ────────────────────────────────────────────────────────────────

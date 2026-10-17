@@ -133,7 +133,38 @@ class ASTChunk:
             "start_line": self.start_line,
             "end_line": self.end_line,
             "calls": self.calls,
+            "imports": self.imports,
         }
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "repo_id": self.repo_id,
+            "name": self.name,
+            "file": self.file,
+            "type": self.type,
+            "start_line": self.start_line,
+            "end_line": self.end_line,
+            "source": self.source,
+            "docstring": self.docstring,
+            "calls": self.calls,
+            "imports": self.imports,
+            "parent_class": self.parent_class,
+            "parent_docstring": self.parent_docstring,
+            "parent_header": self.parent_header,
+            "chunk_index": self.chunk_index,
+            "total_chunks": self.total_chunks,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> ASTChunk:
+        valid_keys = {
+            "id", "repo_id", "name", "file", "type", "start_line", "end_line",
+            "source", "docstring", "calls", "imports", "parent_class",
+            "parent_docstring", "parent_header", "chunk_index", "total_chunks",
+        }
+        kwargs = {k: v for k, v in data.items() if k in valid_keys}
+        return cls(**kwargs)
 
 
 class ASTChunker:
@@ -360,20 +391,36 @@ class ASTChunker:
                 "function_declaration",
                 "method_definition",
                 "arrow_function",
+                "function",
+                "function_expression",
+                "generator_function_declaration",
+                "generator_function",
             ):
                 name_node = node.child_by_field_name("name")
-                if not name_node and node.parent and node.parent.type == "variable_declarator":
-                    name_node = node.parent.child_by_field_name("name")
+                if not name_node and node.parent:
+                    p = node.parent
+                    if p.type in ("variable_declarator", "public_field_definition", "field_definition", "property_definition", "pair"):
+                        name_node = p.child_by_field_name("name") or p.child_by_field_name("key")
+                    elif p.type == "assignment_expression":
+                        name_node = p.child_by_field_name("left")
 
                 body_node = node.child_by_field_name("body") or node.child_by_field_name("statement_block")
                 if name_node and body_node:
                     raw_name = self._node_text(name_node, src_bytes)
                     qualified_name = f"{parent_class}.{raw_name}" if parent_class else raw_name
-                    unit_id = f"{repo_id}::{file_rel}::{qualified_name}::{node.start_point[0] + 1}"
+
+                    # Use parent declarator boundary for self-contained arrow function / field chunks
+                    enclosing_node = node
+                    if node.parent and node.parent.type in ("variable_declarator", "public_field_definition", "field_definition", "property_definition"):
+                        enclosing_node = node.parent
+
+                    start_l = enclosing_node.start_point[0] + 1
+                    end_l = enclosing_node.end_point[0] + 1
+                    unit_id = f"{repo_id}::{file_rel}::{qualified_name}::{start_l}"
                     
                     docstring = self._extract_docstring(body_node, src_bytes)
                     calls = self._extract_calls(body_node, src_bytes)
-                    source_text = self._node_text(node, src_bytes)
+                    source_text = self._node_text(enclosing_node, src_bytes)
 
                     parent_ctx = ParentContext(
                         file=file_rel,
@@ -390,8 +437,8 @@ class ASTChunker:
                         name=qualified_name,
                         file=file_rel,
                         type="function",
-                        start_line=node.start_point[0] + 1,
-                        end_line=node.end_point[0] + 1,
+                        start_line=start_l,
+                        end_line=end_l,
                         source=source_text,
                         docstring=docstring,
                         calls=calls,
@@ -451,7 +498,54 @@ class ASTChunker:
                 for child in body_node.children:
                     process_node(child, class_name, class_doc)
 
-            elif node.type in ("lexical_declaration", "variable_declarator", "export_statement"):
+            elif node.type in ("interface_declaration", "type_alias_declaration", "enum_declaration"):
+                name_node = node.child_by_field_name("name")
+                if name_node:
+                    decl_name = self._node_text(name_node, src_bytes)
+                    decl_type = "interface" if "interface" in node.type else ("type" if "type" in node.type else "enum")
+                    unit_id = f"{repo_id}::{file_rel}::{decl_name}::{node.start_point[0] + 1}"
+                    source_text = self._node_text(node, src_bytes)
+
+                    parent_ctx = ParentContext(
+                        file=file_rel,
+                        parent_class=None,
+                        parent_docstring=None,
+                        imports=imports,
+                        module_docstring=module_docstring,
+                    )
+                    header_str = parent_ctx.format_header(comment_prefix)
+                    chunks.append(
+                        ASTChunk(
+                            id=unit_id,
+                            repo_id=repo_id,
+                            name=decl_name,
+                            file=file_rel,
+                            type=decl_type,
+                            start_line=node.start_point[0] + 1,
+                            end_line=node.end_point[0] + 1,
+                            source=source_text,
+                            docstring="",
+                            calls=[],
+                            imports=imports,
+                            parent_class=None,
+                            parent_docstring=None,
+                            parent_header=header_str,
+                        )
+                    )
+
+            elif node.type in (
+                "lexical_declaration",
+                "variable_declaration",
+                "variable_declarator",
+                "export_statement",
+                "expression_statement",
+                "field_definition",
+                "public_field_definition",
+                "property_definition",
+                "class_body",
+                "statement_block",
+                "program",
+            ):
                 for child in node.children:
                     process_node(child, parent_class, parent_class_docstring)
 

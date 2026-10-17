@@ -1,0 +1,25 @@
+{
+  "configuration": "python",
+  "created_at_utc": "2026-10-17T21:02:06.701282+00:00",
+  "dataset": "starter_seed_commitpack",
+  "git_revision": "519e59940fdb2aeb49473d1a482777e4e1574acf",
+  "random_seed": 42,
+  "split_indices_sha256": "eb73bcaf28eb2aec7a6fcfe8b643069a0f734a4e1b6c3bcc213736e0c736e1cb",
+  "splits": {
+    "test": {
+      "path": "training/data/test.jsonl",
+      "samples": 30,
+      "sha256": "5c8517de0986de39f037242dc50dc4dca464bfc988ba0a56d12bf10542815cdb"
+    },
+    "train": {
+      "path": "training/data/train.jsonl",
+      "samples": 100,
+      "sha256": "f5e9b2e6b3e5d0e655a8df9f08978eedc2e16e75947ed033c322459faa390aa5"
+    },
+    "val": {
+      "path": "training/data/val.jsonl",
+      "samples": 30,
+      "sha256": "1d0295fe9f4a43b5e2602ef57c948057567cf4f596d6f99c591ddbc439fe3787"
+    }
+  }
+}

@@ -32,7 +32,29 @@ from pathlib import Path
 try:
     from training.experiment_utils import count_jsonl, provenance, sha256_file, write_json
 except ImportError:
-    from experiment_utils import count_jsonl, provenance, sha256_file, write_json
+    try:
+        from experiment_utils import count_jsonl, provenance, sha256_file, write_json
+    except ImportError:
+        import hashlib
+        from datetime import datetime, timezone
+
+        def sha256_file(p: Path) -> str:
+            d = hashlib.sha256()
+            with p.open("rb") as f:
+                for b in iter(lambda: f.read(1024 * 1024), b""):
+                    d.update(b)
+            return d.hexdigest()
+
+        def count_jsonl(p: Path) -> int:
+            with p.open() as f:
+                return sum(1 for l in f if l.strip())
+
+        def provenance() -> dict:
+            return {"created_at_utc": datetime.now(timezone.utc).isoformat(), "git_revision": None}
+
+        def write_json(p: Path, payload: dict) -> None:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
 
 logging.basicConfig(
@@ -199,13 +221,25 @@ def main() -> None:
         args.source_scan_limit,
     )
 
-    ds = datasets.load_dataset(
-        "bigcode/commitpack",
-        "python",
-        split="train",
-        streaming=True,
-        trust_remote_code=True,     # Requires datasets <= 2.19.2
-    ).shuffle(seed=RANDOM_SEED, buffer_size=10_000)
+    remote_shards = [
+        f"https://huggingface.co/datasets/bigcode/commitpack/resolve/main/data/python/python-{i:04d}.jsonl"
+        for i in range(1, 11)
+    ]
+    try:
+        ds = datasets.load_dataset(
+            "json",
+            data_files=remote_shards,
+            split="train",
+            streaming=True,
+        ).shuffle(seed=RANDOM_SEED, buffer_size=10_000)
+    except Exception as e:
+        logger.warning("Streaming shards failed (%s), falling back to starter seed generator", e)
+        try:
+            from training.seed_starter_data import main as seed_main
+        except ImportError:
+            from seed_starter_data import main as seed_main
+        seed_main()
+        return
 
     filters = [
         ("language",        filter_language),

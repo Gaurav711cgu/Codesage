@@ -117,6 +117,7 @@ app.include_router(code.router, prefix="/api/v1")
 app.include_router(benchmarks.router, prefix="/api/v1")
 app.include_router(metrics_router)
 app.mount("/mcp", mcp_app)
+app.mount("/tools", mcp_app)
 
 # OpenTelemetry distributed tracing
 try:

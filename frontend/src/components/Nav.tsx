@@ -58,7 +58,7 @@ export default function Nav() {
             </Link>
             <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 border border-border bg-surface text-[10px] font-mono text-muted-foreground uppercase tracking-wider rounded-[2px]">
               <span className="w-1.5 h-1.5 bg-primary rounded-[1px]"></span>
-              SYS:ONLINE
+              SOURCE WORKBENCH
             </span>
           </div>
 

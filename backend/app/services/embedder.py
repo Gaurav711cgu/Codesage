@@ -40,29 +40,38 @@ def get_default_dense_embedder():
     global _default_dense_fn
     if _default_dense_fn is None:
         try:
-            import chromadb.utils.embedding_functions as ef
-            _default_dense_fn = ef.DefaultEmbeddingFunction()
-        except Exception as exc:
-            logger.warning("Failed to initialize Chroma default ONNX dense embedder: %s", exc)
-            _default_dense_fn = None
+            from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
+            _default_dense_fn = ONNXMiniLM_L6_V2(preferred_providers=["CPUExecutionProvider"])
+        except Exception:
+            try:
+                import chromadb.utils.embedding_functions as ef
+                _default_dense_fn = ef.DefaultEmbeddingFunction()
+            except Exception as exc:
+                logger.warning("Failed to initialize Chroma default ONNX dense embedder: %s", exc)
+                _default_dense_fn = None
     return _default_dense_fn
 
 
-def local_dense_embed(texts: list[str]) -> list[list[float]]:
+def local_dense_embed(texts: list[str], batch_size: int = 32, max_chars_per_text: int = 1000) -> list[list[float]]:
     """
     Generate authentic 384-dimensional dense semantic embeddings using the local ONNX
     all-MiniLM-L6-v2 model (via ChromaDB built-in engine).
     Requires zero external API keys or network requests.
     Falls back gracefully to local_hash_embed if ONNX runtime is unavailable.
     """
+    if not texts:
+        return []
+
     fn = get_default_dense_embedder()
     if fn is not None:
         try:
-            raw_embeddings = fn(texts)
-            normalized = []
-            for vec in raw_embeddings:
-                norm = math.sqrt(sum(x * x for x in vec))
-                normalized.append([x / norm for x in vec] if norm > 0.0 else [float(x) for x in vec])
+            normalized: list[list[float]] = []
+            for i in range(0, len(texts), batch_size):
+                batch = [t[:max_chars_per_text] for t in texts[i:i + batch_size]]
+                raw_embeddings = fn(batch)
+                for vec in raw_embeddings:
+                    norm = math.sqrt(sum(float(x) * float(x) for x in vec))
+                    normalized.append([float(x / norm) for x in vec] if norm > 0.0 else [float(x) for x in vec])
             return normalized
         except Exception as exc:
             logger.warning("Local dense embedding batch failed: %s; falling back to feature hash", exc)

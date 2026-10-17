@@ -135,3 +135,51 @@ def test_ast_chunker_python_ast_fallback():
     method = next(c for c in chunks if c.name == "Geometry.circle_area")
     assert method.parent_class == "Geometry"
     assert "Geometry utilities" in (method.parent_docstring or "")
+
+
+def test_ast_chunker_handles_arrow_functions_and_interfaces(tmp_path: Path):
+    ts_code = textwrap.dedent("""\
+        export interface UserProfile {
+            id: string;
+            email: string;
+        }
+
+        export const fetchUserProfile = async (userId: string): Promise<UserProfile> => {
+            const res = await fetch(`/api/users/${userId}`);
+            return res.json();
+        };
+
+        export const multiply = (a: number, b: number) => a * b;
+
+        export class ButtonHandler {
+            onClick = async (e: Event) => {
+                console.log("clicked");
+                await fetchUserProfile("usr_1");
+            };
+        }
+    """)
+    f = tmp_path / "components.tsx"
+    f.write_text(ts_code)
+
+    chunks = default_ast_chunker.chunk_file(f, "test_repo", "components.tsx")
+    chunk_names = {c.name: c for c in chunks}
+
+    # 1. Interface chunk
+    assert "UserProfile" in chunk_names
+    assert chunk_names["UserProfile"].type == "interface"
+
+    # 2. Exported async arrow function
+    assert "fetchUserProfile" in chunk_names
+    assert chunk_names["fetchUserProfile"].type == "function"
+    assert "fetch" in chunk_names["fetchUserProfile"].calls
+
+    # 3. Concise arrow function
+    assert "multiply" in chunk_names
+    assert chunk_names["multiply"].type == "function"
+
+    # 4. Class field arrow function
+    assert "ButtonHandler.onClick" in chunk_names
+    btn_chunk = chunk_names["ButtonHandler.onClick"]
+    assert btn_chunk.parent_class == "ButtonHandler"
+    assert "fetchUserProfile" in btn_chunk.calls
+
