@@ -8,6 +8,7 @@ Graph edges:    directed — caller → callee  (A calls B  ⟹  edge A→B)
 """
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -146,8 +147,9 @@ def build_graph(code_units: list[dict]) -> nx.DiGraph:
     # Build multi-tier lookups for scope-aware call resolution
     name_to_id: dict[str, str] = {}
     base_name_to_ids: dict[str, list[str]] = {}
-    file_and_base_to_id: dict[tuple[str, str], str] = {}
+    file_and_base_to_ids: dict[tuple[str, str], list[str]] = {}
     class_and_method_to_id: dict[tuple[str, str], str] = {}
+    module_and_symbol_to_id: dict[tuple[str, str], str] = {}
 
     for unit in code_units:
         u_id = unit["id"]
@@ -155,49 +157,113 @@ def build_graph(code_units: list[dict]) -> nx.DiGraph:
         u_file = unit.get("file", "")
         name_to_id[u_name] = u_id
 
-        # Base name (e.g. "add" from "Calculator.add")
+        mod_name = Path(u_file).stem
         base_name = u_name.split(".")[-1]
+
         base_name_to_ids.setdefault(base_name, []).append(u_id)
-        file_and_base_to_id[(u_file, base_name)] = u_id
+        file_and_base_to_ids.setdefault((u_file, base_name), []).append(u_id)
+        module_and_symbol_to_id[(mod_name, base_name)] = u_id
 
         if "." in u_name:
             parts = u_name.split(".")
-            class_and_method_to_id[(parts[0], parts[-1])] = u_id
+            cls_name, m_name = parts[0], parts[-1]
+            class_and_method_to_id[(cls_name, m_name)] = u_id
+            module_and_symbol_to_id[(mod_name, f"{cls_name}.{m_name}")] = u_id
 
     # Second pass: add edges from caller → callee using scope resolution
     for unit in code_units:
         caller_id = unit["id"]
         caller_file = unit.get("file", "")
         caller_name = unit.get("name", "")
+        caller_imports = unit.get("imports", [])
         caller_class = caller_name.split(".")[0] if "." in caller_name else None
+
+        # Build local import map from caller's imports
+        imported_symbols: dict[str, str] = {}
+        for imp in caller_imports:
+            imp_clean = imp.strip()
+            m_from = re.search(r"from\s+([A-Za-z0-9_.]+)\s+import\s+(.+)", imp_clean)
+            if m_from:
+                pkg_module = m_from.group(1).replace(".", "/")
+                symbols_part = m_from.group(2)
+                for sym_item in symbols_part.split(","):
+                    sym_item = sym_item.strip()
+                    if " as " in sym_item:
+                        orig, alias = sym_item.split(" as ")
+                        imported_symbols[alias.strip()] = f"{pkg_module}::{orig.strip()}"
+                    elif sym_item:
+                        imported_symbols[sym_item] = f"{pkg_module}::{sym_item}"
+            else:
+                m_imp = re.search(r"import\s+([A-Za-z0-9_.]+)(?:\s+as\s+([A-Za-z0-9_]+))?", imp_clean)
+                if m_imp:
+                    mod_path = m_imp.group(1).replace(".", "/")
+                    alias = m_imp.group(2) or m_imp.group(1).split(".")[-1]
+                    imported_symbols[alias] = mod_path
 
         for callee_raw in unit.get("calls", []):
             callee_id = None
             callee_base = callee_raw.split(".")[-1]
+            callee_prefix = callee_raw.split(".")[0] if "." in callee_raw else None
 
             # 1. Exact match on qualified name
             if callee_raw in name_to_id:
                 callee_id = name_to_id[callee_raw]
-            # 2. Member call (e.g. "calc.add" or "self.add") matching class method
+
+            # 2. 'self.' / 'cls.' / 'this.' call bound to caller's class
+            elif callee_prefix in ("self", "cls", "this") and caller_class:
+                callee_id = class_and_method_to_id.get((caller_class, callee_base))
+
+            # 3. Explicit Class.method match (e.g. User.save)
             elif "." in callee_raw:
                 parts = callee_raw.split(".")
                 callee_id = class_and_method_to_id.get((parts[0], parts[-1]))
-            
-            # 3. Intra-class resolution (calling sibling method in same class)
+
+                # Check if receiver variable matches an imported class
+                if not callee_id and parts[0] in imported_symbols:
+                    target_info = imported_symbols[parts[0]]
+                    for (c_name, m_name), target_id in class_and_method_to_id.items():
+                        if m_name == parts[-1] and (c_name in target_info or target_info.endswith(f"::{c_name}")):
+                            callee_id = target_id
+                            break
+
+            # 4. Intra-class resolution (calling sibling method in same class)
             if not callee_id and caller_class:
                 callee_id = class_and_method_to_id.get((caller_class, callee_base))
 
-            # 4. Intra-file resolution (function in same module)
-            if not callee_id:
-                callee_id = file_and_base_to_id.get((caller_file, callee_base))
+            # 5. Intra-file resolution (function/class in same file)
+            if not callee_id and (caller_file, callee_base) in file_and_base_to_ids:
+                candidates_in_file = file_and_base_to_ids[(caller_file, callee_base)]
+                if caller_class:
+                    for cid in candidates_in_file:
+                        if f"::{caller_class}." in cid:
+                            callee_id = cid
+                            break
+                if not callee_id:
+                    callee_id = candidates_in_file[0]
 
-            # 5. Global unique base name match
+            # 6. Imported symbol resolution
+            if not callee_id and callee_base in imported_symbols:
+                target_str = imported_symbols[callee_base]
+                for node_id in G.nodes:
+                    if target_str in node_id or node_id.endswith(f"::{callee_base}"):
+                        callee_id = node_id
+                        break
+
+            # 7. Receiver name heuristic (e.g. user.save -> User.save, auth_service.validate -> AuthService.validate)
+            if not callee_id and callee_prefix and callee_prefix not in ("self", "cls", "this"):
+                clean_prefix = callee_prefix.replace("_", "").lower()
+                for (cls_name, m_name), target_id in class_and_method_to_id.items():
+                    if m_name == callee_base and (cls_name.lower().endswith(clean_prefix) or clean_prefix in cls_name.lower()):
+                        callee_id = target_id
+                        break
+
+            # 8. Global unique base name match
             if not callee_id and callee_base in base_name_to_ids:
                 candidates = base_name_to_ids[callee_base]
                 if len(candidates) == 1:
                     callee_id = candidates[0]
                 else:
-                    # Pick candidate with closest file directory match
+                    # Disambiguate by directory proximity
                     caller_dir = str(Path(caller_file).parent)
                     best_match = None
                     for c_id in candidates:
@@ -206,7 +272,7 @@ def build_graph(code_units: list[dict]) -> nx.DiGraph:
                             break
                     callee_id = best_match or candidates[0]
 
-            # 6. Fallback to basic name lookup
+            # 9. Fallback to basic name lookup
             if not callee_id:
                 callee_id = name_to_id.get(callee_raw)
 

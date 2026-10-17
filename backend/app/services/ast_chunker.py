@@ -133,6 +133,7 @@ class ASTChunk:
             "start_line": self.start_line,
             "end_line": self.end_line,
             "calls": self.calls,
+            "imports": self.imports,
         }
 
     def to_dict(self) -> dict:

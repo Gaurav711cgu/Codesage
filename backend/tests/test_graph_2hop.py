@@ -77,3 +77,100 @@ def test_scope_aware_symbol_disambiguation():
     # 3. User.update_profile sibling call 'save' must resolve to User.save, NEVER Post.save
     assert G.has_edge("repo::models/user.py::User.update_profile::20", "repo::models/user.py::User.save::10")
     assert not G.has_edge("repo::models/user.py::User.update_profile::20", "repo::models/post.py::Post.save::10")
+
+
+def test_scope_aware_receiver_heuristics_and_imports():
+    """
+    Verify receiver heuristics and import matching accurately resolve ambiguous method calls.
+    e.g. auth_service.validate() vs payment_service.validate()
+    """
+    code_units = [
+        {
+            "id": "repo::services/auth.py::AuthService.validate::10",
+            "name": "AuthService.validate",
+            "file": "services/auth.py",
+            "type": "method",
+            "calls": [],
+            "imports": [],
+        },
+        {
+            "id": "repo::services/payment.py::PaymentService.validate::10",
+            "name": "PaymentService.validate",
+            "file": "services/payment.py",
+            "type": "method",
+            "calls": [],
+            "imports": [],
+        },
+        {
+            "id": "repo::controllers/checkout.py::process_order::5",
+            "name": "process_order",
+            "file": "controllers/checkout.py",
+            "type": "function",
+            "calls": ["payment_service.validate"],
+            "imports": ["from services.payment import PaymentService"],
+        },
+        {
+            "id": "repo::controllers/login.py::do_login::5",
+            "name": "do_login",
+            "file": "controllers/login.py",
+            "type": "function",
+            "calls": ["auth_service.validate"],
+            "imports": ["from services.auth import AuthService"],
+        },
+    ]
+
+    G = build_graph(code_units)
+
+    # process_order must connect to PaymentService.validate, NOT AuthService.validate
+    assert G.has_edge("repo::controllers/checkout.py::process_order::5", "repo::services/payment.py::PaymentService.validate::10")
+    assert not G.has_edge("repo::controllers/checkout.py::process_order::5", "repo::services/auth.py::AuthService.validate::10")
+
+    # do_login must connect to AuthService.validate, NOT PaymentService.validate
+    assert G.has_edge("repo::controllers/login.py::do_login::5", "repo::services/auth.py::AuthService.validate::10")
+    assert not G.has_edge("repo::controllers/login.py::do_login::5", "repo::services/payment.py::PaymentService.validate::10")
+
+
+def test_scope_aware_self_and_this_binding():
+    """Verify 'self.method' and 'this.method' explicitly bind to the enclosing class."""
+    code_units = [
+        {
+            "id": "repo::calculator.py::Calculator.compute::10",
+            "name": "Calculator.compute",
+            "file": "calculator.py",
+            "type": "method",
+            "calls": ["self.add", "self.multiply"],
+            "imports": [],
+        },
+        {
+            "id": "repo::calculator.py::Calculator.add::20",
+            "name": "Calculator.add",
+            "file": "calculator.py",
+            "type": "method",
+            "calls": [],
+            "imports": [],
+        },
+        {
+            "id": "repo::calculator.py::Calculator.multiply::30",
+            "name": "Calculator.multiply",
+            "file": "calculator.py",
+            "type": "method",
+            "calls": [],
+            "imports": [],
+        },
+        {
+            "id": "repo::other.py::Other.add::10",
+            "name": "Other.add",
+            "file": "other.py",
+            "type": "method",
+            "calls": [],
+            "imports": [],
+        },
+    ]
+
+    G = build_graph(code_units)
+
+    # Calculator.compute calling self.add must resolve to Calculator.add, never Other.add
+    assert G.has_edge("repo::calculator.py::Calculator.compute::10", "repo::calculator.py::Calculator.add::20")
+    assert not G.has_edge("repo::calculator.py::Calculator.compute::10", "repo::other.py::Other.add::10")
+    assert G.has_edge("repo::calculator.py::Calculator.compute::10", "repo::calculator.py::Calculator.multiply::30")
+
