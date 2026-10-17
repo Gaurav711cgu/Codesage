@@ -40,11 +40,15 @@ def get_default_dense_embedder():
     global _default_dense_fn
     if _default_dense_fn is None:
         try:
-            import chromadb.utils.embedding_functions as ef
-            _default_dense_fn = ef.DefaultEmbeddingFunction()
-        except Exception as exc:
-            logger.warning("Failed to initialize Chroma default ONNX dense embedder: %s", exc)
-            _default_dense_fn = None
+            from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
+            _default_dense_fn = ONNXMiniLM_L6_V2(preferred_providers=["CPUExecutionProvider"])
+        except Exception:
+            try:
+                import chromadb.utils.embedding_functions as ef
+                _default_dense_fn = ef.DefaultEmbeddingFunction()
+            except Exception as exc:
+                logger.warning("Failed to initialize Chroma default ONNX dense embedder: %s", exc)
+                _default_dense_fn = None
     return _default_dense_fn
 
 
