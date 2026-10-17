@@ -33,7 +33,7 @@ import tree_sitter_javascript as tsjavascript
 import tree_sitter_typescript as tstypescript
 
 from app.core.config import settings
-from app.models.repo import Repo, Task
+from app.models.repo import GraphEdge, Repo, Task
 from app.services import chromadb_client, graph as graph_svc
 from app.services.gemini import embed_texts
 from app.services.hybrid_search import bm25_manager
@@ -201,7 +201,11 @@ def parse_file(
 
 async def _check_repo_size(github_url: str) -> None:
     """Raise if repo > MAX_REPO_SIZE_KB using GitHub API."""
+    if not (github_url.startswith("https://github.com/") or github_url.startswith("http://github.com/")):
+        return
     parts = github_url.rstrip("/").split("/")
+    if len(parts) < 2:
+        return
     owner, repo = parts[-2], parts[-1]
     
     headers = {"Accept": "application/vnd.github.v3+json"}
@@ -247,25 +251,39 @@ async def run_ingestion(
         await sse_callback(data)
 
     try:
-        # ── Stage 1: Clone ────────────────────────────────────────────────────
+        # ── Stage 1: Clone or Copy ─────────────────────────────────────────────
         await _update_repo_status(db, repo_id, "cloning")
         await _update_task(db, task_id, "cloning")
-        await emit({"stage": "cloning", "message": "Checking repository size…"})
 
-        await _check_repo_size(github_url)
+        local_path = Path(github_url).expanduser().resolve() if not (github_url.startswith("http://") or github_url.startswith("https://") or github_url.startswith("git@")) else None
+        if local_path and local_path.is_dir():
+            await emit({"stage": "cloning", "message": f"Copying local project directory {local_path.name}…"})
+            if clone_dir.exists():
+                shutil.rmtree(clone_dir)
+            shutil.copytree(
+                local_path,
+                clone_dir,
+                ignore=shutil.ignore_patterns(
+                    ".git", "__pycache__", ".venv", "venv", "node_modules", "target", "dist", "build", ".next", ".mypy_cache", ".pytest_cache"
+                ),
+            )
+            logger.info("Copied local directory %s to %s", local_path, clone_dir)
+        else:
+            await emit({"stage": "cloning", "message": "Checking repository size…"})
+            await _check_repo_size(github_url)
 
-        clone_dir.mkdir(parents=True, exist_ok=True)
-        await emit({"stage": "cloning", "message": "Cloning repository (depth=1)…"})
+            clone_dir.mkdir(parents=True, exist_ok=True)
+            await emit({"stage": "cloning", "message": "Cloning repository (depth=1)…"})
 
-        proc = await asyncio.create_subprocess_exec(
-            "git", "clone", "--depth", "1", "--single-branch", github_url, str(clone_dir),
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        stdout, stderr = await proc.communicate()
-        if proc.returncode != 0:
-            raise RuntimeError(f"Git clone failed: {stderr.decode()}")
-        logger.info("Cloned %s to %s", github_url, clone_dir)
+            proc = await asyncio.create_subprocess_exec(
+                "git", "clone", "--depth", "1", "--single-branch", github_url, str(clone_dir),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await proc.communicate()
+            if proc.returncode != 0:
+                raise RuntimeError(f"Git clone failed: {stderr.decode()}")
+            logger.info("Cloned %s to %s", github_url, clone_dir)
 
         # ── Stage 2: Discover files ───────────────────────────────────────────
         await _update_repo_status(db, repo_id, "parsing")
