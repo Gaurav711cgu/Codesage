@@ -345,16 +345,12 @@ def train(base_model_name: str = DEFAULT_MODEL) -> None:
     _orig_training_step = trainer.training_step
 
     def _safe_training_step(model, inputs, num_items_in_batch=None):
-        """Guard num_items_in_batch and prevent BFloat16 unscale crashes."""
+        """Guard num_items_in_batch and ensure GradScaler remains disabled."""
         if isinstance(num_items_in_batch, int):
             num_items_in_batch = None
         loss = _orig_training_step(model, inputs, num_items_in_batch)
-        # Ensure scaler remains disabled and gradients are safe
         if getattr(trainer.accelerator, "scaler", None) is not None:
             trainer.accelerator.scaler = None
-        for p in model.parameters():
-            if p.grad is not None and p.grad.dtype == torch.bfloat16:
-                p.grad.data = p.grad.data.to(torch.float16)
         return loss
 
     trainer.training_step = _safe_training_step
