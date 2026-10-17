@@ -37,6 +37,7 @@ from app.models.repo import Repo, Task
 from app.services import chromadb_client, graph as graph_svc
 from app.services.gemini import embed_texts
 from app.services.hybrid_search import bm25_manager
+from app.services.incremental import IncrementalManifest, compute_file_sha256
 
 logger = logging.getLogger(__name__)
 
@@ -334,6 +335,15 @@ async def run_ingestion(
         await _update_task(db, task_id, "discovering", 0, total_files)
         logger.info("Found %d target files in %s", total_files, clone_dir)
 
+        # Content-addressed change detection via SHA-256 Merkle manifest
+        manifest_dir = Path(settings.chroma_persist_dir) / "manifests"
+        manifest = IncrementalManifest(repo_id_str, manifest_dir=manifest_dir)
+        diff = manifest.diff_directory(clone_dir, target_files)
+        logger.info(
+            "Incremental diff for %s: %d added, %d modified, %d deleted, %d unchanged",
+            repo_id_str, len(diff.added_files), len(diff.modified_files), len(diff.deleted_paths), diff.unchanged_count
+        )
+
         # ── Stage 3: Parse ────────────────────────────────────────────────────
         all_units: list[CodeUnit] = []
         for i, fpath in enumerate(target_files):
@@ -345,6 +355,14 @@ async def run_ingestion(
             if i % 10 == 0 or i == total_files - 1:
                 await emit({"stage": "parsing", "current": i + 1, "total": total_files})
                 await _update_task(db, task_id, "parsing", i + 1, total_files)
+
+        # Record file hashes and chunk ids in manifest
+        for fpath in target_files:
+            file_rel = str(fpath.relative_to(clone_dir))
+            fhash = compute_file_sha256(fpath)
+            unit_ids = [u.id for u in all_units if u.file == file_rel]
+            manifest.record_file(file_rel, fhash, unit_ids)
+        manifest.save()
 
         functions = [u for u in all_units if u.type == "function"]
         classes   = [u for u in all_units if u.type == "class"]
