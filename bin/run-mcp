@@ -12,5 +12,7 @@ if [[ ! -x "${VENV_PYTHON}" ]]; then
 fi
 
 export PYTHONPATH="${REPO_ROOT}/backend:${REPO_ROOT}"
+cd "${REPO_ROOT}"
 
 exec "${VENV_PYTHON}" -m app.mcp_server "$@"
+

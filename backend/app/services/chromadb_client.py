@@ -59,13 +59,47 @@ SUFFIXES = ("_functions", "_classes", "_files")
 
 def collection_name(repo_id: str, suffix: str) -> str:
     provider = _get_provider()
-    return f"{repo_id}{suffix}_{provider}"
+    norm_id = repo_id
+    if len(repo_id) == 32 and "-" not in repo_id:
+        try:
+            import uuid
+            norm_id = str(uuid.UUID(repo_id))
+        except Exception:
+            pass
+    return f"{norm_id}{suffix}_{provider}"
 
 
 def get_or_create_collection(repo_id: str, suffix: str) -> chromadb.Collection:
-    name = collection_name(repo_id, suffix)
-    return get_client().get_or_create_collection(
-        name=name,
+    norm_id = repo_id
+    if len(repo_id) == 32 and "-" not in repo_id:
+        try:
+            import uuid
+            norm_id = str(uuid.UUID(repo_id))
+        except Exception:
+            norm_id = repo_id
+
+    client = get_client()
+    target_name = collection_name(norm_id, suffix)
+
+    try:
+        existing_cols = {c.name: c for c in client.list_collections()}
+        if target_name in existing_cols:
+            return existing_cols[target_name]
+
+        # Check fallback candidates (e.g. without provider or unhyphenated)
+        candidates = [
+            collection_name(repo_id, suffix),
+            f"{norm_id}{suffix}",
+            f"{repo_id}{suffix}",
+        ]
+        for cand in candidates:
+            if cand in existing_cols:
+                return existing_cols[cand]
+    except Exception:
+        pass
+
+    return client.get_or_create_collection(
+        name=target_name,
         metadata={"hnsw:space": "cosine"},
     )
 
