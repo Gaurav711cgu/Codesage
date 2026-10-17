@@ -14,13 +14,13 @@ export default function Footer() {
             <span>CodeSageZ Platform</span>
           </div>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Enterprise Graph-RAG inference engine. AST parsing via Tree-sitter, dense semantic vector search via ChromaDB, and structural graph traversal with NetworkX.
+            Repository intelligence prototype. AST parsing via Tree-sitter, dense semantic vector search via ChromaDB, and structural graph traversal with NetworkX.
           </p>
           <div className="flex items-center gap-2 pt-2 text-[10px]">
             <span className="w-1.5 h-1.5 bg-primary rounded-[1px]"></span>
-            <span className="text-foreground">MODEL: gemini-2.5-flash</span>
+            <span className="text-foreground">MODEL: configured per backend</span>
             <span className="text-muted-foreground">|</span>
-            <span className="text-foreground">LATENCY: &lt;50ms</span>
+            <span className="text-foreground">SOURCE: inspectable context</span>
           </div>
         </div>
 
@@ -102,8 +102,8 @@ export default function Footer() {
       </div>
 
       <div className="max-w-7xl mx-auto mt-8 pt-4 border-t border-border/40 flex flex-col sm:flex-row justify-between items-center gap-2 text-[10px] text-muted-foreground">
-        <div>&copy; 2026 CodeSageZ Systems. All systems operational.</div>
-        <div>Built for production LLM code generation &amp; high-throughput retrieval.</div>
+        <div>&copy; 2026 CodeSageZ Systems. Local source exploration.</div>
+        <div>Built to inspect source, retrieval context, and call relationships.</div>
       </div>
     </footer>
   );

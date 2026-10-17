@@ -1,0 +1,81 @@
+{
+  "label": "Authored local source-explorer sample",
+  "generatedWith": "Python ast; static function and call inspection",
+  "files": [
+    {
+      "path": "api.py",
+      "source": "# A small, local example used to explore source relationships.\nfrom graph import build_graph\nfrom retrieval import rank_context\n\n\ndef inspect_repository(files, question):\n    \"\"\"Collect structural context before a reviewer asks a question.\"\"\"\n    graph = build_graph(files)\n    context = rank_context(question, graph[\"symbols\"])\n    return {\"context\": context, \"graph\": graph}\n"
+    },
+    {
+      "path": "graph.py",
+      "source": "# Source relationships are resolved from local syntax trees.\nfrom parser import parse_symbols, resolve_calls\n\n\ndef build_graph(files):\n    \"\"\"Keep definitions and their resolved calls together.\"\"\"\n    symbols = []\n    edges = []\n\n    for path, source in files.items():\n        symbols.extend(parse_symbols(path, source))\n\n    for path, source in files.items():\n        edges.extend(resolve_calls(path, source, symbols))\n\n    return {\"symbols\": symbols, \"edges\": edges}\n\n\ndef neighbors(name, edges):\n    \"\"\"Return direct callees for a selected definition.\"\"\"\n    return [edge[\"to\"] for edge in edges if edge[\"from\"] == name]\n"
+    },
+    {
+      "path": "parser.py",
+      "source": "import ast\n\n\ndef parse_symbols(path, source):\n    \"\"\"Return function names and their original source locations.\"\"\"\n    tree = ast.parse(source)\n    return [{\"name\": node.name, \"file\": path, \"line\": node.lineno}\n            for node in ast.walk(tree)\n            if isinstance(node, ast.FunctionDef)]\n\n\ndef resolve_calls(path, source, symbols):\n    \"\"\"Keep calls whose target is a known function in this sample.\"\"\"\n    known = {symbol[\"name\"] for symbol in symbols}\n    tree = ast.parse(source)\n    edges = []\n    for function in ast.walk(tree):\n        if isinstance(function, ast.FunctionDef):\n            for call in ast.walk(function):\n                if isinstance(call, ast.Call) and isinstance(call.func, ast.Name):\n                    if call.func.id in known:\n                        edges.append({\"from\": function.name, \"to\": call.func.id})\n    return edges\n"
+    },
+    {
+      "path": "retrieval.py",
+      "source": "# This sample performs local lexical ranking, without a model call.\n\ndef lexical_score(question, symbol):\n    words = set(question.lower().split())\n    name = symbol[\"name\"].replace(\"_\", \" \").lower()\n    return sum(word in name for word in words)\n\n\ndef rank_context(question, symbols):\n    \"\"\"Order definitions by a small, inspectable lexical score.\"\"\"\n    ranked = sorted(symbols,\n                    key=lambda symbol: lexical_score(question, symbol),\n                    reverse=True)\n    return ranked[:4]\n"
+    }
+  ],
+  "symbols": [
+    {
+      "name": "inspect_repository",
+      "file": "api.py",
+      "line": 6
+    },
+    {
+      "name": "build_graph",
+      "file": "graph.py",
+      "line": 5
+    },
+    {
+      "name": "neighbors",
+      "file": "graph.py",
+      "line": 19
+    },
+    {
+      "name": "parse_symbols",
+      "file": "parser.py",
+      "line": 4
+    },
+    {
+      "name": "resolve_calls",
+      "file": "parser.py",
+      "line": 12
+    },
+    {
+      "name": "lexical_score",
+      "file": "retrieval.py",
+      "line": 3
+    },
+    {
+      "name": "rank_context",
+      "file": "retrieval.py",
+      "line": 9
+    }
+  ],
+  "edges": [
+    {
+      "from": "inspect_repository",
+      "to": "build_graph"
+    },
+    {
+      "from": "inspect_repository",
+      "to": "rank_context"
+    },
+    {
+      "from": "build_graph",
+      "to": "parse_symbols"
+    },
+    {
+      "from": "build_graph",
+      "to": "resolve_calls"
+    },
+    {
+      "from": "rank_context",
+      "to": "lexical_score"
+    }
+  ]
+}
