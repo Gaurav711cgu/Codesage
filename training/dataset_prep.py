@@ -199,13 +199,25 @@ def main() -> None:
         args.source_scan_limit,
     )
 
-    ds = datasets.load_dataset(
-        "bigcode/commitpack",
-        "python",
-        split="train",
-        streaming=True,
-        trust_remote_code=True,     # Requires datasets <= 2.19.2
-    ).shuffle(seed=RANDOM_SEED, buffer_size=10_000)
+    remote_shards = [
+        f"https://huggingface.co/datasets/bigcode/commitpack/resolve/main/data/python/python-{i:04d}.jsonl"
+        for i in range(1, 11)
+    ]
+    try:
+        ds = datasets.load_dataset(
+            "json",
+            data_files=remote_shards,
+            split="train",
+            streaming=True,
+        ).shuffle(seed=RANDOM_SEED, buffer_size=10_000)
+    except Exception as e:
+        logger.warning("Streaming shards failed (%s), falling back to starter seed generator", e)
+        try:
+            from training.seed_starter_data import main as seed_main
+        except ImportError:
+            from seed_starter_data import main as seed_main
+        seed_main()
+        return
 
     filters = [
         ("language",        filter_language),
