@@ -229,6 +229,9 @@ def train(base_model_name: str = DEFAULT_MODEL) -> None:
         load_in_4bit=True,
     )
 
+    if hasattr(model, "config"):
+        model.config.torch_dtype = torch.float16
+
     # Attach LoRA adapters
     logger.info("Attaching LoRA adapters (r=16, alpha=32)")
     model = FastLanguageModel.get_peft_model(
@@ -244,6 +247,19 @@ def train(base_model_name: str = DEFAULT_MODEL) -> None:
         use_gradient_checkpointing="unsloth",  # Unsloth's optimized checkpointing
         random_state=RANDOM_SEED,
     )
+
+    # Force all bfloat16 parameters and buffers to float16 to prevent GradScaler crash on T4
+    bfloat16_count = 0
+    for name, param in model.named_parameters():
+        if param.dtype == torch.bfloat16:
+            param.data = param.data.to(torch.float16)
+            bfloat16_count += 1
+    for name, buf in model.named_buffers():
+        if buf.dtype == torch.bfloat16:
+            buf.data = buf.data.to(torch.float16)
+            bfloat16_count += 1
+    if bfloat16_count > 0:
+        logger.info("Converted %d bfloat16 tensors to float16 for T4 GradScaler compatibility", bfloat16_count)
 
     # ── Build training arguments (version-aware) ──────────────────────────────
     # Core args shared between SFTConfig and TrainingArguments
@@ -362,7 +378,7 @@ def train(base_model_name: str = DEFAULT_MODEL) -> None:
     # Write training log
     log = {
         **provenance(),
-        "base_model": BASE_MODEL,
+        "base_model": base_model_name,
         "dataset_manifest_sha256": sha256_file(manifest_path),
         "random_seed": RANDOM_SEED,
         "max_seq_length": MAX_SEQ_LENGTH,
