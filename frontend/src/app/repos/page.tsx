@@ -10,7 +10,7 @@ export default function ReposPage() {
   const [file, setFile] = useState(sample.files[1].path);
   const [query, setQuery] = useState("");
   const [view, setView] = useState<"source" | "graph">("source");
-  const [connected, setConnected] = useState(false);
+  const [connected, setConnected] = useState(true);
   const selected = sample.files.find((item) => item.path === file)!;
   const symbols = sample.symbols.filter((item) => item.file === file);
   const results = useMemo(() => sample.symbols.filter((symbol) => `${symbol.name} ${symbol.file}`.toLowerCase().includes(query.toLowerCase())), [query]);

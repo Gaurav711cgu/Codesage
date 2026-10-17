@@ -62,14 +62,17 @@ export default function ReposPage() {
   }, [messages]);
 
   const validateUrl = (url: string) => {
-    const pattern = /^https:\/\/github\.com\/[\w.\-]+\/[\w.\-]+\/?$/;
-    return pattern.test(url.trim());
+    const trimmed = url.trim();
+    if (!trimmed) return false;
+    const isGithub = /^https?:\/\/(www\.)?github\.com\/[\w.\-]+\/[\w.\-]+\/?$/.test(trimmed);
+    const isLocal = trimmed.startsWith("/") || trimmed.startsWith("./") || trimmed.includes("/") || trimmed.length > 2;
+    return isGithub || isLocal;
   };
 
   const handleIngest = async () => {
     const url = githubUrl.trim();
     if (!validateUrl(url)) {
-      setUrlError("Invalid URL: must be https://github.com/owner/repo");
+      setUrlError("Invalid target: provide a GitHub URL (https://github.com/owner/repo) or local folder path");
       return;
     }
     setUrlError("");
@@ -195,12 +198,12 @@ export default function ReposPage() {
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="flex-1 w-full relative">
             <input
-              type="url"
+              type="text"
               value={githubUrl}
               onChange={(e) => { setGithubUrl(e.target.value); setUrlError(""); }}
-              placeholder="https://github.com/owner/repo"
+              placeholder="https://github.com/owner/repo or local directory path"
               className="input-field"
-              aria-label="GitHub repository URL"
+              aria-label="Repository URL or local path"
             />
             {urlError && (
               <p className="text-[11px] text-destructive mt-1.5 flex items-center gap-1 font-mono">
@@ -215,6 +218,24 @@ export default function ReposPage() {
           >
             {ingesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Database className="h-3.5 w-3.5" />}
             {ingesting ? "Indexing" : "Index"}
+          </button>
+        </div>
+
+        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground font-mono">
+          <span>Presets:</span>
+          <button
+            type="button"
+            onClick={() => setGithubUrl("benchmarks/data/sample_repo")}
+            className="px-2 py-0.5 border border-border rounded bg-muted hover:text-foreground transition-colors"
+          >
+            Sample Repo
+          </button>
+          <button
+            type="button"
+            onClick={() => setGithubUrl("backend/app")}
+            className="px-2 py-0.5 border border-border rounded bg-muted hover:text-foreground transition-colors"
+          >
+            CodeSage Core
           </button>
         </div>
 
