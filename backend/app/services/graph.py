@@ -29,6 +29,125 @@ def deserialise_graph(graph_data: dict | str) -> nx.DiGraph:
     return nx.node_link_graph(graph_data)
 
 
+def _load_graph_from_disk(repo_id: str, norm_id: str) -> Optional[nx.DiGraph]:
+    """Load graph from SQLite graph_edges table and manifest metadata when not in memory."""
+    import sqlite3
+    import uuid
+    from app.core.config import settings
+
+    db_path = settings.database_url.replace("sqlite+aiosqlite:///", "").replace("sqlite:///", "")
+    candidate_dbs = [
+        Path(__file__).resolve().parents[3] / "app.db",
+        Path(__file__).resolve().parents[2] / "app.db",
+        Path(db_path),
+        Path("app.db"),
+    ]
+    target_db = None
+    for p in candidate_dbs:
+        if p and p.exists():
+            try:
+                conn = sqlite3.connect(str(p))
+                cur = conn.cursor()
+                cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='graph_edges'")
+                if cur.fetchone():
+                    target_db = p
+                    conn.close()
+                    break
+                conn.close()
+            except Exception:
+                pass
+
+    if not target_db:
+        return None
+
+    resolved_id = repo_id
+    try:
+        uuid.UUID(repo_id)
+    except Exception:
+        try:
+            conn = sqlite3.connect(str(target_db))
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT id FROM repos WHERE (name = ? OR name LIKE ?) AND status = 'complete' ORDER BY updated_at DESC LIMIT 1",
+                (repo_id, f"%{repo_id}%"),
+            )
+            row = cur.fetchone()
+            if row:
+                resolved_id = str(row[0])
+            conn.close()
+        except Exception:
+            pass
+
+    actual_norm_id = resolved_id
+    try:
+        actual_norm_id = str(uuid.UUID(resolved_id))
+    except Exception:
+        pass
+    unhyphen = actual_norm_id.replace("-", "")
+
+    edges: list[tuple[str, str]] = []
+    try:
+        conn = sqlite3.connect(str(target_db))
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT source, target FROM graph_edges WHERE repo_id = ? OR repo_id = ? OR repo_id = ?",
+            (resolved_id, actual_norm_id, unhyphen),
+        )
+        edges = [(r[0], r[1]) for r in cur.fetchall()]
+        conn.close()
+    except Exception as exc:
+        logger.warning("Failed to query graph_edges from %s: %s", target_db, exc)
+
+    manifest_dirs = [
+        Path(__file__).resolve().parents[3] / ".chroma" / "manifests",
+        Path(__file__).resolve().parents[2] / ".chroma" / "manifests",
+        Path(settings.chroma_persist_dir) / "manifests",
+        Path(".chroma/manifests"),
+    ]
+    manifest_file = None
+    for md in manifest_dirs:
+        for fid in (actual_norm_id, unhyphen, resolved_id, repo_id):
+            cand = md / f"{fid}_manifest.json"
+            if cand.exists():
+                manifest_file = cand
+                break
+        if manifest_file:
+            break
+
+    if not edges and not manifest_file:
+        return None
+
+    G = nx.DiGraph()
+    if manifest_file:
+        try:
+            manifest_data = json.loads(manifest_file.read_text())
+            for _, file_info in manifest_data.items():
+                for c in file_info.get("chunks_data", []):
+                    G.add_node(c["id"], **c)
+        except Exception as exc:
+            logger.warning("Failed to load manifest %s: %s", manifest_file, exc)
+
+    G.add_edges_from(edges)
+
+    for node in G.nodes():
+        if "name" not in G.nodes[node]:
+            parts = str(node).split("::")
+            if len(parts) >= 4:
+                G.nodes[node]["name"] = parts[2]
+                G.nodes[node]["file"] = parts[1]
+                try:
+                    G.nodes[node]["start_line"] = int(parts[3])
+                except ValueError:
+                    pass
+            elif len(parts) == 3:
+                G.nodes[node]["name"] = parts[2]
+                G.nodes[node]["file"] = parts[1]
+            else:
+                G.nodes[node]["name"] = str(node)
+
+    return G
+
+
 def get_graph(
     repo_id: str,
     graph_data: Optional[dict | str | list[tuple[str, str]]] = None,
@@ -37,13 +156,35 @@ def get_graph(
     """
     Return the cached graph for repo_id.
     If not cached and graph_data (or edges) is provided, deserialise and cache it.
-    Raises ValueError if neither source is available.
+    If neither is provided, automatically loads from SQLite and manifest.
+    Raises ValueError if graph cannot be found.
     """
+    import uuid
+    norm_id = repo_id
+    if len(repo_id) == 32 and "-" not in repo_id:
+        try:
+            norm_id = str(uuid.UUID(repo_id))
+        except Exception:
+            pass
+
+    if norm_id in _graph_cache:
+        return _graph_cache[norm_id]
     if repo_id in _graph_cache:
         return _graph_cache[repo_id]
 
     source = edges if edges is not None else graph_data
     if source is None:
+        G = _load_graph_from_disk(repo_id, norm_id)
+        if G is not None:
+            _graph_cache[norm_id] = G
+            _graph_cache[repo_id] = G
+            logger.info(
+                "Loaded graph from disk for repo %s: %d nodes, %d edges",
+                repo_id,
+                G.number_of_nodes(),
+                G.number_of_edges(),
+            )
+            return G
         raise ValueError(
             f"Graph for repo {repo_id} is not in cache and no graph data or edges were provided."
         )
@@ -59,6 +200,7 @@ def get_graph(
     else:
         raise ValueError(f"Unsupported graph data format: {type(source)}")
 
+    _graph_cache[norm_id] = G
     _graph_cache[repo_id] = G
     logger.info(
         "Loaded graph for repo %s: %d nodes, %d edges",

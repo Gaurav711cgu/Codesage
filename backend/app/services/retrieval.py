@@ -415,6 +415,7 @@ def _raw_retrieve(
     graph_data_json: str | None = None,
     hop_depth: int = 1,
 ) -> tuple[list[RetrievedChunk], int]:
+    repo_id = chromadb_client._resolve_id(repo_id)
     # 1. Check query cache (jittered TTL)
     cached = query_cache.get(repo_id, query, mode)
     if cached is not None:

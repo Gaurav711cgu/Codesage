@@ -57,26 +57,50 @@ def get_client() -> Any:
 SUFFIXES = ("_functions", "_classes", "_files")
 
 
+def _resolve_id(repo_id: str) -> str:
+    """Resolve repo alias or query to normalized repo UUID if possible."""
+    if not repo_id:
+        return repo_id
+    try:
+        import uuid
+        return str(uuid.UUID(repo_id))
+    except Exception:
+        pass
+    try:
+        import sqlite3
+        from pathlib import Path
+        candidate_dbs = [
+            Path(__file__).resolve().parents[3] / "app.db",
+            Path(__file__).resolve().parents[2] / "app.db",
+            Path(__file__).resolve().parents[1] / "app.db",
+            Path("app.db"),
+        ]
+        target_db = next((p for p in candidate_dbs if p and p.exists()), None)
+        if target_db:
+            conn = sqlite3.connect(str(target_db))
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT id FROM repos WHERE (name = ? OR name LIKE ?) AND status = 'complete' ORDER BY updated_at DESC LIMIT 1",
+                (repo_id, f"%{repo_id}%"),
+            )
+            row = cur.fetchone()
+            conn.close()
+            if row:
+                import uuid
+                return str(uuid.UUID(str(row[0])))
+    except Exception:
+        pass
+    return repo_id
+
+
 def collection_name(repo_id: str, suffix: str) -> str:
     provider = _get_provider()
-    norm_id = repo_id
-    if len(repo_id) == 32 and "-" not in repo_id:
-        try:
-            import uuid
-            norm_id = str(uuid.UUID(repo_id))
-        except Exception:
-            pass
+    norm_id = _resolve_id(repo_id)
     return f"{norm_id}{suffix}_{provider}"
 
 
 def get_or_create_collection(repo_id: str, suffix: str) -> chromadb.Collection:
-    norm_id = repo_id
-    if len(repo_id) == 32 and "-" not in repo_id:
-        try:
-            import uuid
-            norm_id = str(uuid.UUID(repo_id))
-        except Exception:
-            norm_id = repo_id
+    norm_id = _resolve_id(repo_id)
 
     client = get_client()
     target_name = collection_name(norm_id, suffix)

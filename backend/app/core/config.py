@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     chromadb_url: str = ""
     chroma_persist_directory: str = "./.chroma"
     chroma_auth_token: str = ""
+    embedding_provider: str = "local"
 
     @property
     def chroma_persist_dir(self) -> str:

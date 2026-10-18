@@ -41,6 +41,11 @@ TARGET_PRESETS = {
         "path": ROOT_DIR / "backend" / "app",
         "description": "CodeSage backend engine architecture (Graph-RAG, Ingestion, MCP)",
     },
+    "pytest": {
+        "name": "pytest",
+        "path": BACKEND_DIR / "venv" / "lib" / "python3.11" / "site-packages" / "_pytest",
+        "description": "Pytest core engine (fixtures, runner, terminal, python AST)",
+    },
 }
 
 
@@ -115,7 +120,7 @@ async def main_async() -> int:
     parser = argparse.ArgumentParser(description="Seed CodeSage with sample and benchmark repositories.")
     parser.add_argument(
         "--target",
-        choices=["sample", "core", "all"],
+        choices=["sample", "core", "pytest", "all"],
         default="sample",
         help="Repository target to seed (default: sample)",
     )
@@ -126,7 +131,7 @@ async def main_async() -> int:
     )
     args = parser.parse_args()
 
-    targets_to_seed = ["sample", "core"] if args.target == "all" else [args.target]
+    targets_to_seed = ["sample", "core", "pytest"] if args.target == "all" else [args.target]
 
     print("=" * 60)
     print("  CodeSage Dynamic Repository Seeder")

@@ -27,8 +27,8 @@ def _get_provider() -> EmbeddingProvider:
     provider_env = os.getenv("EMBEDDING_PROVIDER", "").lower().strip()
     if provider_env in ("voyage", "openai", "gemini", "local"):
         return provider_env  # type: ignore[return-value]
-    if settings.gemini_api_key:
-        return "gemini"
+    if getattr(settings, "embedding_provider", None) in ("voyage", "openai", "gemini", "local"):
+        return settings.embedding_provider  # type: ignore[return-value]
     return "local"
 
 

@@ -228,6 +228,26 @@ class ASTChunker:
                                     "utf-8", errors="replace"
                                 )
                             )
+                args_node = node.child_by_field_name("arguments")
+                if args_node:
+                    for arg in args_node.children:
+                        if arg.type == "identifier":
+                            calls.append(
+                                src_bytes[arg.start_byte:arg.end_byte].decode(
+                                    "utf-8", errors="replace"
+                                )
+                            )
+                        elif arg.type in ("attribute", "member_expression"):
+                            attr = (
+                                arg.child_by_field_name("attribute")
+                                or arg.child_by_field_name("property")
+                            )
+                            if attr:
+                                calls.append(
+                                    src_bytes[attr.start_byte:attr.end_byte].decode(
+                                        "utf-8", errors="replace"
+                                    )
+                                )
             for child in node.children:
                 walk(child)
 
@@ -595,6 +615,16 @@ class ASTChunker:
                             calls.append(sub.func.id)
                         elif isinstance(sub.func, ast.Attribute):
                             calls.append(sub.func.attr)
+                        for arg in sub.args:
+                            if isinstance(arg, ast.Name):
+                                calls.append(arg.id)
+                            elif isinstance(arg, ast.Attribute):
+                                calls.append(arg.attr)
+                        for kw in sub.keywords:
+                            if isinstance(kw.value, ast.Name):
+                                calls.append(kw.value.id)
+                            elif isinstance(kw.value, ast.Attribute):
+                                calls.append(kw.value.attr)
 
                 parent_ctx = ParentContext(
                     file=file_rel,
