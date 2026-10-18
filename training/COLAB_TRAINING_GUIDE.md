@@ -22,12 +22,17 @@ This guide walks you through fine-tuning **`Qwen/Qwen2.5-Coder-1.5B-Instruct`** 
 ### Cell 1–3: Hardware & Environment
 - **`!nvidia-smi`**: Checks available VRAM (T4 provides ~15 GB VRAM).
 - **Google Drive Mount** (Optional): Mounts `/content/drive` to automatically back up checkpoints across session resets.
-- **Dependency Installation**:
-  ```bash
-  !pip install --no-cache-dir "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
-  !pip install --no-cache-dir --no-deps trl peft accelerate bitsandbytes
-  !pip install "datasets==3.6.0" codebleu human-eval
-  ```
+- **Dependency Installation (Choose Track 1 or Track 2)**:
+  - **Track 1: Standard Hugging Face PEFT (Zero Unsloth - 100% Reliable)**:
+    ```bash
+    !pip install transformers peft bitsandbytes accelerate datasets codebleu human-eval
+    ```
+  - **Track 2: Unsloth Fast Patching**:
+    ```bash
+    !pip install --no-cache-dir "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
+    !pip install --no-cache-dir --no-deps trl peft accelerate bitsandbytes
+    !pip install "datasets==3.6.0" codebleu human-eval
+    ```
 
 ### Cell 4–5: Code & Environment Check
 - Clones `https://github.com/Gaurav711cgu/Codesage.git` and checks out branch `feat/gravitas-modernization-v2`.
@@ -53,7 +58,18 @@ This guide walks you through fine-tuning **`Qwen/Qwen2.5-Coder-1.5B-Instruct`** 
   ```
 
 ### Cell 8: QLoRA Fine-Tuning Execution
-- Executes `python training/finetune.py --model-size 1.5b` (or `--model-size 7b`).
+- **Track 1 (Hugging Face PEFT - Rock Solid):**
+  ```bash
+  !python training/finetune_hf.py --model-size 1.5b
+  # or
+  !python training/finetune_hf.py --model-size 7b
+  ```
+- **Track 2 (Unsloth QLoRA with T4 GradScaler Fix):**
+  ```bash
+  !python training/finetune.py --model-size 1.5b
+  # or
+  !python training/finetune.py --model-size 7b
+  ```
 - **Model Choice:**
   - **`1.5b` (`Qwen2.5-Coder-1.5B-Instruct`):** Guaranteed safe on free Colab T4 (~7 GB VRAM). Fast 3-epoch training in ~25 mins.
   - **`7b` (`Qwen2.5-Coder-7B-Instruct`):** State-of-the-art open code model. Fits in ~10 GB VRAM with 4-bit Unsloth. Recommended if using Colab A100/L4 or for high-accuracy SWE reasoning.
