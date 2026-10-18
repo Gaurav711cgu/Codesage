@@ -1,7 +1,7 @@
 # ── Web framework ────────────────────────────────────────────────────────────
-fastapi==0.115.5
+fastapi>=0.115.6
 uvicorn[standard]==0.32.1
-python-multipart==0.0.12
+python-multipart>=0.0.31
 
 # ── Rate limiting ─────────────────────────────────────────────────────────────
 slowapi==0.1.9
@@ -33,7 +33,7 @@ tree-sitter-javascript==0.23.1
 tree-sitter-typescript==0.23.2
 
 # ── Git cloning ───────────────────────────────────────────────────────────────
-gitpython==3.1.43
+gitpython>=3.1.60
 
 # ── HTTP client (for Ollama + GitHub API checks) ──────────────────────────────
 httpx==0.28.1
@@ -42,7 +42,7 @@ httpx==0.28.1
 tenacity==9.0.0
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
-pytest==8.3.4
-pytest-asyncio==0.24.0
+pytest>=9.0.3
+pytest-asyncio>=1.4.0
 pytest-cov==6.0.0
 google-api-core==2.24.0

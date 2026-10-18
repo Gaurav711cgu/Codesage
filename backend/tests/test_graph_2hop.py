@@ -174,3 +174,20 @@ def test_scope_aware_self_and_this_binding():
     assert not G.has_edge("repo::calculator.py::Calculator.compute::10", "repo::other.py::Other.add::10")
     assert G.has_edge("repo::calculator.py::Calculator.compute::10", "repo::calculator.py::Calculator.multiply::30")
 
+
+def test_expand_two_hop_bounded_by_max_total_nodes():
+    """Verify that high-fanout graph traversal caps at max_total_nodes to protect LLM context windows."""
+    G = nx.DiGraph()
+    # Node S calls 25 distinct functions
+    for i in range(25):
+        G.add_edge("seed", f"callee_{i:02d}")
+        # Each callee calls another function
+        G.add_edge(f"callee_{i:02d}", f"transitive_{i:02d}")
+
+    # Standard unbounded traversal would return 50 nodes
+    # With max_total_nodes=15, must return exactly 15 nodes
+    bounded = expand_two_hop(G, ["seed"], max_degree=25, max_total_nodes=15)
+    assert len(bounded) == 15
+    # The seed itself should never be included
+    assert "seed" not in bounded
+

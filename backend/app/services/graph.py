@@ -434,7 +434,7 @@ def build_graph(code_units: list[dict]) -> nx.DiGraph:
 
 # ─── Graph traversal (called by retrieval) ────────────────────────────────────
 
-def expand_one_hop(G: nx.DiGraph, node_ids: list[str], max_degree: int = 50) -> set[str]:
+def expand_one_hop(G: nx.DiGraph, node_ids: list[str], max_degree: int = 10) -> set[str]:
     """
     Return all 1-hop neighbours (successors + predecessors) of the given nodes,
     excluding the seed nodes themselves. Limits edges to prevent context explosion.
@@ -455,15 +455,28 @@ def expand_one_hop(G: nx.DiGraph, node_ids: list[str], max_degree: int = 50) -> 
     return neighbours - set(node_ids)
 
 
-def expand_two_hop(G: nx.DiGraph, node_ids: list[str], max_degree: int = 50) -> set[str]:
+def expand_two_hop(
+    G: nx.DiGraph,
+    node_ids: list[str],
+    max_degree: int = 10,
+    max_total_nodes: int = 15,
+) -> set[str]:
     """
     Return all 2-hop neighbours (direct + transitive caller/callee dependencies)
     of the given seed nodes, excluding the seed nodes themselves.
-    Catches transitive call chains (A calls B, B calls C -> retrieves C for A).
+    Capped at max_total_nodes to protect LLM context windows against blowout.
     """
     one_hop = expand_one_hop(G, node_ids, max_degree=max_degree)
     two_hop = expand_one_hop(G, list(one_hop), max_degree=max_degree)
-    return (one_hop | two_hop) - set(node_ids)
+    combined = (one_hop | two_hop) - set(node_ids)
+    if len(combined) > max_total_nodes:
+        # Prioritize direct 1-hop neighbours first, then take sorted 2-hop transitive
+        ranked = list(one_hop - set(node_ids))[:max_total_nodes]
+        if len(ranked) < max_total_nodes:
+            remaining_quota = max_total_nodes - len(ranked)
+            ranked.extend(sorted(two_hop - one_hop)[:remaining_quota])
+        return set(ranked)
+    return combined
 
 
 def get_node_metadata(G: nx.DiGraph, node_id: str) -> dict:
