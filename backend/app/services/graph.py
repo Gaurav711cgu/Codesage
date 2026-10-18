@@ -293,11 +293,28 @@ def build_graph(code_units: list[dict]) -> nx.DiGraph:
     class_and_method_to_id: dict[tuple[str, str], str] = {}
     module_and_symbol_to_id: dict[tuple[str, str], str] = {}
 
+    class_to_id: dict[tuple[str, str], str] = {}
+    for unit in code_units:
+        if unit.get("type") == "class":
+            class_to_id[(unit.get("file", ""), unit.get("name", ""))] = unit["id"]
+
     for unit in code_units:
         u_id = unit["id"]
         u_name = unit.get("name", "")
         u_file = unit.get("file", "")
         name_to_id[u_name] = u_id
+
+        # Structural containment: connect Class -> Class.method
+        p_cls = unit.get("parent_class")
+        if p_cls:
+            cls_id = class_to_id.get((u_file, p_cls))
+            if not cls_id:
+                for (f, cname), cid in class_to_id.items():
+                    if cname == p_cls:
+                        cls_id = cid
+                        break
+            if cls_id and cls_id != u_id:
+                G.add_edge(cls_id, u_id)
 
         mod_name = Path(u_file).stem
         base_name = u_name.split(".")[-1]
@@ -470,11 +487,22 @@ def expand_two_hop(
     two_hop = expand_one_hop(G, list(one_hop), max_degree=max_degree)
     combined = (one_hop | two_hop) - set(node_ids)
     if len(combined) > max_total_nodes:
-        # Prioritize direct 1-hop neighbours first, then take sorted 2-hop transitive
-        ranked = list(one_hop - set(node_ids))[:max_total_nodes]
-        if len(ranked) < max_total_nodes:
-            remaining_quota = max_total_nodes - len(ranked)
-            ranked.extend(sorted(two_hop - one_hop)[:remaining_quota])
+        seed_files = {G.nodes[n].get("file", "") for n in node_ids if n in G}
+        def _score_node(nid: str) -> tuple[int, int, str]:
+            n_file = G.nodes[nid].get("file", "") if nid in G else ""
+            same_file = 1 if n_file and n_file in seed_files else 0
+            deg = G.degree(nid) if nid in G else 0
+            return (same_file, deg, nid)
+
+        candidates_one = one_hop - set(node_ids)
+        if len(candidates_one) >= max_total_nodes:
+            ranked = sorted(candidates_one, key=_score_node, reverse=True)[:max_total_nodes]
+            return set(ranked)
+
+        ranked = sorted(candidates_one, key=_score_node, reverse=True)
+        remaining_quota = max_total_nodes - len(ranked)
+        candidates_two = sorted(two_hop - one_hop, key=_score_node, reverse=True)
+        ranked.extend(candidates_two[:remaining_quota])
         return set(ranked)
     return combined
 

@@ -191,3 +191,42 @@ def test_expand_two_hop_bounded_by_max_total_nodes():
     # The seed itself should never be included
     assert "seed" not in bounded
 
+
+def test_class_containment_edges():
+    """Verify structural containment edges from Class -> Class.method."""
+    code_units = [
+        {
+            "id": "repo::models/session.py::Session::10",
+            "name": "Session",
+            "file": "models/session.py",
+            "type": "class",
+            "calls": [],
+        },
+        {
+            "id": "repo::models/session.py::Session.send::20",
+            "name": "Session.send",
+            "file": "models/session.py",
+            "type": "method",
+            "parent_class": "Session",
+            "calls": [],
+        },
+        {
+            "id": "repo::api.py::request::5",
+            "name": "request",
+            "file": "api.py",
+            "type": "function",
+            "calls": ["Session"],
+            "imports": ["from models.session import Session"],
+        },
+    ]
+
+    G = build_graph(code_units)
+
+    # Class must connect to method
+    assert G.has_edge("repo::models/session.py::Session::10", "repo::models/session.py::Session.send::20")
+    # request calling Session() connects to Session class
+    assert G.has_edge("repo::api.py::request::5", "repo::models/session.py::Session::10")
+    # 2-hop traversal from request reaches Session.send
+    two_hop = expand_two_hop(G, ["repo::api.py::request::5"], max_degree=10, max_total_nodes=15)
+    assert "repo::models/session.py::Session.send::20" in two_hop
+
