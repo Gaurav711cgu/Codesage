@@ -301,8 +301,10 @@ def build_graph(code_units: list[dict]) -> nx.DiGraph:
     for unit in code_units:
         u_id = unit["id"]
         u_name = unit.get("name", "")
+        clean_u_name = re.sub(r"::part_\d+$", "", u_name)
         u_file = unit.get("file", "")
         name_to_id[u_name] = u_id
+        name_to_id[clean_u_name] = u_id
 
         # Structural containment: connect Class -> Class.method
         p_cls = unit.get("parent_class")
@@ -317,14 +319,14 @@ def build_graph(code_units: list[dict]) -> nx.DiGraph:
                 G.add_edge(cls_id, u_id)
 
         mod_name = Path(u_file).stem
-        base_name = u_name.split(".")[-1]
+        base_name = clean_u_name.split(".")[-1]
 
         base_name_to_ids.setdefault(base_name, []).append(u_id)
         file_and_base_to_ids.setdefault((u_file, base_name), []).append(u_id)
         module_and_symbol_to_id[(mod_name, base_name)] = u_id
 
-        if "." in u_name:
-            parts = u_name.split(".")
+        if "." in clean_u_name:
+            parts = clean_u_name.split(".")
             cls_name, m_name = parts[0], parts[-1]
             class_and_method_to_id[(cls_name, m_name)] = u_id
             module_and_symbol_to_id[(mod_name, f"{cls_name}.{m_name}")] = u_id
