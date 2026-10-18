@@ -130,6 +130,7 @@ class ASTChunk:
             "name": self.name,
             "file": self.file,
             "type": self.type,
+            "parent_class": self.parent_class,
             "start_line": self.start_line,
             "end_line": self.end_line,
             "calls": self.calls,
