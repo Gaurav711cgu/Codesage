@@ -46,6 +46,21 @@ TARGET_PRESETS = {
         "path": BACKEND_DIR / "venv" / "lib" / "python3.11" / "site-packages" / "_pytest",
         "description": "Pytest core engine (fixtures, runner, terminal, python AST)",
     },
+    "requests": {
+        "name": "requests",
+        "path": BACKEND_DIR / "venv" / "lib" / "python3.11" / "site-packages" / "requests",
+        "description": "Requests HTTP client library for Python",
+    },
+    "flask": {
+        "name": "flask",
+        "path": BACKEND_DIR / "venv" / "lib" / "python3.11" / "site-packages" / "flask",
+        "description": "Flask WSGI web framework",
+    },
+    "seaborn": {
+        "name": "seaborn",
+        "path": BACKEND_DIR / "venv" / "lib" / "python3.11" / "site-packages" / "seaborn",
+        "description": "Seaborn statistical data visualization",
+    },
 }
 
 
@@ -120,7 +135,7 @@ async def main_async() -> int:
     parser = argparse.ArgumentParser(description="Seed CodeSage with sample and benchmark repositories.")
     parser.add_argument(
         "--target",
-        choices=["sample", "core", "pytest", "all"],
+        choices=list(TARGET_PRESETS.keys()) + ["all"],
         default="sample",
         help="Repository target to seed (default: sample)",
     )
@@ -131,7 +146,7 @@ async def main_async() -> int:
     )
     args = parser.parse_args()
 
-    targets_to_seed = ["sample", "core", "pytest"] if args.target == "all" else [args.target]
+    targets_to_seed = list(TARGET_PRESETS.keys()) if args.target == "all" else [args.target]
 
     print("=" * 60)
     print("  CodeSage Dynamic Repository Seeder")
